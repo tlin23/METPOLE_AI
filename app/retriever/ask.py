@@ -19,7 +19,29 @@ openai_api_key = os.getenv("OPENAI_API_KEY")
 if not openai_api_key:
     raise ValueError("OPENAI_API_KEY environment variable is not set")
 
-client = openai.OpenAI(api_key=openai_api_key)
+# Initialize OpenAI client with proper error handling for proxy settings
+try:
+    client = openai.OpenAI(api_key=openai_api_key)
+except TypeError as e:
+    if "unexpected keyword argument 'proxies'" in str(e):
+        # If the error is about proxies, initialize without proxy settings
+        import openai._base_client
+        original_init = openai._base_client.SyncHttpxClientWrapper.__init__
+        
+        def patched_init(self, *args, **kwargs):
+            # Remove 'proxies' from kwargs if present
+            if 'proxies' in kwargs:
+                del kwargs['proxies']
+            return original_init(self, *args, **kwargs)
+        
+        # Apply the patch
+        openai._base_client.SyncHttpxClientWrapper.__init__ = patched_init
+        
+        # Try initializing again
+        client = openai.OpenAI(api_key=openai_api_key)
+    else:
+        # If it's a different TypeError, re-raise it
+        raise
 
 
 class Retriever:
