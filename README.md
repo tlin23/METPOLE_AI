@@ -1,6 +1,6 @@
 # METPOLE_AI
 
-A project for crawling, processing, and retrieving content from the Metropole Ballard website.
+A project for crawling, processing, and retrieving content from the Metropole Ballard website. The application includes a FastAPI backend and a React frontend.
 
 ## 📋 Components
 
@@ -120,3 +120,43 @@ pip install pytest pytest-cov
 ```
 
 For more details on the test suite, see [tests/README.md](tests/README.md).
+
+## 🚀 Deployment
+
+The application can be deployed to cloud services using the provided configuration files. For detailed deployment instructions, see [DEPLOYMENT.md](DEPLOYMENT.md).
+
+### Deployment Options
+
+1. **Render.com (Recommended)**
+   - Backend: Docker-based web service
+   - Frontend: Static site
+   - Configuration: `render.yaml`
+
+2. **Fly.io + Render**
+   - Backend: Fly.io with Docker
+   - Frontend: Render static site
+   - Configuration: `fly.toml` for backend, frontend deployed separately
+
+### Testing Deployment
+
+After deployment, you can test the end-to-end flow using the provided test script:
+
+```bash
+# Install test dependencies
+pip install -r requirements.txt
+
+# Run the test script
+./test_deployment.py --backend-url https://your-backend-url.com
+```
+
+The test script verifies:
+- Backend API connectivity
+- Crawling functionality
+- Querying and asking questions
+- Source display
+- Feedback logging
+
+### CI/CD
+
+The repository includes GitHub Actions workflows for continuous deployment:
+- `.github/workflows/deploy.yml`: Deploys both backend and frontend to Render

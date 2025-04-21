@@ -3,6 +3,7 @@ import os
 from fastapi import FastAPI
 import uvicorn
 from pathlib import Path
+from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes import router as api_router
 from app.vector_store.init_chroma import init_chroma_db
 
@@ -18,6 +19,22 @@ app = FastAPI(
     title="MetPol AI",
     description="A FastAPI application for crawling, embedding, and retrieving information",
     version="0.1.0"
+)
+
+# Configure CORS
+origins = [
+    "http://localhost:5173",  # Local development frontend
+    "https://metpol-ai-frontend.onrender.com",  # Render frontend
+    "https://metpol-ai-frontend.vercel.app",  # Optional Vercel frontend
+    "*"  # Allow all origins during development (remove in production)
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Include API routes
