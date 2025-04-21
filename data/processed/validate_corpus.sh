@@ -5,6 +5,9 @@
 # Set the script to exit on error
 set -e
 
+# Change to the project root directory
+cd "$(dirname "$0")/../.."
+
 echo "=== Metropole Corpus Validation ==="
 echo
 

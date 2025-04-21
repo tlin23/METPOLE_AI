@@ -150,7 +150,7 @@ def main():
     """Main function."""
     parser = argparse.ArgumentParser(description='Validate the metropole_corpus.json file.')
     parser.add_argument('--corpus-path', type=str, 
-                        default=os.path.join('data', 'processed', 'metropole_corpus.json'),
+                        default='metropole_corpus.json',
                         help='Path to the corpus file')
     parser.add_argument('--verbose', action='store_true',
                         help='Print verbose output')

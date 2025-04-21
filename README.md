@@ -1,4 +1,4 @@
-# METPOL_AI
+# METPOLE_AI
 
 A project for crawling, processing, and retrieving content from the Metropole Ballard website.
 
@@ -7,8 +7,8 @@ A project for crawling, processing, and retrieving content from the Metropole Ba
 1. Clone the repo and navigate to the folder:
 
     ```bash
-    git clone https://github.com/your-username/METPOL_AI.git
-    cd METPOL_AI
+    git clone https://github.com/your-username/METPOLE_AI.git
+    cd METPOLE_AI
     ```
 
 2. Create and activate a virtual environment:
