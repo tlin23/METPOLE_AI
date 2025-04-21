@@ -2,6 +2,13 @@
 
 A project for crawling, processing, and retrieving content from the Metropole Ballard website.
 
+## 📋 Components
+
+- **Crawler**: Fetches and processes web content
+- **Chunking**: Breaks content into manageable chunks
+- **Embedding**: Converts text to vector embeddings
+- **Retrieval**: Queries the vector store and generates answers using LLM
+
 ## 🔧 Setup
 
 1. Clone the repo and navigate to the folder:
@@ -54,3 +61,32 @@ Start the FastAPI server:
 
 ```bash
 uvicorn main:app --reload
+```
+
+## 🧪 Testing
+
+The project includes a comprehensive test suite covering all components:
+
+```bash
+# Install test dependencies
+pip install pytest pytest-cov
+
+# Run all tests
+./run_tests.py
+
+# Run with coverage report
+./run_tests.py -c
+
+# Run specific test categories
+./run_tests.py -m unit
+./run_tests.py -m integration
+./run_tests.py -m crawler
+./run_tests.py -m embedding
+./run_tests.py -m retrieval
+./run_tests.py -m edge_case
+
+# Run tests with verbose output
+./run_tests.py -v
+```
+
+For more details on the test suite, see [tests/README.md](tests/README.md).
