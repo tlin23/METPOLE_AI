@@ -14,6 +14,7 @@ from app.crawler.extract_content import process_all_html_files
 from app.embedder.embed import Embedder
 from app.embedder.embed_corpus import embed_corpus
 from app.retriever.ask import Retriever
+from app.utils.helpers import save_feedback_log
 
 
 # Add the project root to the Python path to allow importing from data/processed
@@ -25,6 +26,12 @@ router = APIRouter()
 # Initialize components
 embedder = Embedder()
 retriever = Retriever()
+
+# Configure logging
+FEEDBACK_LOG_DIR = os.getenv("FEEDBACK_LOG_DIR", "data/logs")
+FEEDBACK_LOG_FILE = os.getenv("FEEDBACK_LOG_FILE", "feedback.jsonl")
+FEEDBACK_LOG_MAX_SIZE_MB = int(os.getenv("FEEDBACK_LOG_MAX_SIZE_MB", "10"))
+FEEDBACK_LOG_MAX_BACKUPS = int(os.getenv("FEEDBACK_LOG_MAX_BACKUPS", "5"))
 
 
 # Define models
@@ -83,6 +90,21 @@ class AskResponse(BaseModel):
     is_general_knowledge: Optional[bool] = False
     contains_diy_advice: Optional[bool] = False
     source_info: Optional[str] = None
+    success: bool
+    message: str
+
+
+class FeedbackRequest(BaseModel):
+    question: str
+    response: str
+    chunk_ids: Optional[List[str]] = None
+    rating: Optional[int] = None
+    comments: Optional[str] = None
+    user_id: Optional[str] = None
+    session_id: Optional[str] = None
+
+
+class FeedbackResponse(BaseModel):
     success: bool
     message: str
 
@@ -432,6 +454,54 @@ async def crawl_all():
         return CrawlAllResponse(
             pages_crawled=0,
             chunks_processed=0,
+            success=False,
+            message=f"Error: {str(e)}"
+        )
+
+
+@router.post("/feedback", response_model=FeedbackResponse)
+async def submit_feedback(request: FeedbackRequest):
+    """
+    Submit feedback about a question and response.
+    
+    Logs the question, response, timestamp, and chunk IDs to a local JSONL file.
+    Additional metadata like rating, comments, user_id, and session_id can also be included.
+    """
+    try:
+        # Prepare feedback data for logging
+        feedback_data = {
+            "question": request.question,
+            "response": request.response,
+            "chunk_ids": request.chunk_ids or [],
+            "timestamp": None,  # Will be added by save_feedback_log
+            "rating": request.rating,
+            "comments": request.comments,
+            "user_id": request.user_id,
+            "session_id": request.session_id
+        }
+        
+        # Save to log file with rotation support
+        success = save_feedback_log(
+            feedback_data=feedback_data,
+            log_dir=FEEDBACK_LOG_DIR,
+            filename=FEEDBACK_LOG_FILE,
+            max_size_mb=FEEDBACK_LOG_MAX_SIZE_MB,
+            max_backups=FEEDBACK_LOG_MAX_BACKUPS
+        )
+        
+        if not success:
+            return FeedbackResponse(
+                success=False,
+                message="Failed to save feedback to log file"
+            )
+        
+        return FeedbackResponse(
+            success=True,
+            message="Feedback logged successfully"
+        )
+    
+    except Exception as e:
+        return FeedbackResponse(
             success=False,
             message=f"Error: {str(e)}"
         )
