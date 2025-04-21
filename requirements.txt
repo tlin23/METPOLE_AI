@@ -3,6 +3,7 @@ uvicorn==0.24.0
 python-dotenv==1.0.0
 requests==2.31.0
 beautifulsoup4==4.12.2
+numpy<2.0.0  # Ensure compatibility with ChromaDB
 chromadb==0.4.18
 keybert==0.7.0
 pydantic==2.5.2

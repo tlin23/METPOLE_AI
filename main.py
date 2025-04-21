@@ -2,10 +2,16 @@ from dotenv import load_dotenv
 import os
 from fastapi import FastAPI
 import uvicorn
+from pathlib import Path
 from app.api.routes import router as api_router
+from app.vector_store.init_chroma import init_chroma_db
 
 # Load environment variables
 load_dotenv()
+
+# Set default Chroma DB path if not in environment
+if not os.getenv("CHROMA_DB_PATH"):
+    os.environ["CHROMA_DB_PATH"] = "./data/index"
 
 # Create FastAPI app
 app = FastAPI(
@@ -20,6 +26,19 @@ app.include_router(api_router, prefix="/api")
 @app.get("/")
 def read_root():
     return {"message": "Hello World"}
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize services on startup."""
+    # Initialize the Chroma DB
+    chroma_db_path = os.getenv("CHROMA_DB_PATH")
+    print(f"Initializing Chroma DB at: {chroma_db_path}")
+    
+    # Ensure the directory exists
+    Path(chroma_db_path).mkdir(parents=True, exist_ok=True)
+    
+    # Initialize the Chroma DB
+    init_chroma_db()
 
 if __name__ == "__main__":
     # Print some environment info
