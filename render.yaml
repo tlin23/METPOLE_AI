@@ -33,5 +33,5 @@ services:
     dockerContext: ./frontend
     numInstances: 1
     envVars:
-      - key: VITE_BACKEND_API_URL
+      - key: BACKEND_API_URL
         value: https://metpol-ai-backend.onrender.com

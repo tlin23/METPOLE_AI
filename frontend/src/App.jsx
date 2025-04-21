@@ -58,7 +58,7 @@ function App() {
 
     try {
       // Send request to backend API
-      const response = await axios.post(`${import.meta.env.VITE_BACKEND_API_URL}/api/ask`, {
+      const response = await axios.post(`${import.meta.env.BACKEND_API_URL}/api/ask`, {
         question: userMessage.text,
         top_k: 5
       })
