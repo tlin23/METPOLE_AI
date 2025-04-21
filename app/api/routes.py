@@ -12,6 +12,7 @@ from typing import List, Optional, Dict, Any
 from app.crawler.crawl import crawl, recursive_crawl
 from app.crawler.extract_content import process_all_html_files
 from app.embedder.embed import Embedder
+from app.embedder.embed_corpus import embed_corpus
 from app.retriever.ask import Retriever
 
 
@@ -34,6 +35,12 @@ class CrawlRequest(BaseModel):
 class CrawlAllResponse(BaseModel):
     pages_crawled: int
     chunks_processed: int
+    success: bool
+    message: str
+
+
+class EmbedResponse(BaseModel):
+    chunks_embedded: int
     success: bool
     message: str
 
@@ -183,6 +190,56 @@ async def ask_question(request: AskRequest):
         return AskResponse(
             question=request.question,
             chunks=[],
+            success=False,
+            message=f"Error: {str(e)}"
+        )
+
+
+@router.post("/embed", response_model=EmbedResponse)
+async def embed_corpus_endpoint():
+    """
+    Re-embed the contents of metropole_corpus.json and update the Chroma index.
+    
+    Returns a summary of how many chunks were embedded.
+    """
+    try:
+        # Path to the corpus file
+        corpus_path = os.path.join('data', 'processed', 'metropole_corpus.json')
+        
+        # Check if the corpus file exists
+        if not os.path.exists(corpus_path):
+            return EmbedResponse(
+                chunks_embedded=0,
+                success=False,
+                message=f"Error: Corpus file not found at {corpus_path}"
+            )
+        
+        # Load the corpus to get the number of chunks
+        with open(corpus_path, 'r', encoding='utf-8') as f:
+            corpus = json.load(f)
+        
+        chunks_count = len(corpus)
+        
+        # Get the Chroma DB path
+        chroma_db_path = os.getenv("CHROMA_DB_PATH", "./data/index")
+        
+        # Embed the corpus
+        embed_corpus(
+            corpus_path=corpus_path,
+            chroma_path=chroma_db_path,
+            collection_name="documents",
+            batch_size=100
+        )
+        
+        return EmbedResponse(
+            chunks_embedded=chunks_count,
+            success=True,
+            message=f"Successfully embedded {chunks_count} chunks into the Chroma index"
+        )
+    
+    except Exception as e:
+        return EmbedResponse(
+            chunks_embedded=0,
             success=False,
             message=f"Error: {str(e)}"
         )
