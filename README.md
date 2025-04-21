@@ -146,7 +146,7 @@ After deployment, you can test the end-to-end flow using the provided test scrip
 pip install -r requirements.txt
 
 # Run the test script
-./test_deployment.py --backend-url https://your-backend-url.com
+./test_deployment.py --backend-url https://metpol-ai-backend.onrender.com
 ```
 
 The test script verifies:
