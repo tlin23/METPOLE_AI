@@ -1,5 +1,5 @@
 {
-  "../../data/html/www.metropoleballard.com_hub.html": {
+  "data/html/www.metropoleballard.com_hub.html": {
     "title": "metropoleballard.com - Hub",
     "sections": [
       {
@@ -161,7 +161,7 @@
       }
     ]
   },
-  "../../data/html/www.metropoleballard.com_newsletter.html": {
+  "data/html/www.metropoleballard.com_newsletter.html": {
     "title": "metropoleballard.com - Newsletter",
     "sections": [
       {
@@ -288,7 +288,7 @@
       }
     ]
   },
-  "../../data/html/www.metropoleballard.com_board-2025.html": {
+  "data/html/www.metropoleballard.com_board-2025.html": {
     "title": "metropoleballard.com - Board 2025",
     "sections": [
       {
@@ -566,7 +566,7 @@
       }
     ]
   },
-  "../../data/html/www.metropoleballard.com_home.html": {
+  "data/html/www.metropoleballard.com_home.html": {
     "title": "metropoleballard.com",
     "sections": [
       {
@@ -638,7 +638,7 @@
       }
     ]
   },
-  "../../data/html/www.metropoleballard.com_manual.html": {
+  "data/html/www.metropoleballard.com_manual.html": {
     "title": "metropoleballard.com - Manual",
     "sections": [
       {
@@ -1844,7 +1844,7 @@
       }
     ]
   },
-  "../../data/html/www.metropoleballard.com_board-2024.html": {
+  "data/html/www.metropoleballard.com_board-2024.html": {
     "title": "metropoleballard.com - Board 2024",
     "sections": [
       {
@@ -2114,7 +2114,7 @@
       }
     ]
   },
-  "../../data/html/www.metropoleballard.com_blog.html": {
+  "data/html/www.metropoleballard.com_blog.html": {
     "title": "metropoleballard.com - Blog",
     "sections": [
       {
@@ -3275,7 +3275,7 @@
       }
     ]
   },
-  "../../data/html/www.metropoleballard.com_ballard.html": {
+  "data/html/www.metropoleballard.com_ballard.html": {
     "title": "metropoleballard.com - Ballard",
     "sections": [
       {
@@ -3361,7 +3361,7 @@
       }
     ]
   },
-  "../../data/html/www.metropoleballard.com_building.html": {
+  "data/html/www.metropoleballard.com_building.html": {
     "title": "metropoleballard.com - Building",
     "sections": [
       {
@@ -3422,7 +3422,7 @@
       }
     ]
   },
-  "../../data/html/www.metropoleballard.com_rules.html": {
+  "data/html/www.metropoleballard.com_rules.html": {
     "title": "metropoleballard.com - Rules",
     "sections": [
       {
@@ -4774,7 +4774,7 @@
       }
     ]
   },
-  "../../data/html/www.metropoleballard.com_video.html": {
+  "data/html/www.metropoleballard.com_video.html": {
     "title": "metropoleballard.com - Video",
     "sections": [
       {
