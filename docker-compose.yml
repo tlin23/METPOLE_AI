@@ -24,16 +24,18 @@ services:
       retries: 3
       start_period: 10s
 
-  # Frontend service (uncomment if you have a frontend)
-  # frontend:
-  #   build:
-  #     context: ./frontend
-  #     dockerfile: Dockerfile
-  #   ports:
-  #     - "3000:3000"
-  #   depends_on:
-  #     - app
-  #   restart: unless-stopped
+  # Frontend service
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      - app
+    environment:
+      - BACKEND_API_URL=http://app:8000
+    restart: unless-stopped
 
 volumes:
   chroma_data:
