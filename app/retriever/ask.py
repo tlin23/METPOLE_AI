@@ -51,11 +51,11 @@ class Retriever:
         Returns:
             list: List of matching documents.
         """
-        # In a real implementation, this would use semantic similarity search
-        # For this placeholder, we're just doing a simple query
+        # Query using cosine similarity
         results = self.collection.query(
             query_texts=[query_text],
-            n_results=n_results
+            n_results=n_results,
+            include=["documents", "metadatas", "distances"],
         )
         
         return results

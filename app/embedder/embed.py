@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 import chromadb
 from chromadb.config import Settings
 from pathlib import Path
+from datetime import datetime
 
 from app.vector_store.init_chroma import init_chroma_db
 
@@ -45,13 +46,14 @@ class Embedder:
         # Initialize the collection
         self.collection = self.chroma_client.get_or_create_collection("documents")
     
-    def embed_text(self, text, doc_id=None):
+    def embed_text(self, text, doc_id=None, metadata=None):
         """
         Convert text to embeddings and store in ChromaDB.
         
         Args:
             text (str): Text to embed.
             doc_id (str, optional): Document ID. Defaults to None.
+            metadata (dict, optional): Metadata for the document. Defaults to None.
             
         Returns:
             str: Document ID of the embedded text.
@@ -61,10 +63,18 @@ class Embedder:
             import uuid
             doc_id = str(uuid.uuid4())
         
+        # Default metadata if none provided
+        if metadata is None:
+            metadata = {
+                "source": "direct_input",
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            }
+        
         # In a real implementation, we would use a proper embedding model
         # For this placeholder, we're just storing the text directly
         self.collection.add(
             documents=[text],
+            metadatas=[metadata],
             ids=[doc_id]
         )
         
@@ -75,14 +85,21 @@ class Embedder:
         Embed multiple documents.
         
         Args:
-            documents (list): List of (doc_id, text) tuples.
+            documents (list): List of (doc_id, text, metadata) tuples.
+                metadata is optional and can be None.
             
         Returns:
             list: List of document IDs.
         """
         doc_ids = []
-        for doc_id, text in documents:
-            doc_id = self.embed_text(text, doc_id)
+        for item in documents:
+            if len(item) == 2:
+                doc_id, text = item
+                metadata = None
+            else:
+                doc_id, text, metadata = item
+            
+            doc_id = self.embed_text(text, doc_id, metadata)
             doc_ids.append(doc_id)
         
         return doc_ids

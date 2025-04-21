@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup
 import os
 import urllib.parse
 from collections import defaultdict
+from datetime import datetime
 
 
 def fetch_url(url):
@@ -214,11 +215,21 @@ def crawl(url):
         url (str): The URL to crawl.
         
     Returns:
-        str: Extracted text content.
+        tuple: (extracted text content, metadata dictionary)
     """
     html = fetch_url(url)
     soup = parse_html(html)
-    return extract_text(soup)
+    text = extract_text(soup)
+    
+    # Extract metadata
+    metadata = {
+        "url": url,
+        "title": soup.title.string if soup and soup.title else "No title",
+        "crawl_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "source": "web_crawl"
+    }
+    
+    return text, metadata
 
 
 if __name__ == "__main__":

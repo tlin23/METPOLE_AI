@@ -4,7 +4,7 @@ API routes for the application.
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
 from app.crawler.crawl import crawl
 from app.embedder.embed import Embedder
@@ -44,6 +44,24 @@ class QueryResponse(BaseModel):
     message: str
 
 
+class AskRequest(BaseModel):
+    question: str
+    top_k: Optional[int] = 5
+
+
+class ChunkResult(BaseModel):
+    text: str
+    metadata: Optional[Dict[str, Any]] = None
+    distance: Optional[float] = None
+
+
+class AskResponse(BaseModel):
+    question: str
+    chunks: List[ChunkResult]
+    success: bool
+    message: str
+
+
 @router.post("/crawl", response_model=CrawlResponse)
 async def crawl_url(request: CrawlRequest):
     """
@@ -51,7 +69,7 @@ async def crawl_url(request: CrawlRequest):
     """
     try:
         # Crawl the URL
-        content = crawl(request.url)
+        content, metadata = crawl(request.url)
         
         if not content:
             return CrawlResponse(
@@ -60,8 +78,8 @@ async def crawl_url(request: CrawlRequest):
                 message="Failed to extract content from URL"
             )
         
-        # Embed the content
-        doc_id = embedder.embed_text(content)
+        # Embed the content with metadata
+        doc_id = embedder.embed_text(content, metadata=metadata)
         
         return CrawlResponse(
             url=request.url,
@@ -98,6 +116,43 @@ async def query_data(request: QueryRequest):
         return QueryResponse(
             query=request.query,
             results=[],
+            success=False,
+            message=f"Error: {str(e)}"
+        )
+
+
+@router.post("/ask", response_model=AskResponse)
+async def ask_question(request: AskRequest):
+    """
+    Ask a question and get the most relevant chunks from the vector store using cosine similarity.
+    
+    Returns the top-k most relevant chunks along with their metadata and similarity scores.
+    """
+    try:
+        # Query the vector store using cosine similarity
+        results = retriever.query(request.question, request.top_k)
+        
+        # Format the results
+        chunks = []
+        for i in range(len(results["documents"][0])):
+            chunk = ChunkResult(
+                text=results["documents"][0][i],
+                metadata=results["metadatas"][0][i] if "metadatas" in results and results["metadatas"][0] else None,
+                distance=results["distances"][0][i] if "distances" in results and results["distances"][0] else None
+            )
+            chunks.append(chunk)
+        
+        return AskResponse(
+            question=request.question,
+            chunks=chunks,
+            success=True,
+            message="Question answered successfully"
+        )
+    
+    except Exception as e:
+        return AskResponse(
+            question=request.question,
+            chunks=[],
             success=False,
             message=f"Error: {str(e)}"
         )
