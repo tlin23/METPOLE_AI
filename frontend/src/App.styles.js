@@ -20,6 +20,45 @@ const styles = {
     fontSize: '1.25rem',
     fontWeight: 'bold'
   },
+  headerControls: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '16px'
+  },
+  sourceControls: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px'
+  },
+  sourceToggleLabel: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    fontSize: '0.875rem',
+    cursor: 'pointer'
+  },
+  sourceToggleCheckbox: {
+    cursor: 'pointer'
+  },
+  displayModeControls: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px'
+  },
+  displayModeLabel: {
+    fontSize: '0.75rem',
+    color: 'white',
+    textTransform: 'capitalize'
+  },
+  cycleButton: {
+    padding: '4px 8px',
+    borderRadius: '4px',
+    border: '1px solid white',
+    backgroundColor: 'transparent',
+    color: 'white',
+    fontSize: '0.75rem',
+    cursor: 'pointer'
+  },
   resetButton: {
     backgroundColor: 'white',
     color: '#2563eb',
@@ -110,6 +149,72 @@ const styles = {
   buttonDisabled: {
     backgroundColor: '#93c5fd',
     cursor: 'not-allowed'
+  },
+  
+  // Source information display styles
+  sourceTooltipTrigger: {
+    position: 'absolute',
+    bottom: '-18px',
+    left: '8px',
+    fontSize: '0.75rem',
+    color: '#6b7280',
+    cursor: 'help',
+    backgroundColor: '#f3f4f6',
+    padding: '2px 6px',
+    borderRadius: '4px',
+    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
+  },
+  
+  sourcePanel: {
+    marginTop: '8px',
+    backgroundColor: '#f9fafb',
+    borderRadius: '6px',
+    padding: '4px',
+    fontSize: '0.75rem',
+    color: '#4b5563',
+    maxWidth: '100%'
+  },
+  
+  sourcePanelSummary: {
+    cursor: 'pointer',
+    fontWeight: 'bold',
+    padding: '4px'
+  },
+  
+  sourcePanelContent: {
+    padding: '8px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px'
+  },
+  
+  sourceChunk: {
+    backgroundColor: 'white',
+    padding: '8px',
+    borderRadius: '4px',
+    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+    fontSize: '0.75rem',
+    lineHeight: '1.4'
+  },
+  
+  sourceFooter: {
+    marginTop: '8px',
+    backgroundColor: '#f9fafb',
+    borderRadius: '6px',
+    padding: '8px',
+    fontSize: '0.75rem',
+    color: '#4b5563'
+  },
+  
+  sourceFooterTitle: {
+    fontWeight: 'bold',
+    marginBottom: '4px'
+  },
+  
+  sourceFooterItem: {
+    fontSize: '0.7rem',
+    marginBottom: '2px',
+    color: '#6b7280'
   }
 };
 

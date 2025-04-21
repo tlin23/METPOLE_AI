@@ -8,13 +8,17 @@ function App() {
   const [inputValue, setInputValue] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [inputFocused, setInputFocused] = useState(false)
+  const [showSourceInfo, setShowSourceInfo] = useState(false)
+  const [sourceDisplayMode, setSourceDisplayMode] = useState('tooltip') // 'tooltip', 'panel', or 'footer'
   const messagesEndRef = useRef(null)
 
   // Welcome message
   const welcomeMessage = {
     id: 'welcome',
     text: 'Welcome to Metropole.AI! I can help answer questions about the building, maintenance, rules, and more. How can I assist you today?',
-    sender: 'bot'
+    sender: 'bot',
+    sourceInfo: null,
+    chunks: []
   }
 
   // Display welcome message on initial load
@@ -67,7 +71,9 @@ function App() {
           {
             id: Date.now(),
             text: response.data.answer || "I'm sorry, I couldn't find an answer to that.",
-            sender: 'bot'
+            sender: 'bot',
+            sourceInfo: response.data.source_info,
+            chunks: response.data.chunks || []
           }
         ])
       } else {
@@ -77,7 +83,9 @@ function App() {
           {
             id: Date.now(),
             text: response.data.message || "Sorry, there was an error processing your request.",
-            sender: 'bot'
+            sender: 'bot',
+            sourceInfo: null,
+            chunks: []
           }
         ])
       }
@@ -97,17 +105,59 @@ function App() {
     }
   }
 
+  // Toggle source info display
+  const toggleSourceInfo = () => {
+    setShowSourceInfo(!showSourceInfo);
+  }
+
+  // Change source display mode
+  const changeSourceDisplayMode = (mode) => {
+    setSourceDisplayMode(mode);
+  }
+
+  // Cycle through display modes
+  const cycleDisplayMode = () => {
+    const modes = ['tooltip', 'panel', 'footer'];
+    const currentIndex = modes.indexOf(sourceDisplayMode);
+    const nextIndex = (currentIndex + 1) % modes.length;
+    setSourceDisplayMode(modes[nextIndex]);
+  }
+
   return (
     <div style={styles.container}>
       {/* App Header */}
       <header style={styles.header}>
         <h1 style={styles.headerTitle}>Metropole.AI</h1>
-        <button 
-          onClick={handleReset} 
-          style={styles.resetButton}
-        >
-          Start Over
-        </button>
+        <div style={styles.headerControls}>
+          <div style={styles.sourceControls}>
+            <label style={styles.sourceToggleLabel}>
+              <input
+                type="checkbox"
+                checked={showSourceInfo}
+                onChange={toggleSourceInfo}
+                style={styles.sourceToggleCheckbox}
+              />
+              Show Sources
+            </label>
+            {showSourceInfo && (
+              <div style={styles.displayModeControls}>
+                <span style={styles.displayModeLabel}>Mode: {sourceDisplayMode}</span>
+                <button 
+                  onClick={cycleDisplayMode}
+                  style={styles.cycleButton}
+                >
+                  Change Mode
+                </button>
+              </div>
+            )}
+          </div>
+          <button 
+            onClick={handleReset} 
+            style={styles.resetButton}
+          >
+            Start Over
+          </button>
+        </div>
       </header>
 
       {/* Chat Container */}
@@ -127,14 +177,57 @@ function App() {
                   ...(message.sender === 'user' ? styles.messageRight : styles.messageLeft)
                 }}
               >
-                <div 
-                  style={{
-                    ...styles.messageBubble,
-                    ...(message.sender === 'user' ? styles.userBubble : styles.botBubble),
-                    ...(message.sender === 'bot' ? { whiteSpace: 'pre-wrap' } : {})
-                  }}
-                >
-                  {message.text}
+                <div style={{ position: 'relative' }}>
+                  <div 
+                    style={{
+                      ...styles.messageBubble,
+                      ...(message.sender === 'user' ? styles.userBubble : styles.botBubble),
+                      ...(message.sender === 'bot' ? { whiteSpace: 'pre-wrap' } : {})
+                    }}
+                  >
+                    {message.text}
+                  </div>
+                  
+                  {/* Source Information Display */}
+                  {message.sender === 'bot' && showSourceInfo && message.sourceInfo && (
+                    <>
+                      {/* Tooltip Source Display */}
+                      {sourceDisplayMode === 'tooltip' && (
+                        <div style={styles.sourceTooltipTrigger} title={message.sourceInfo}>
+                          ℹ️ Source
+                        </div>
+                      )}
+                      
+                      {/* Collapsible Panel Source Display */}
+                      {sourceDisplayMode === 'panel' && (
+                        <details style={styles.sourcePanel}>
+                          <summary style={styles.sourcePanelSummary}>Source Information</summary>
+                          <div style={styles.sourcePanelContent}>
+                            {message.chunks.map((chunk, index) => (
+                              <div key={index} style={styles.sourceChunk}>
+                                <strong>Chunk ID:</strong> {chunk.metadata?.chunk_id || 'Unknown'}<br />
+                                <strong>Section:</strong> {chunk.metadata?.section_header || 'N/A'}<br />
+                                <strong>Page:</strong> {chunk.metadata?.page_title || 'Unknown'}
+                              </div>
+                            ))}
+                          </div>
+                        </details>
+                      )}
+                      
+                      {/* Footer Source Display */}
+                      {sourceDisplayMode === 'footer' && (
+                        <div style={styles.sourceFooter}>
+                          <div style={styles.sourceFooterTitle}>Sources:</div>
+                          {message.chunks.map((chunk, index) => (
+                            <div key={index} style={styles.sourceFooterItem}>
+                              {chunk.metadata?.chunk_id || 'Unknown'} 
+                              {chunk.metadata?.section_header ? ` (${chunk.metadata.section_header})` : ''}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
               </div>
             ))
