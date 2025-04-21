@@ -1,12 +1,14 @@
-# Python Virtual Environment Starter
+# METPOL_AI
+
+A project for crawling, processing, and retrieving content from the Metropole Ballard website.
 
 ## 🔧 Setup
 
 1. Clone the repo and navigate to the folder:
 
     ```bash
-    git clone https://github.com/your-repo-name.git
-    cd your-repo-name
+    git clone https://github.com/your-username/METPOL_AI.git
+    cd METPOL_AI
     ```
 
 2. Create and activate a virtual environment:
