@@ -57,11 +57,41 @@ python -m app.vector_store.demo
 
 ## ▶️ Run the app
 
+### Local Development
+
 Start the FastAPI server:
 
 ```bash
 uvicorn main:app --reload
 ```
+
+### Docker
+
+You can also run the application using Docker:
+
+```bash
+# Build and start the containers
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop the containers
+docker-compose down
+```
+
+The API will be available at http://localhost:8000.
+
+#### Environment Variables
+
+Create a `.env` file in the project root with the following variables:
+
+```env
+OPENAI_API_KEY=your-openai-api-key
+SECRET_KEY=your-secret-key
+```
+
+These variables will be automatically loaded by docker-compose.
 
 ## 🧪 Testing
 
