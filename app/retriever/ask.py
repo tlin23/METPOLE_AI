@@ -71,19 +71,6 @@ class Retriever:
         # Convert to a standard dictionary
         return dict(results)
 
-    def get_document(self, doc_id: str) -> Dict[str, Any]:
-        """Retrieve a specific document by ID.
-
-        Args:
-            doc_id: Document ID to retrieve.
-
-        Returns:
-            Dictionary containing the document data.
-        """
-        result = self.collection.get(ids=[doc_id])
-        # Convert to a standard dictionary
-        return dict(result)
-
     def generate_answer(
         self, question: str, chunks: List[Any], model: str = "gpt-3.5-turbo"
     ) -> Dict[str, Any]:
