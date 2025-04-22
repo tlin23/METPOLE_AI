@@ -33,12 +33,12 @@ def verify_embeddings():
     Verify that embeddings are added to Chroma correctly.
     """
     print("Starting embedding verification...")
-    
+
     # Create a temporary directory for the test
     temp_dir = tempfile.mkdtemp()
     chroma_path = os.path.join(temp_dir, "chroma_test")
     test_corpus_path = os.path.join(temp_dir, "test_corpus.json")
-    
+
     try:
         # Create a small test corpus
         test_corpus = [
@@ -50,7 +50,7 @@ def verify_embeddings():
                 "section_header": "Test Section 1",
                 "content": "This is a test content for the first chunk.",
                 "content_html": "<p>This is a test content for the first chunk.</p>",
-                "tags": ["test", "first", "chunk"]
+                "tags": ["test", "first", "chunk"],
             },
             {
                 "chunk_id": "chunk_test_002",
@@ -60,7 +60,7 @@ def verify_embeddings():
                 "section_header": "Test Section 2",
                 "content": "This is a test content for the second chunk.",
                 "content_html": "<p>This is a test content for the second chunk.</p>",
-                "tags": ["test", "second", "chunk"]
+                "tags": ["test", "second", "chunk"],
             },
             {
                 "chunk_id": "chunk_test_003",
@@ -70,77 +70,77 @@ def verify_embeddings():
                 "section_header": "Test Section 1",
                 "content": "This is a test content for the third chunk on a different page.",
                 "content_html": "<p>This is a test content for the third chunk on a different page.</p>",
-                "tags": ["test", "third", "chunk", "different"]
-            }
+                "tags": ["test", "third", "chunk", "different"],
+            },
         ]
-        
+
         # Write the test corpus to a file
         print(f"Creating test corpus at {test_corpus_path}...")
-        with open(test_corpus_path, 'w', encoding='utf-8') as f:
+        with open(test_corpus_path, "w", encoding="utf-8") as f:
             json.dump(test_corpus, f)
-        
+
         # Embed the test corpus
         print(f"Embedding test corpus into Chroma at {chroma_path}...")
         embed_corpus(
             corpus_path=test_corpus_path,
             chroma_path=chroma_path,
             collection_name="test_collection",
-            batch_size=10
+            batch_size=10,
         )
-        
+
         # Initialize the embedding function for tests
         embedding_function = embedding_functions.DefaultEmbeddingFunction()
-        
+
         # Initialize the Chroma client
         print("Connecting to Chroma DB...")
         client = chromadb.PersistentClient(
-            path=chroma_path,
-            settings=Settings(
-                anonymized_telemetry=False
-            )
+            path=chroma_path, settings=Settings(anonymized_telemetry=False)
         )
-        
+
         # Get the collection
         collection = client.get_collection(
-            name="test_collection",
-            embedding_function=embedding_function
+            name="test_collection", embedding_function=embedding_function
         )
-        
+
         # Check 1: Verify embedding count
         count = collection.count()
         print(f"\n1. Embedding Count Check:")
         print(f"   Expected: 3, Actual: {count}")
         assert count == 3, "Collection should have 3 embeddings"
         print("   ✓ PASSED: Correct number of embeddings found")
-        
+
         # Check 2: Verify IDs are present
         print(f"\n2. ID Presence Check:")
         expected_ids = ["chunk_test_001", "chunk_test_002", "chunk_test_003"]
         result = collection.get()
         actual_ids = result["ids"]
-        
+
         for expected_id in expected_ids:
-            assert expected_id in actual_ids, f"ID {expected_id} should be in the collection"
+            assert (
+                expected_id in actual_ids
+            ), f"ID {expected_id} should be in the collection"
             print(f"   ✓ PASSED: Found ID {expected_id}")
-        
+
         # Check 3: Verify metadata is correct
         print(f"\n3. Metadata Correctness Check:")
         # Get a specific chunk by ID
         result = collection.get(ids=["chunk_test_001"])
-        
+
         # Check that we got exactly one result
         assert len(result["ids"]) == 1, "Should get exactly one result"
-        
+
         # Check the metadata
         metadata = result["metadatas"][0]
         print(f"   Retrieved metadata for chunk_test_001:")
         for key, value in metadata.items():
             print(f"   - {key}: {value}")
-        
+
         assert metadata["page_id"] == "page_test_001", "Page ID should match"
         assert metadata["page_title"] == "Test Page 1", "Page title should match"
         assert metadata["page_name"] == "test_page_1", "Page name should match"
-        assert metadata["section_header"] == "Test Section 1", "Section header should match"
+        assert (
+            metadata["section_header"] == "Test Section 1"
+        ), "Section header should match"
         # Check if tags are joined with or without commas
         expected_tags = "test,first,chunk"
         actual_tags = metadata["tags"]
@@ -150,41 +150,43 @@ def verify_embeddings():
         else:
             assert actual_tags == expected_tags, "Tags should match (with commas)"
         print("   ✓ PASSED: All metadata fields match expected values")
-        
+
         # Check 4: Verify content is correct
         print(f"\n4. Content Correctness Check:")
         content = result["documents"][0]
-        print(f"   Retrieved content: \"{content}\"")
-        assert content == "This is a test content for the first chunk.", "Content should match"
+        print(f'   Retrieved content: "{content}"')
+        assert (
+            content == "This is a test content for the first chunk."
+        ), "Content should match"
         print("   ✓ PASSED: Content matches expected value")
-        
+
         # Check 5: Verify similarity ranking
         print(f"\n5. Similarity Ranking Check:")
         # Create a query that should match all chunks but with different similarity
         query_text = "test content different page"
-        print(f"   Query: \"{query_text}\"")
-        
-        results = collection.query(
-            query_texts=[query_text],
-            n_results=3
-        )
-        
+        print(f'   Query: "{query_text}"')
+
+        results = collection.query(query_texts=[query_text], n_results=3)
+
         # The third chunk should be the most similar due to "different page" in the content
         most_similar_id = results["ids"][0][0]
         print(f"   Most similar chunk: {most_similar_id}")
-        assert most_similar_id == "chunk_test_003", "The third chunk should be the most similar to the query"
+        assert (
+            most_similar_id == "chunk_test_003"
+        ), "The third chunk should be the most similar to the query"
         print("   ✓ PASSED: Correct chunk ranked as most similar")
-        
+
         # Check distances
         distances = results["distances"][0]
         print(f"   Similarity distances: {distances}")
         assert len(distances) == 3, "Should have 3 distances"
-        assert all(distances[i] <= distances[i+1] for i in range(len(distances)-1)), \
-            "Distances should be in ascending order (most similar first)"
+        assert all(
+            distances[i] <= distances[i + 1] for i in range(len(distances) - 1)
+        ), "Distances should be in ascending order (most similar first)"
         print("   ✓ PASSED: Distances are in correct order")
-        
+
         print("\nAll verification checks passed successfully!")
-        
+
     except Exception as e:
         print(f"Error during verification: {e}")
         raise

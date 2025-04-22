@@ -12,7 +12,7 @@ from pathlib import Path
 from unittest.mock import patch, MagicMock
 
 # Add the project root to the Python path to allow importing from app
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import chromadb
 from chromadb.config import Settings
@@ -144,22 +144,22 @@ def sample_content_objects():
             "page_name": "test_page_1",
             "section_header": "Section 1",
             "content": "This is the content of section 1.",
-            "content_html": "<p>This is the content of section 1.</p>"
+            "content_html": "<p>This is the content of section 1.</p>",
         },
         {
             "page_title": "Test Page 1",
             "page_name": "test_page_1",
             "section_header": "Section 2",
             "content": "This is the content of section 2.",
-            "content_html": "<p>This is the content of section 2.</p>"
+            "content_html": "<p>This is the content of section 2.</p>",
         },
         {
             "page_title": "Test Page 2",
             "page_name": "test_page_2",
             "section_header": "Section 1",
             "content": "This is the content of section 1 on page 2.",
-            "content_html": "<p>This is the content of section 1 on page 2.</p>"
-        }
+            "content_html": "<p>This is the content of section 1 on page 2.</p>",
+        },
     ]
 
 
@@ -173,7 +173,7 @@ def sample_content_objects_with_edge_cases():
             "page_name": "test_page_1",
             "section_header": "Section 1",
             "content": "This is the content of section 1.",
-            "content_html": "<p>This is the content of section 1.</p>"
+            "content_html": "<p>This is the content of section 1.</p>",
         },
         # Empty content
         {
@@ -181,7 +181,7 @@ def sample_content_objects_with_edge_cases():
             "page_name": "test_page_1",
             "section_header": "Empty Section",
             "content": "",
-            "content_html": "<p></p>"
+            "content_html": "<p></p>",
         },
         # Very short content (less than 20 chars)
         {
@@ -189,16 +189,17 @@ def sample_content_objects_with_edge_cases():
             "page_name": "test_page_1",
             "section_header": "Short Section",
             "content": "Short text.",
-            "content_html": "<p>Short text.</p>"
+            "content_html": "<p>Short text.</p>",
         },
         # Very long content
         {
             "page_title": "Test Page 2",
             "page_name": "test_page_2",
             "section_header": "Long Section",
-            "content": "This is a very long content that exceeds the typical length of a chunk. " * 20,
-            "content_html": f"<p>{'This is a very long content that exceeds the typical length of a chunk. ' * 20}</p>"
-        }
+            "content": "This is a very long content that exceeds the typical length of a chunk. "
+            * 20,
+            "content_html": f"<p>{'This is a very long content that exceeds the typical length of a chunk. ' * 20}</p>",
+        },
     ]
 
 
@@ -214,7 +215,7 @@ def sample_corpus_with_metadata():
             "section_header": "Section 1",
             "content": "This is the content of section 1.",
             "content_html": "<p>This is the content of section 1.</p>",
-            "tags": ["test", "content", "section1"]
+            "tags": ["test", "content", "section1"],
         },
         {
             "chunk_id": "chunk_test_002",
@@ -224,7 +225,7 @@ def sample_corpus_with_metadata():
             "section_header": "Section 2",
             "content": "This is the content of section 2.",
             "content_html": "<p>This is the content of section 2.</p>",
-            "tags": ["test", "content", "section2"]
+            "tags": ["test", "content", "section2"],
         },
         {
             "chunk_id": "chunk_test_003",
@@ -234,8 +235,8 @@ def sample_corpus_with_metadata():
             "section_header": "Section 1",
             "content": "This is the content of section 1 on page 2.",
             "content_html": "<p>This is the content of section 1 on page 2.</p>",
-            "tags": ["test", "content", "page2", "section1"]
-        }
+            "tags": ["test", "content", "page2", "section1"],
+        },
     ]
 
 
@@ -252,7 +253,7 @@ def sample_corpus_with_edge_cases():
             "section_header": "Section 1",
             "content": "This is the content of section 1.",
             "content_html": "<p>This is the content of section 1.</p>",
-            "tags": ["test", "content", "section1"]
+            "tags": ["test", "content", "section1"],
         },
         # Empty content
         {
@@ -263,7 +264,7 @@ def sample_corpus_with_edge_cases():
             "section_header": "Empty Section",
             "content": "",
             "content_html": "<p></p>",
-            "tags": []
+            "tags": [],
         },
         # Missing tags
         {
@@ -274,7 +275,7 @@ def sample_corpus_with_edge_cases():
             "section_header": "Section with Missing Tags",
             "content": "This content has no tags.",
             "content_html": "<p>This content has no tags.</p>",
-            "tags": []
+            "tags": [],
         },
         # Very long content
         {
@@ -283,10 +284,11 @@ def sample_corpus_with_edge_cases():
             "page_title": "Test Page 2",
             "page_name": "test_page_2",
             "section_header": "Long Section",
-            "content": "This is a very long content that exceeds the typical length of a chunk. " * 20,
+            "content": "This is a very long content that exceeds the typical length of a chunk. "
+            * 20,
             "content_html": f"<p>{'This is a very long content that exceeds the typical length of a chunk. ' * 20}</p>",
-            "tags": ["test", "long", "content"]
-        }
+            "tags": ["test", "long", "content"],
+        },
     ]
 
 
@@ -315,26 +317,56 @@ def mock_chroma_client():
     mock_collection = MagicMock()
     mock_client.get_or_create_collection.return_value = mock_collection
     mock_client.get_collection.return_value = mock_collection
-    
+
     # Set up the collection's query method to return sample results
     mock_collection.query.return_value = {
         "ids": [["chunk_test_001", "chunk_test_002", "chunk_test_003"]],
-        "documents": [["This is the content of section 1.", "This is the content of section 2.", "This is the content of section 1 on page 2."]],
-        "metadatas": [[
-            {"page_id": "page_test_001", "page_title": "Test Page 1", "section_header": "Section 1", "tags": "test,content,section1"},
-            {"page_id": "page_test_001", "page_title": "Test Page 1", "section_header": "Section 2", "tags": "test,content,section2"},
-            {"page_id": "page_test_002", "page_title": "Test Page 2", "section_header": "Section 1", "tags": "test,content,page2,section1"}
-        ]],
-        "distances": [[0.1, 0.2, 0.3]]
+        "documents": [
+            [
+                "This is the content of section 1.",
+                "This is the content of section 2.",
+                "This is the content of section 1 on page 2.",
+            ]
+        ],
+        "metadatas": [
+            [
+                {
+                    "page_id": "page_test_001",
+                    "page_title": "Test Page 1",
+                    "section_header": "Section 1",
+                    "tags": "test,content,section1",
+                },
+                {
+                    "page_id": "page_test_001",
+                    "page_title": "Test Page 1",
+                    "section_header": "Section 2",
+                    "tags": "test,content,section2",
+                },
+                {
+                    "page_id": "page_test_002",
+                    "page_title": "Test Page 2",
+                    "section_header": "Section 1",
+                    "tags": "test,content,page2,section1",
+                },
+            ]
+        ],
+        "distances": [[0.1, 0.2, 0.3]],
     }
-    
+
     # Set up the collection's get method to return sample results
     mock_collection.get.return_value = {
         "ids": ["chunk_test_001"],
         "documents": ["This is the content of section 1."],
-        "metadatas": [{"page_id": "page_test_001", "page_title": "Test Page 1", "section_header": "Section 1", "tags": "test,content,section1"}]
+        "metadatas": [
+            {
+                "page_id": "page_test_001",
+                "page_title": "Test Page 1",
+                "section_header": "Section 1",
+                "tags": "test,content,section1",
+            }
+        ],
     }
-    
+
     return mock_client
 
 
@@ -345,19 +377,19 @@ def mock_openai_client():
     mock_completion = MagicMock()
     mock_choice = MagicMock()
     mock_message = MagicMock()
-    
+
     # Set up the message content
     mock_message.content = "This is a sample response from the LLM."
-    
+
     # Set up the choice with the message
     mock_choice.message = mock_message
-    
+
     # Set up the completion with the choice
     mock_completion.choices = [mock_choice]
-    
+
     # Set up the client's chat.completions.create method to return the mock completion
     mock_client.chat.completions.create.return_value = mock_completion
-    
+
     return mock_client
 
 
@@ -368,6 +400,6 @@ def mock_keybert():
     mock_model.extract_keywords.return_value = [
         ("test", 0.9),
         ("content", 0.8),
-        ("section", 0.7)
+        ("section", 0.7),
     ]
     return mock_model

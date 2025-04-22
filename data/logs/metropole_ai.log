@@ -89,3 +89,130 @@
 2025-04-22 11:36:26,877 - metropole_ai.embedder.embed_corpus - INFO - Collection 'metropole_documents' now contains 1164 documents
 2025-04-22 11:36:27,015 - metropole_ai.pipeline - INFO - Corpus embedding complete in 78.96 seconds
 2025-04-22 11:36:27,015 - metropole_ai.pipeline - INFO - Pipeline complete! Total time: 143.13 seconds
+2025-04-22 11:41:59,463 - metropole_ai.embedder.embed_corpus - INFO - Loading corpus from /var/folders/zc/p747p4k50k3_122ywxscdpph0000gn/T/tmp73vuvmhj/test_corpus.json
+2025-04-22 11:41:59,463 - metropole_ai.embedder.embed_corpus - INFO - Successfully loaded corpus with 3 chunks
+2025-04-22 11:41:59,464 - metropole_ai.embedder.embed_corpus - INFO - Loading corpus from nonexistent_file.json
+2025-04-22 11:41:59,464 - metropole_ai.embedder.embed_corpus - ERROR - Error loading corpus: [Errno 2] No such file or directory: 'nonexistent_file.json'
+2025-04-22 11:41:59,467 - metropole_ai.embedder.embed_corpus - INFO - Loading corpus from test_corpus.json
+2025-04-22 11:41:59,467 - metropole_ai.embedder.embed_corpus - ERROR - Error loading corpus: JSON error: line 1 column 1 (char 0)
+2025-04-22 11:41:59,472 - metropole_ai.embedder.embed_corpus - INFO - Initializing Chroma DB at: test_chroma_path
+2025-04-22 11:41:59,472 - metropole_ai.embedder.embed_corpus - INFO - Loading default embedding model (all-MiniLM-L6-v2)...
+2025-04-22 11:41:59,473 - metropole_ai.embedder.embed_corpus - INFO - Loading corpus from /var/folders/zc/p747p4k50k3_122ywxscdpph0000gn/T/tmp9xqz5jxa/test_corpus.json
+2025-04-22 11:41:59,473 - metropole_ai.embedder.embed_corpus - INFO - Successfully loaded corpus with 3 chunks
+2025-04-22 11:41:59,473 - metropole_ai.embedder.embed_corpus - INFO - Preparing to embed 3 chunks
+2025-04-22 11:41:59,473 - metropole_ai.embedder.embed_corpus - INFO - Embedding batch 1/2 (2 chunks)
+2025-04-22 11:41:59,473 - metropole_ai.embedder.embed_corpus - INFO - Progress: 2/3 chunks embedded
+2025-04-22 11:41:59,473 - metropole_ai.embedder.embed_corpus - INFO - Embedding batch 2/2 (1 chunks)
+2025-04-22 11:41:59,473 - metropole_ai.embedder.embed_corpus - INFO - Progress: 3/3 chunks embedded
+2025-04-22 11:41:59,473 - metropole_ai.embedder.embed_corpus - INFO - Embedding complete! 3 chunks embedded in 0.00 seconds
+2025-04-22 11:41:59,474 - metropole_ai.embedder.embed_corpus - INFO - Collection 'test_collection' now contains <MagicMock name='PersistentClient().get_or_create_collection().count()' id='6167195200'> documents
+2025-04-22 11:41:59,504 - metropole_ai.embedder.embed_corpus - INFO - Initializing Chroma DB at: ./data/index
+2025-04-22 11:41:59,505 - metropole_ai.embedder.embed_corpus - INFO - Loading default embedding model (all-MiniLM-L6-v2)...
+2025-04-22 11:41:59,505 - metropole_ai.embedder.embed_corpus - INFO - Loading corpus from /var/folders/zc/p747p4k50k3_122ywxscdpph0000gn/T/tmp0j0hj2wz/test_corpus.json
+2025-04-22 11:41:59,505 - metropole_ai.embedder.embed_corpus - INFO - Successfully loaded corpus with 3 chunks
+2025-04-22 11:41:59,506 - metropole_ai.embedder.embed_corpus - INFO - Preparing to embed 3 chunks
+2025-04-22 11:41:59,506 - metropole_ai.embedder.embed_corpus - INFO - Embedding batch 1/1 (3 chunks)
+2025-04-22 11:41:59,506 - metropole_ai.embedder.embed_corpus - INFO - Progress: 3/3 chunks embedded
+2025-04-22 11:41:59,506 - metropole_ai.embedder.embed_corpus - INFO - Embedding complete! 3 chunks embedded in 0.00 seconds
+2025-04-22 11:41:59,506 - metropole_ai.embedder.embed_corpus - INFO - Collection 'test_collection' now contains <MagicMock name='PersistentClient().get_or_create_collection().count()' id='6167139040'> documents
+2025-04-22 11:41:59,536 - metropole_ai.embedder.embed_corpus - INFO - Initializing Chroma DB at: test_chroma_path
+2025-04-22 11:41:59,536 - metropole_ai.embedder.embed_corpus - INFO - Loading default embedding model (all-MiniLM-L6-v2)...
+2025-04-22 11:41:59,537 - metropole_ai.embedder.embed_corpus - INFO - Loading corpus from /var/folders/zc/p747p4k50k3_122ywxscdpph0000gn/T/tmpxr1zpma5/empty_corpus.json
+2025-04-22 11:41:59,537 - metropole_ai.embedder.embed_corpus - INFO - Successfully loaded corpus with 0 chunks
+2025-04-22 11:41:59,537 - metropole_ai.embedder.embed_corpus - INFO - Preparing to embed 0 chunks
+2025-04-22 11:41:59,537 - metropole_ai.embedder.embed_corpus - INFO - Embedding complete! 0 chunks embedded in 0.00 seconds
+2025-04-22 11:41:59,538 - metropole_ai.embedder.embed_corpus - INFO - Collection 'test_collection' now contains <MagicMock name='PersistentClient().get_or_create_collection().count()' id='6167124672'> documents
+2025-04-22 11:41:59,539 - metropole_ai.embedder.embed_corpus - INFO - Initializing Chroma DB at: test_chroma_path
+2025-04-22 11:41:59,539 - metropole_ai.embedder.embed_corpus - INFO - Loading default embedding model (all-MiniLM-L6-v2)...
+2025-04-22 11:41:59,540 - metropole_ai.embedder.embed_corpus - INFO - Loading corpus from /var/folders/zc/p747p4k50k3_122ywxscdpph0000gn/T/tmpkgfyaclh/test_corpus.json
+2025-04-22 11:41:59,540 - metropole_ai.embedder.embed_corpus - INFO - Successfully loaded corpus with 3 chunks
+2025-04-22 11:41:59,540 - metropole_ai.embedder.embed_corpus - INFO - Preparing to embed 3 chunks
+2025-04-22 11:41:59,540 - metropole_ai.embedder.embed_corpus - INFO - Embedding batch 1/3 (1 chunks)
+2025-04-22 11:41:59,540 - metropole_ai.embedder.embed_corpus - INFO - Progress: 1/3 chunks embedded
+2025-04-22 11:41:59,540 - metropole_ai.embedder.embed_corpus - INFO - Embedding batch 2/3 (1 chunks)
+2025-04-22 11:41:59,540 - metropole_ai.embedder.embed_corpus - INFO - Progress: 2/3 chunks embedded
+2025-04-22 11:41:59,540 - metropole_ai.embedder.embed_corpus - INFO - Embedding batch 3/3 (1 chunks)
+2025-04-22 11:41:59,540 - metropole_ai.embedder.embed_corpus - INFO - Progress: 3/3 chunks embedded
+2025-04-22 11:41:59,540 - metropole_ai.embedder.embed_corpus - INFO - Embedding complete! 3 chunks embedded in 0.00 seconds
+2025-04-22 11:41:59,540 - metropole_ai.embedder.embed_corpus - INFO - Collection 'test_collection' now contains <MagicMock name='PersistentClient().get_or_create_collection().count()' id='6165659472'> documents
+2025-04-22 11:41:59,581 - metropole_ai.embedder.embed_corpus - INFO - Initializing Chroma DB at: test_chroma_path
+2025-04-22 11:41:59,581 - metropole_ai.embedder.embed_corpus - INFO - Loading default embedding model (all-MiniLM-L6-v2)...
+2025-04-22 11:41:59,582 - metropole_ai.embedder.embed_corpus - INFO - Loading corpus from /var/folders/zc/p747p4k50k3_122ywxscdpph0000gn/T/tmps6twfp58/test_corpus_edge_cases.json
+2025-04-22 11:41:59,582 - metropole_ai.embedder.embed_corpus - INFO - Successfully loaded corpus with 4 chunks
+2025-04-22 11:41:59,582 - metropole_ai.embedder.embed_corpus - INFO - Preparing to embed 4 chunks
+2025-04-22 11:41:59,582 - metropole_ai.embedder.embed_corpus - INFO - Embedding batch 1/1 (4 chunks)
+2025-04-22 11:41:59,582 - metropole_ai.embedder.embed_corpus - INFO - Progress: 4/4 chunks embedded
+2025-04-22 11:41:59,582 - metropole_ai.embedder.embed_corpus - INFO - Embedding complete! 4 chunks embedded in 0.00 seconds
+2025-04-22 11:41:59,582 - metropole_ai.embedder.embed_corpus - INFO - Collection 'test_collection' now contains <MagicMock name='PersistentClient().get_or_create_collection().count()' id='6166348384'> documents
+2025-04-22 11:41:59,583 - metropole_ai.embedder.embed_corpus - INFO - Initializing Chroma DB at: /var/folders/zc/p747p4k50k3_122ywxscdpph0000gn/T/tmplpm1cfkq
+2025-04-22 11:41:59,583 - metropole_ai.embedder.embed_corpus - INFO - Loading default embedding model (all-MiniLM-L6-v2)...
+2025-04-22 11:41:59,684 - metropole_ai.embedder.embed_corpus - INFO - Initializing Chroma DB at: /var/folders/zc/p747p4k50k3_122ywxscdpph0000gn/T/tmpkgqgwrjv/index
+2025-04-22 11:41:59,684 - metropole_ai.embedder.embed_corpus - INFO - Loading default embedding model (all-MiniLM-L6-v2)...
+2025-04-22 11:41:59,685 - metropole_ai.embedder.embed_corpus - INFO - Loading corpus from /var/folders/zc/p747p4k50k3_122ywxscdpph0000gn/T/tmpkgqgwrjv/processed/test_corpus.json
+2025-04-22 11:41:59,685 - metropole_ai.embedder.embed_corpus - INFO - Successfully loaded corpus with 6 chunks
+2025-04-22 11:41:59,685 - metropole_ai.embedder.embed_corpus - INFO - Preparing to embed 6 chunks
+2025-04-22 11:41:59,685 - metropole_ai.embedder.embed_corpus - INFO - Embedding batch 1/1 (6 chunks)
+2025-04-22 11:41:59,685 - metropole_ai.embedder.embed_corpus - INFO - Progress: 6/6 chunks embedded
+2025-04-22 11:41:59,685 - metropole_ai.embedder.embed_corpus - INFO - Embedding complete! 6 chunks embedded in 0.00 seconds
+2025-04-22 11:41:59,685 - metropole_ai.embedder.embed_corpus - INFO - Collection 'test_collection' now contains <MagicMock name='PersistentClient().get_or_create_collection().count()' id='6166130576'> documents
+2025-04-22 11:41:59,698 - metropole_ai.embedder.embed_corpus - INFO - Initializing Chroma DB at: /var/folders/zc/p747p4k50k3_122ywxscdpph0000gn/T/tmpi2i0uzol/index
+2025-04-22 11:41:59,698 - metropole_ai.embedder.embed_corpus - INFO - Loading default embedding model (all-MiniLM-L6-v2)...
+2025-04-22 11:41:59,699 - metropole_ai.embedder.embed_corpus - INFO - Loading corpus from /var/folders/zc/p747p4k50k3_122ywxscdpph0000gn/T/tmpi2i0uzol/processed/empty_corpus.json
+2025-04-22 11:41:59,699 - metropole_ai.embedder.embed_corpus - INFO - Successfully loaded corpus with 0 chunks
+2025-04-22 11:41:59,699 - metropole_ai.embedder.embed_corpus - INFO - Preparing to embed 0 chunks
+2025-04-22 11:41:59,699 - metropole_ai.embedder.embed_corpus - INFO - Embedding complete! 0 chunks embedded in 0.00 seconds
+2025-04-22 11:41:59,699 - metropole_ai.embedder.embed_corpus - INFO - Collection 'empty_collection' now contains <MagicMock name='PersistentClient().get_or_create_collection().count()' id='6167159456'> documents
+2025-04-22 11:41:59,711 - metropole_ai.embedder.embed_corpus - INFO - Initializing Chroma DB at: /var/folders/zc/p747p4k50k3_122ywxscdpph0000gn/T/tmpoypj5laj/index
+2025-04-22 11:41:59,711 - metropole_ai.embedder.embed_corpus - INFO - Loading default embedding model (all-MiniLM-L6-v2)...
+2025-04-22 11:41:59,712 - metropole_ai.embedder.embed_corpus - INFO - Loading corpus from /var/folders/zc/p747p4k50k3_122ywxscdpph0000gn/T/tmpoypj5laj/processed/no_tags_corpus.json
+2025-04-22 11:41:59,712 - metropole_ai.embedder.embed_corpus - INFO - Successfully loaded corpus with 1 chunks
+2025-04-22 11:41:59,712 - metropole_ai.embedder.embed_corpus - INFO - Preparing to embed 1 chunks
+2025-04-22 11:41:59,712 - metropole_ai.embedder.embed_corpus - INFO - Embedding batch 1/1 (1 chunks)
+2025-04-22 11:41:59,712 - metropole_ai.embedder.embed_corpus - INFO - Progress: 1/1 chunks embedded
+2025-04-22 11:41:59,712 - metropole_ai.embedder.embed_corpus - INFO - Embedding complete! 1 chunks embedded in 0.00 seconds
+2025-04-22 11:41:59,712 - metropole_ai.embedder.embed_corpus - INFO - Collection 'no_tags_collection' now contains <MagicMock name='PersistentClient().get_or_create_collection().count()' id='6170048992'> documents
+2025-04-22 11:41:59,722 - metropole_ai.embedder.embed_corpus - INFO - Initializing Chroma DB at: /var/folders/zc/p747p4k50k3_122ywxscdpph0000gn/T/tmp_idw8emr/index
+2025-04-22 11:41:59,722 - metropole_ai.embedder.embed_corpus - INFO - Loading default embedding model (all-MiniLM-L6-v2)...
+2025-04-22 11:41:59,723 - metropole_ai.embedder.embed_corpus - INFO - Loading corpus from /var/folders/zc/p747p4k50k3_122ywxscdpph0000gn/T/tmp_idw8emr/processed/api_key_corpus.json
+2025-04-22 11:41:59,724 - metropole_ai.embedder.embed_corpus - INFO - Successfully loaded corpus with 1 chunks
+2025-04-22 11:41:59,724 - metropole_ai.embedder.embed_corpus - INFO - Preparing to embed 1 chunks
+2025-04-22 11:41:59,724 - metropole_ai.embedder.embed_corpus - INFO - Embedding batch 1/1 (1 chunks)
+2025-04-22 11:41:59,724 - metropole_ai.embedder.embed_corpus - INFO - Progress: 1/1 chunks embedded
+2025-04-22 11:41:59,724 - metropole_ai.embedder.embed_corpus - INFO - Embedding complete! 1 chunks embedded in 0.00 seconds
+2025-04-22 11:41:59,724 - metropole_ai.embedder.embed_corpus - INFO - Collection 'api_key_collection' now contains <MagicMock name='PersistentClient().get_or_create_collection().count()' id='6170537968'> documents
+2025-04-22 11:42:33,526 - metropole_ai.vector_store.init_chroma - INFO - Initializing Chroma DB at: ./data/index
+2025-04-22 11:42:33,533 - metropole_ai.vector_store.init_chroma - INFO - Collection 'documents' initialized with 603 documents
+2025-04-22 11:42:47,809 - metropole_ai.pipeline - INFO - Starting Metropole.AI pipeline
+2025-04-22 11:42:47,809 - metropole_ai.pipeline - INFO - Starting website crawl from https://www.metropoleballard.com/home
+2025-04-22 11:42:47,809 - metropole_ai.pipeline - INFO - Max pages: 50
+2025-04-22 11:42:53,008 - metropole_ai.pipeline - INFO - Crawling complete. Collected 18 pages in 5.20 seconds
+2025-04-22 11:42:53,008 - metropole_ai.pipeline - INFO - Processing HTML files to extract structured content
+2025-04-22 11:42:53,175 - metropole_ai.pipeline - INFO - HTML processing complete in 0.17 seconds
+2025-04-22 11:42:53,175 - metropole_ai.pipeline - INFO - Extracted 7 unique content chunks from 15 HTML files
+2025-04-22 11:42:53,175 - metropole_ai.pipeline - INFO - Adding metadata and tags to content
+2025-04-22 11:42:54,794 - metropole_ai.vector_store.init_chroma - INFO - Initializing Chroma DB at: ./data/index
+2025-04-22 11:42:54,803 - metropole_ai.vector_store.init_chroma - INFO - Collection 'documents' initialized with 603 documents
+2025-04-22 11:42:57,980 - metropole_ai.pipeline - INFO - Metadata and tagging complete in 1.94 seconds
+2025-04-22 11:42:57,980 - metropole_ai.pipeline - INFO - Processed 7 content chunks from 3 unique pages
+2025-04-22 11:42:57,980 - metropole_ai.pipeline - INFO - Generated 17 tags (avg. 2.4 per chunk)
+2025-04-22 11:42:57,980 - metropole_ai.pipeline - INFO - Embedding corpus data
+2025-04-22 11:42:57,980 - metropole_ai.embedder.embed_corpus - INFO - Initializing Chroma DB at: ./data/index
+2025-04-22 11:42:57,980 - metropole_ai.embedder.embed_corpus - INFO - Loading default embedding model (all-MiniLM-L6-v2)...
+2025-04-22 11:42:58,109 - metropole_ai.embedder.embed_corpus - INFO - Loading corpus from data/processed/metropole_corpus.json
+2025-04-22 11:42:58,109 - metropole_ai.embedder.embed_corpus - INFO - Successfully loaded corpus with 7 chunks
+2025-04-22 11:42:58,109 - metropole_ai.embedder.embed_corpus - INFO - Preparing to embed 7 chunks
+2025-04-22 11:42:58,109 - metropole_ai.embedder.embed_corpus - INFO - Embedding batch 1/1 (7 chunks)
+2025-04-22 11:42:59,489 - metropole_ai.embedder.embed_corpus - INFO - Progress: 7/7 chunks embedded
+2025-04-22 11:42:59,489 - metropole_ai.embedder.embed_corpus - INFO - Embedding complete! 7 chunks embedded in 1.51 seconds
+2025-04-22 11:42:59,489 - metropole_ai.embedder.embed_corpus - INFO - Collection 'metropole_documents' now contains 1171 documents
+2025-04-22 11:42:59,626 - metropole_ai.pipeline - INFO - Corpus embedding complete in 1.65 seconds
+2025-04-22 11:42:59,627 - metropole_ai.pipeline - INFO - Pipeline complete! Total time: 11.82 seconds
+2025-04-22 11:43:20,791 - metropole_ai.embedder.embed_corpus - INFO - Initializing Chroma DB at: ./data/index
+2025-04-22 11:43:20,791 - metropole_ai.embedder.embed_corpus - INFO - Loading default embedding model (all-MiniLM-L6-v2)...
+2025-04-22 11:43:20,928 - metropole_ai.embedder.embed_corpus - INFO - Loading corpus from data/processed/metropole_corpus.json
+2025-04-22 11:43:20,928 - metropole_ai.embedder.embed_corpus - INFO - Successfully loaded corpus with 7 chunks
+2025-04-22 11:43:20,928 - metropole_ai.embedder.embed_corpus - INFO - Preparing to embed 7 chunks
+2025-04-22 11:43:20,928 - metropole_ai.embedder.embed_corpus - INFO - Embedding batch 1/1 (7 chunks)
+2025-04-22 11:43:22,295 - metropole_ai.embedder.embed_corpus - INFO - Progress: 7/7 chunks embedded
+2025-04-22 11:43:22,295 - metropole_ai.embedder.embed_corpus - INFO - Embedding complete! 7 chunks embedded in 1.50 seconds
+2025-04-22 11:43:22,295 - metropole_ai.embedder.embed_corpus - INFO - Collection 'metropole_documents' now contains 1171 documents

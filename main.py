@@ -18,7 +18,7 @@ if not os.getenv("CHROMA_DB_PATH"):
 app = FastAPI(
     title="MetPol AI",
     description="A FastAPI application for crawling, embedding, and retrieving information",
-    version="0.1.0"
+    version="0.1.0",
 )
 
 # Configure CORS
@@ -26,7 +26,7 @@ origins = [
     "http://localhost:5173",  # Local development frontend
     "https://metpol-ai-frontend.onrender.com",  # Render frontend
     "https://metpol-ai-frontend.vercel.app",  # Optional Vercel frontend
-    "*"  # Allow all origins during development (remove in production)
+    "*",  # Allow all origins during development (remove in production)
 ]
 
 app.add_middleware(
@@ -40,9 +40,11 @@ app.add_middleware(
 # Include API routes
 app.include_router(api_router, prefix="/api")
 
+
 @app.get("/")
 def read_root():
     return {"message": "Hello World"}
+
 
 @app.on_event("startup")
 async def startup_event():
@@ -50,17 +52,20 @@ async def startup_event():
     # Initialize the Chroma DB
     chroma_db_path = os.getenv("CHROMA_DB_PATH")
     print(f"Initializing Chroma DB at: {chroma_db_path}")
-    
+
     # Ensure the directory exists
     Path(chroma_db_path).mkdir(parents=True, exist_ok=True)
-    
+
     # Initialize the Chroma DB
     init_chroma_db()
+
 
 if __name__ == "__main__":
     # Print some environment info
     print(f"CHROMA_DB_PATH: {os.getenv('CHROMA_DB_PATH')}")
-    
+
     # Run the FastAPI server
-    print("Run the FastAPI server at http://127.0.0.1:8000 with: uvicorn main:app --reload")
+    print(
+        "Run the FastAPI server at http://127.0.0.1:8000 with: uvicorn main:app --reload"
+    )
     uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
