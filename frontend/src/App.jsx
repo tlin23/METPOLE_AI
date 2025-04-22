@@ -9,7 +9,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(false)
   const [inputFocused, setInputFocused] = useState(false)
   const [showSourceInfo, setShowSourceInfo] = useState(false)
-  const [sourceDisplayMode, setSourceDisplayMode] = useState('tooltip') // 'tooltip', 'panel', or 'footer'
+  const [sourceDisplayMode, setSourceDisplayMode] = useState('panel') // 'tooltip', 'panel', or 'footer'
   const messagesEndRef = useRef(null)
 
   // Welcome message
@@ -70,7 +70,7 @@ function App() {
           ...prevMessages,
           {
             id: Date.now(),
-            text: response.data.answer || "I'm sorry, I couldn't find an answer to that.",
+            text: (response.data.answer || "I'm sorry, I couldn't find an answer to that.").replace(/\n+Source:.*/s, ''),  // sanitize trailing source text
             sender: 'bot',
             sourceInfo: response.data.source_info,
             chunks: response.data.chunks || []
@@ -139,17 +139,6 @@ function App() {
               />
               Show Sources
             </label>
-            {showSourceInfo && (
-              <div style={styles.displayModeControls}>
-                <span style={styles.displayModeLabel}>Mode: {sourceDisplayMode}</span>
-                <button
-                  onClick={cycleDisplayMode}
-                  style={styles.cycleButton}
-                >
-                  Change Mode
-                </button>
-              </div>
-            )}
           </div>
           <button
             onClick={handleReset}
@@ -191,13 +180,6 @@ function App() {
                   {/* Source Information Display */}
                   {message.sender === 'bot' && showSourceInfo && message.sourceInfo && (
                     <>
-                      {/* Tooltip Source Display */}
-                      {sourceDisplayMode === 'tooltip' && (
-                        <div style={styles.sourceTooltipTrigger} title={message.sourceInfo}>
-                          ℹ️ Source
-                        </div>
-                      )}
-
                       {/* Collapsible Panel Source Display */}
                       {sourceDisplayMode === 'panel' && (
                         <details style={styles.sourcePanel}>
@@ -212,19 +194,6 @@ function App() {
                             ))}
                           </div>
                         </details>
-                      )}
-
-                      {/* Footer Source Display */}
-                      {sourceDisplayMode === 'footer' && (
-                        <div style={styles.sourceFooter}>
-                          <div style={styles.sourceFooterTitle}>Sources:</div>
-                          {message.chunks.map((chunk, index) => (
-                            <div key={index} style={styles.sourceFooterItem}>
-                              {chunk.metadata?.chunk_id || 'Unknown'}
-                              {chunk.metadata?.section_header ? ` (${chunk.metadata.section_header})` : ''}
-                            </div>
-                          ))}
-                        </div>
                       )}
                     </>
                   )}

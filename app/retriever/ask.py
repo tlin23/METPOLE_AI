@@ -146,19 +146,6 @@ class Retriever:
         # Prepare source information
         source_info = self._prepare_source_info(chunks)
 
-        # Add appropriate disclaimers
-        if contains_diy_advice:
-            disclaimer = "\n\nDisclaimer: This is based on past residents' experience and should not be considered professional advice. When in doubt, contact the board or a licensed professional."
-            answer_text += disclaimer
-
-        if is_general_knowledge:
-            disclaimer = "\n\nNote: This answer is based on general knowledge, not Metropole-specific content."
-            answer_text += disclaimer
-
-        # Add source trace
-        if source_info and not is_general_knowledge and answer_text:
-            answer_text += f"\n\nSource: {source_info}"
-
         return {
             "answer": answer_text,
             "is_general_knowledge": is_general_knowledge,
