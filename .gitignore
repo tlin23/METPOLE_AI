@@ -68,6 +68,9 @@ frontend/.cache/
 # Test directories
 test_chroma_path/
 
+# Archive folder
+archive/
+
 # Data files that might be large or sensitive
 # Uncomment if you don't want to track these
 # data/html/

@@ -67,6 +67,9 @@ pytest.ini
 run_tests.py
 test_deployment.py
 
+# Archive
+archive/
+
 # Deployment configs
 render.yaml
 fly.toml

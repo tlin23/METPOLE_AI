@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 import chromadb
 from chromadb.config import Settings
 from pathlib import Path
-import openai
+from openai import OpenAI
 from typing import Dict, List, Any
 
 from app.config import OPENAI_API_KEY, CHROMA_DB_PATH
@@ -21,19 +21,7 @@ if not OPENAI_API_KEY:
     raise ValueError("OPENAI_API_KEY environment variable is not set")
 
 # Initialize OpenAI client with proper error handling for proxy settings
-try:
-    client = openai.OpenAI(api_key=OPENAI_API_KEY)
-except TypeError as e:
-    if "unexpected keyword argument 'proxies'" in str(e):
-        # If the error is about proxies, initialize without proxy settings
-        # Create a client with default settings
-        client = openai.OpenAI(api_key=OPENAI_API_KEY)
-
-        # Log the issue
-        logger.warning("Proxy settings were ignored when initializing OpenAI client")
-    else:
-        # If it's a different TypeError, re-raise it
-        raise
+client = OpenAI(api_key=OPENAI_API_KEY)
 
 
 class Retriever:
