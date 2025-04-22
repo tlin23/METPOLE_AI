@@ -89,7 +89,7 @@ function App() {
           }
         ])
       }
-    } catch (error) {   
+    } catch (error) {
       console.error('Error calling API:', error)
       // Add error message to chat
       setMessages(prevMessages => [
@@ -142,7 +142,7 @@ function App() {
             {showSourceInfo && (
               <div style={styles.displayModeControls}>
                 <span style={styles.displayModeLabel}>Mode: {sourceDisplayMode}</span>
-                <button 
+                <button
                   onClick={cycleDisplayMode}
                   style={styles.cycleButton}
                 >
@@ -151,8 +151,8 @@ function App() {
               </div>
             )}
           </div>
-          <button 
-            onClick={handleReset} 
+          <button
+            onClick={handleReset}
             style={styles.resetButton}
           >
             Start Over
@@ -170,7 +170,7 @@ function App() {
             </div>
           ) : (
             messages.map(message => (
-              <div 
+              <div
                 key={message.id}
                 style={{
                   ...styles.messageContainer,
@@ -178,7 +178,7 @@ function App() {
                 }}
               >
                 <div style={{ position: 'relative' }}>
-                  <div 
+                  <div
                     style={{
                       ...styles.messageBubble,
                       ...(message.sender === 'user' ? styles.userBubble : styles.botBubble),
@@ -187,7 +187,7 @@ function App() {
                   >
                     {message.text}
                   </div>
-                  
+
                   {/* Source Information Display */}
                   {message.sender === 'bot' && showSourceInfo && message.sourceInfo && (
                     <>
@@ -197,7 +197,7 @@ function App() {
                           ℹ️ Source
                         </div>
                       )}
-                      
+
                       {/* Collapsible Panel Source Display */}
                       {sourceDisplayMode === 'panel' && (
                         <details style={styles.sourcePanel}>
@@ -213,14 +213,14 @@ function App() {
                           </div>
                         </details>
                       )}
-                      
+
                       {/* Footer Source Display */}
                       {sourceDisplayMode === 'footer' && (
                         <div style={styles.sourceFooter}>
                           <div style={styles.sourceFooterTitle}>Sources:</div>
                           {message.chunks.map((chunk, index) => (
                             <div key={index} style={styles.sourceFooterItem}>
-                              {chunk.metadata?.chunk_id || 'Unknown'} 
+                              {chunk.metadata?.chunk_id || 'Unknown'}
                               {chunk.metadata?.section_header ? ` (${chunk.metadata.section_header})` : ''}
                             </div>
                           ))}
@@ -236,7 +236,7 @@ function App() {
         </div>
 
         {/* Input Form */}
-        <form 
+        <form
           onSubmit={handleSubmit}
           style={styles.form}
         >

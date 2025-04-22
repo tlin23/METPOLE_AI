@@ -150,7 +150,7 @@ const styles = {
     backgroundColor: '#93c5fd',
     cursor: 'not-allowed'
   },
-  
+
   // Source information display styles
   sourceTooltipTrigger: {
     position: 'absolute',
@@ -164,7 +164,7 @@ const styles = {
     borderRadius: '4px',
     boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
   },
-  
+
   sourcePanel: {
     marginTop: '8px',
     backgroundColor: '#f9fafb',
@@ -174,20 +174,20 @@ const styles = {
     color: '#4b5563',
     maxWidth: '100%'
   },
-  
+
   sourcePanelSummary: {
     cursor: 'pointer',
     fontWeight: 'bold',
     padding: '4px'
   },
-  
+
   sourcePanelContent: {
     padding: '8px',
     display: 'flex',
     flexDirection: 'column',
     gap: '8px'
   },
-  
+
   sourceChunk: {
     backgroundColor: 'white',
     padding: '8px',
@@ -196,7 +196,7 @@ const styles = {
     fontSize: '0.75rem',
     lineHeight: '1.4'
   },
-  
+
   sourceFooter: {
     marginTop: '8px',
     backgroundColor: '#f9fafb',
@@ -205,12 +205,12 @@ const styles = {
     fontSize: '0.75rem',
     color: '#4b5563'
   },
-  
+
   sourceFooterTitle: {
     fontWeight: 'bold',
     marginBottom: '4px'
   },
-  
+
   sourceFooterItem: {
     fontSize: '0.7rem',
     marginBottom: '2px',

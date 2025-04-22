@@ -97,7 +97,7 @@ def main():
     page_count = len(results)
     section_count = sum(len(content["sections"]) for content in results.values())
 
-    print(f"\nSummary:")
+    print("\nSummary:")
     print(f"- Processed {page_count} HTML files")
     print(f"- Extracted {section_count} sections")
     print(f"- Created {len(all_chunks)} content chunks")

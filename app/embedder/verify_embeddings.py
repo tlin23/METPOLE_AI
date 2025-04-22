@@ -25,7 +25,7 @@ import chromadb
 from chromadb.config import Settings
 from chromadb.utils import embedding_functions
 
-from app.embedder.embed_corpus import embed_corpus, load_corpus
+from app.embedder.embed_corpus import embed_corpus
 
 
 def verify_embeddings():
@@ -104,13 +104,13 @@ def verify_embeddings():
 
         # Check 1: Verify embedding count
         count = collection.count()
-        print(f"\n1. Embedding Count Check:")
+        print("\n1. Embedding Count Check:")
         print(f"   Expected: 3, Actual: {count}")
         assert count == 3, "Collection should have 3 embeddings"
         print("   ✓ PASSED: Correct number of embeddings found")
 
         # Check 2: Verify IDs are present
-        print(f"\n2. ID Presence Check:")
+        print("\n2. ID Presence Check:")
         expected_ids = ["chunk_test_001", "chunk_test_002", "chunk_test_003"]
         result = collection.get()
         actual_ids = result["ids"]
@@ -122,7 +122,7 @@ def verify_embeddings():
             print(f"   ✓ PASSED: Found ID {expected_id}")
 
         # Check 3: Verify metadata is correct
-        print(f"\n3. Metadata Correctness Check:")
+        print("\n3. Metadata Correctness Check:")
         # Get a specific chunk by ID
         result = collection.get(ids=["chunk_test_001"])
 
@@ -131,7 +131,7 @@ def verify_embeddings():
 
         # Check the metadata
         metadata = result["metadatas"][0]
-        print(f"   Retrieved metadata for chunk_test_001:")
+        print("   Retrieved metadata for chunk_test_001:")
         for key, value in metadata.items():
             print(f"   - {key}: {value}")
 
@@ -152,7 +152,7 @@ def verify_embeddings():
         print("   ✓ PASSED: All metadata fields match expected values")
 
         # Check 4: Verify content is correct
-        print(f"\n4. Content Correctness Check:")
+        print("\n4. Content Correctness Check:")
         content = result["documents"][0]
         print(f'   Retrieved content: "{content}"')
         assert (
@@ -161,7 +161,7 @@ def verify_embeddings():
         print("   ✓ PASSED: Content matches expected value")
 
         # Check 5: Verify similarity ranking
-        print(f"\n5. Similarity Ranking Check:")
+        print("\n5. Similarity Ranking Check:")
         # Create a query that should match all chunks but with different similarity
         query_text = "test content different page"
         print(f'   Query: "{query_text}"')
@@ -192,7 +192,7 @@ def verify_embeddings():
         raise
     finally:
         # Clean up
-        print(f"\nCleaning up temporary files...")
+        print("\nCleaning up temporary files...")
         shutil.rmtree(temp_dir)
         print("Verification complete.")
 

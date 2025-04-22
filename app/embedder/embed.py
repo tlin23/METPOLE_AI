@@ -5,7 +5,6 @@ import chromadb
 from chromadb.config import Settings
 from pathlib import Path
 from datetime import datetime
-import uuid
 from typing import Dict, List, Optional, Tuple, Union, Any
 
 from app.config import CHROMA_DB_PATH

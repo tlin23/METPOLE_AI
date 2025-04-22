@@ -5,7 +5,6 @@ Tests for the embed_corpus module.
 import os
 import json
 import pytest
-import logging
 from unittest.mock import patch, MagicMock, mock_open
 
 from app.embedder.embed_corpus import load_corpus, embed_corpus

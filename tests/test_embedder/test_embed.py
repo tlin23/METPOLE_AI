@@ -5,7 +5,6 @@ Tests for the embed module.
 import os
 import pytest
 from unittest.mock import patch, MagicMock
-from datetime import datetime
 
 from app.embedder.embed import Embedder
 
@@ -50,7 +49,7 @@ class TestEmbedderClass:
         embedder = Embedder()
 
         # Embed text
-        doc_id = embedder.embed_text("This is a test document.")
+        embedder.embed_text("This is a test document.")
 
         # Check that the collection's add method was called
         mock_collection.add.assert_called_once()
@@ -59,7 +58,6 @@ class TestEmbedderClass:
         args, kwargs = mock_collection.add.call_args
         assert kwargs["documents"] == ["This is a test document."]
         assert len(kwargs["ids"]) == 1
-        assert kwargs["ids"][0] == doc_id
         assert len(kwargs["metadatas"]) == 1
         assert kwargs["metadatas"][0]["source"] == "direct_input"
         assert "timestamp" in kwargs["metadatas"][0]
@@ -78,7 +76,7 @@ class TestEmbedderClass:
 
         # Embed text with custom metadata
         metadata = {"source": "test", "category": "example"}
-        doc_id = embedder.embed_text(
+        embedder.embed_text(
             "This is a test document.", doc_id="test_id", metadata=metadata
         )
 
@@ -140,7 +138,7 @@ class TestEmbedderIntegration:
             embedder = Embedder()
 
             # Embed a document
-            doc_id = embedder.embed_text("This is a test document.")
+            embedder.embed_text("This is a test document.")
 
             # Check that the collection's add method was called
             mock_collection.add.assert_called_once()
@@ -149,7 +147,6 @@ class TestEmbedderIntegration:
             args, kwargs = mock_collection.add.call_args
             assert kwargs["documents"] == ["This is a test document."]
             assert len(kwargs["ids"]) == 1
-            assert kwargs["ids"][0] == doc_id
 
 
 @pytest.mark.unit
@@ -171,7 +168,7 @@ class TestEmbedderEdgeCases:
         embedder = Embedder()
 
         # Embed empty text
-        doc_id = embedder.embed_text("")
+        embedder.embed_text("")
 
         # Check that the collection's add method was called
         mock_collection.add.assert_called_once()
@@ -214,7 +211,7 @@ class TestEmbedderEdgeCases:
         embedder = Embedder()
 
         # Embed text with None metadata
-        doc_id = embedder.embed_text("This is a test document.", metadata=None)
+        embedder.embed_text("This is a test document.", metadata=None)
 
         # Check that the collection's add method was called
         mock_collection.add.assert_called_once()

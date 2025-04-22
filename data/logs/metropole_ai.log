@@ -216,3 +216,13 @@
 2025-04-22 11:43:22,295 - metropole_ai.embedder.embed_corpus - INFO - Progress: 7/7 chunks embedded
 2025-04-22 11:43:22,295 - metropole_ai.embedder.embed_corpus - INFO - Embedding complete! 7 chunks embedded in 1.50 seconds
 2025-04-22 11:43:22,295 - metropole_ai.embedder.embed_corpus - INFO - Collection 'metropole_documents' now contains 1171 documents
+2025-04-22 11:47:52,204 - metropole_ai.vector_store.init_chroma - INFO - Initializing Chroma DB at: ./data/index
+2025-04-22 11:47:52,215 - metropole_ai.vector_store.init_chroma - INFO - Collection 'documents' initialized with 603 documents
+2025-04-22 11:48:24,423 - metropole_ai.vector_store.init_chroma - INFO - Initializing Chroma DB at: ./data/index
+2025-04-22 11:48:24,430 - metropole_ai.vector_store.init_chroma - INFO - Collection 'documents' initialized with 603 documents
+2025-04-22 11:49:23,388 - metropole_ai.vector_store.init_chroma - INFO - Initializing Chroma DB at: ./data/index
+2025-04-22 11:49:23,395 - metropole_ai.vector_store.init_chroma - INFO - Collection 'documents' initialized with 603 documents
+2025-04-22 11:49:38,394 - metropole_ai.vector_store.init_chroma - INFO - Initializing Chroma DB at: ./data/index
+2025-04-22 11:49:38,402 - metropole_ai.vector_store.init_chroma - INFO - Collection 'documents' initialized with 603 documents
+2025-04-22 11:49:51,991 - metropole_ai.vector_store.init_chroma - INFO - Initializing Chroma DB at: ./data/index
+2025-04-22 11:49:52,000 - metropole_ai.vector_store.init_chroma - INFO - Collection 'documents' initialized with 603 documents

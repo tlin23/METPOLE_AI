@@ -164,7 +164,7 @@ def main():
     section_count = len(set(obj["section_header"] for obj in processed_objects))
     tag_count = sum(len(obj["tags"]) for obj in processed_objects)
 
-    print(f"\nSummary:")
+    print("\nSummary:")
     print(f"- Processed {len(processed_objects)} content chunks")
     print(f"- From {page_count} unique pages")
     print(f"- With {section_count} unique sections")

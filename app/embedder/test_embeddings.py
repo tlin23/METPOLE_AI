@@ -15,7 +15,6 @@ import json
 import unittest
 import tempfile
 import shutil
-from pathlib import Path
 
 # Add the project root to the Python path to allow importing from app
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))

@@ -11,7 +11,6 @@ This script tests the end-to-end flow including:
 
 import argparse
 import requests
-import json
 import sys
 import time
 from rich.console import Console
@@ -116,7 +115,7 @@ def test_crawl_functionality(base_url):
 
                 if data.get("success"):
                     progress.update(task, completed=100)
-                    console.print(f"[green]✓ Crawl successful[/green]")
+                    console.print("[green]✓ Crawl successful[/green]")
                     console.print(
                         Panel(
                             f"URL: {data.get('url')}\nDoc ID: {data.get('doc_id')}",

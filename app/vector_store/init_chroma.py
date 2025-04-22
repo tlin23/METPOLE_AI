@@ -2,7 +2,6 @@
 Script to initialize a Chroma persistent vector store.
 """
 
-import os
 import sys
 from pathlib import Path
 from dotenv import load_dotenv

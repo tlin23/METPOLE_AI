@@ -99,7 +99,7 @@ For example, to add a test that checks if all chunks have a minimum content leng
 def test_minimum_content_length(self):
     """Test that all chunks have a minimum content length."""
     min_length = 10  # Minimum content length in characters
-    
+
     for i, chunk in enumerate(self.corpus):
         self.assertGreater(
             len(chunk['content']), min_length,

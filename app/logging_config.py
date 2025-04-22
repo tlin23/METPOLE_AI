@@ -11,7 +11,6 @@ import sys
 from pathlib import Path
 from logging.handlers import RotatingFileHandler
 
-from app.config import FEEDBACK_LOG_DIR
 
 # Create logs directory if it doesn't exist
 LOG_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "logs")

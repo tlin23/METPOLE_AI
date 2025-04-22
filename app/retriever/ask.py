@@ -256,7 +256,7 @@ class Retriever:
             prompt += f"Chunk {i+1}{source_info}:\n{text}\n\n"
 
         # Add instructions for the model
-        prompt += """Based on the building content provided above, please answer the question. 
+        prompt += """Based on the building content provided above, please answer the question.
 If the answer cannot be found in the provided content, please state that you're using general knowledge and provide the best answer you can.
 If you're providing DIY advice, please indicate this in your answer.
 Always reference the specific chunks you used to formulate your answer."""

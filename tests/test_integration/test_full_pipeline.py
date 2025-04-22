@@ -3,14 +3,10 @@ Integration tests for the full pipeline from crawling to retrieval.
 """
 
 import os
-import json
 import pytest
-import tempfile
-import shutil
 from unittest.mock import patch, MagicMock
-from pathlib import Path
 
-from app.crawler.crawl import fetch_url, recursive_crawl
+from app.crawler.crawl import recursive_crawl
 from app.crawler.extract_content import process_all_html_files
 from app.crawler.add_metadata_and_tags import process_content_objects, save_to_json
 from app.embedder.embed_corpus import embed_corpus
@@ -435,7 +431,7 @@ class TestFullPipelineEdgeCases:
 
                 # Check that the answer was generated
                 assert "answer" in answer_result
-                assert result["is_general_knowledge"] is True
+                assert answer_result["is_general_knowledge"] is True
 
     @patch("app.crawler.crawl.fetch_url")
     @patch("app.crawler.crawl.extract_links")
@@ -741,7 +737,7 @@ class TestFullPipelineEdgeCases:
             with patch.dict(os.environ, {"OPENAI_API_KEY": ""}):
                 # Should raise ValueError
                 with pytest.raises(ValueError) as excinfo:
-                    retriever = Retriever()
+                    Retriever()
 
                 # Check the exception
                 assert "OPENAI_API_KEY" in str(excinfo.value)

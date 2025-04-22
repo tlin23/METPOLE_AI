@@ -11,7 +11,6 @@ import os
 import sys
 import json
 import unittest
-from typing import List, Dict, Any
 from jsonschema import validate, ValidationError
 
 # Add the project root to the Python path to allow importing from app
@@ -239,7 +238,7 @@ class TestCorpusStreamProcessing(unittest.TestCase):
                         stats["chunks_with_tags"] += 1
 
         # Print statistics
-        print(f"\nStream processing statistics:")
+        print("\nStream processing statistics:")
         print(f"- Total chunks processed: {stats['total_chunks']}")
         print(f"- Chunks with tags: {stats['chunks_with_tags']}")
         print(f"- Chunks missing fields: {stats['chunks_missing_fields']}")

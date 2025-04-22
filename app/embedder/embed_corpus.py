@@ -4,13 +4,11 @@ Script to load the metropole_corpus.json file, embed each chunk using all-MiniLM
 and store the text and metadata in Chroma.
 """
 
-import os
 import sys
 import json
 import time
 from pathlib import Path
 from typing import Dict, List, Any, Optional
-from tqdm import tqdm
 
 # Add the project root to the Python path
 sys.path.append(str(Path(__file__).parent.parent.parent))

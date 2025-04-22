@@ -3,7 +3,6 @@
 Test runner script for Metropole AI test suite.
 """
 
-import os
 import sys
 import argparse
 import subprocess

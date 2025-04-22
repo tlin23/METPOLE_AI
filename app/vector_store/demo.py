@@ -2,7 +2,6 @@
 Demo script for using the Chroma vector store.
 """
 
-import os
 import sys
 from pathlib import Path
 import uuid
@@ -22,7 +21,7 @@ def demo_vector_store():
     print("Initializing Chroma vector store...")
 
     # Initialize the Chroma DB
-    client = init_chroma_db()
+    init_chroma_db()
 
     # Create an embedder
     embedder = Embedder()

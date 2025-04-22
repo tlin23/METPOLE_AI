@@ -5,7 +5,6 @@ Tests for the ask module.
 import os
 import pytest
 from unittest.mock import patch, MagicMock
-from pathlib import Path
 
 from app.retriever.ask import Retriever
 
@@ -431,7 +430,7 @@ class TestRetrieverEdgeCases:
 
         # Initialize the retriever - should raise ValueError
         with pytest.raises(ValueError) as excinfo:
-            retriever = Retriever()
+            Retriever()
 
         # Check the exception
         assert "OPENAI_API_KEY" in str(excinfo.value)

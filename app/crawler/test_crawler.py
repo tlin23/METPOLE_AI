@@ -3,7 +3,6 @@ Test script for the recursive crawler.
 """
 
 import os
-import sys
 import time
 from crawl import recursive_crawl
 

@@ -8,15 +8,10 @@ import json
 import pytest
 import tempfile
 import shutil
-from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock
 
 # Add the project root to the Python path to allow importing from app
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
-import chromadb
-from chromadb.config import Settings
-from chromadb.utils import embedding_functions
 
 
 @pytest.fixture

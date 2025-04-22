@@ -4,7 +4,6 @@ Tests for the extract_content module.
 
 import os
 import pytest
-from unittest.mock import patch, MagicMock, mock_open
 from bs4 import BeautifulSoup
 
 from app.crawler.extract_content import (

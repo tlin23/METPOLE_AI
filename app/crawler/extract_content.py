@@ -4,7 +4,6 @@ Module for extracting structured content from HTML files.
 
 import os
 from bs4 import BeautifulSoup
-import re
 from typing import List, Dict, Any, Optional
 
 

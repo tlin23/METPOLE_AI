@@ -16,8 +16,7 @@ import os
 import sys
 import argparse
 import time
-from pathlib import Path
-from typing import Dict, List, Any, Optional
+from typing import Dict, Optional
 
 # Add the project root to the Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -170,7 +169,6 @@ def add_metadata_and_tags() -> None:
 
     # Print summary
     page_count = len(set(obj["page_id"] for obj in processed_objects))
-    section_count = len(set(obj["section_header"] for obj in processed_objects))
     tag_count = sum(len(obj["tags"]) for obj in processed_objects)
 
     logger.info(f"Metadata and tagging complete in {elapsed_time:.2f} seconds")
