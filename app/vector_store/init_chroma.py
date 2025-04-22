@@ -13,6 +13,10 @@ from chromadb.config import Settings
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from app.config import CHROMA_DB_PATH
+from app.logging_config import get_logger
+
+# Get logger for this module
+logger = get_logger("vector_store.init_chroma")
 
 # Load environment variables
 load_dotenv()
@@ -30,7 +34,7 @@ def init_chroma_db():
     # Create the directory if it doesn't exist
     Path(chroma_db_path).mkdir(parents=True, exist_ok=True)
     
-    print(f"Initializing Chroma DB at: {chroma_db_path}")
+    logger.info(f"Initializing Chroma DB at: {chroma_db_path}")
     
     # Create a persistent client
     client = chromadb.PersistentClient(
@@ -46,7 +50,7 @@ def init_chroma_db():
         metadata={"description": "Main document collection for MetPol AI"}
     )
     
-    print(f"Collection '{collection.name}' initialized with {collection.count()} documents")
+    logger.info(f"Collection '{collection.name}' initialized with {collection.count()} documents")
     
     return client
 
@@ -56,4 +60,4 @@ if __name__ == "__main__":
     
     # List all collections
     collections = client.list_collections()
-    print(f"Available collections: {[c.name for c in collections]}")
+    logger.info(f"Available collections: {[c.name for c in collections]}")

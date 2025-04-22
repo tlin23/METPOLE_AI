@@ -8,6 +8,11 @@ import shutil
 from datetime import datetime
 from typing import Dict, Any, List, Optional, Union
 
+from app.logging_config import get_logger
+
+# Get logger for this module
+logger = get_logger("utils.helpers")
+
 
 def get_timestamp() -> str:
     """
@@ -38,7 +43,7 @@ def save_json(data: Dict[str, Any], filepath: str) -> bool:
             json.dump(data, f, indent=2)
         return True
     except Exception as e:
-        print(f"Error saving JSON: {e}")
+        logger.error(f"Error saving JSON: {e}")
         return False
 
 
@@ -59,7 +64,7 @@ def load_json(filepath: str) -> Optional[Dict[str, Any]]:
         with open(filepath, 'r') as f:
             return json.load(f)
     except Exception as e:
-        print(f"Error loading JSON: {e}")
+        logger.error(f"Error loading JSON: {e}")
         return None
 
 
@@ -144,7 +149,7 @@ def append_to_jsonl(data: Dict[str, Any], filepath: str) -> bool:
             f.write(json.dumps(serializable_data, ensure_ascii=False) + '\n')
         return True
     except Exception as e:
-        print(f"Error appending to JSONL: {e}")
+        logger.error(f"Error appending to JSONL: {e}")
         return False
 
 
@@ -213,7 +218,7 @@ def rotate_log_file(filepath: str, max_backups: int = 5) -> bool:
         
         return True
     except Exception as e:
-        print(f"Error rotating log file: {e}")
+        logger.error(f"Error rotating log file: {e}")
         return False
 
 
@@ -253,5 +258,5 @@ def save_feedback_log(feedback_data: Dict[str, Any], log_dir: str = "data/logs",
         # Append to log file
         return append_to_jsonl(log_data, log_path)
     except Exception as e:
-        print(f"Error saving feedback log: {e}")
+        logger.error(f"Error saving feedback log: {e}")
         return False

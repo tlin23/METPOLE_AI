@@ -7,7 +7,6 @@ and store the text and metadata in Chroma.
 import os
 import sys
 import json
-import logging
 import time
 from pathlib import Path
 from typing import Dict, List, Any, Optional
@@ -21,16 +20,10 @@ from chromadb.config import Settings
 from chromadb.utils import embedding_functions
 
 from app.config import CHROMA_DB_PATH
+from app.logging_config import get_logger
 
-# Set up logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler()
-    ]
-)
-logger = logging.getLogger(__name__)
+# Get logger for this module
+logger = get_logger("embedder.embed_corpus")
 
 
 def load_corpus(corpus_path: str) -> List[Dict[str, Any]]:

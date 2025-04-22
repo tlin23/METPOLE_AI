@@ -11,6 +11,10 @@ import openai
 
 from app.vector_store.init_chroma import init_chroma_db
 from app.config import OPENAI_API_KEY, CHROMA_DB_PATH
+from app.logging_config import get_logger
+
+# Get logger for this module
+logger = get_logger("retriever.ask")
 
 # Load environment variables
 load_dotenv()
@@ -239,4 +243,4 @@ if __name__ == "__main__":
     # Example usage
     retriever = Retriever()
     results = retriever.query("sample query")
-    print(f"Query results: {results}")
+    logger.info(f"Query results: {results}")

@@ -11,6 +11,10 @@ from datetime import datetime
 
 from app.vector_store.init_chroma import init_chroma_db
 from app.config import CHROMA_DB_PATH
+from app.logging_config import get_logger
+
+# Get logger for this module
+logger = get_logger("embedder.embed")
 
 # Load environment variables
 load_dotenv()
@@ -110,4 +114,4 @@ if __name__ == "__main__":
     # Example usage
     embedder = Embedder()
     doc_id = embedder.embed_text("This is a sample document for embedding.")
-    print(f"Document embedded with ID: {doc_id}")
+    logger.info(f"Document embedded with ID: {doc_id}")
