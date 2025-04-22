@@ -1,6 +1,7 @@
 from dotenv import load_dotenv
 import os
 from fastapi import FastAPI
+from contextlib import asynccontextmanager
 import uvicorn
 from pathlib import Path
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,11 +15,36 @@ load_dotenv()
 if not os.getenv("CHROMA_DB_PATH"):
     os.environ["CHROMA_DB_PATH"] = "./data/index"
 
-# Create FastAPI app
+
+# Define lifespan context manager
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Lifespan context manager for FastAPI application.
+    Handles startup and shutdown events.
+    """
+    # Startup: Initialize services
+    chroma_db_path = os.getenv("CHROMA_DB_PATH")
+    print(f"Initializing Chroma DB at: {chroma_db_path}")
+
+    # Ensure the directory exists
+    Path(chroma_db_path).mkdir(parents=True, exist_ok=True)
+
+    # Initialize the Chroma DB
+    init_chroma_db()
+
+    yield
+
+    # Shutdown: Clean up resources if needed
+    print("Shutting down application...")
+
+
+# Create FastAPI app with lifespan
 app = FastAPI(
     title="MetPol AI",
     description="A FastAPI application for crawling, embedding, and retrieving information",
     version="0.1.0",
+    lifespan=lifespan,
 )
 
 # Configure CORS
@@ -46,18 +72,7 @@ def read_root():
     return {"message": "Hello World"}
 
 
-@app.on_event("startup")
-async def startup_event():
-    """Initialize services on startup."""
-    # Initialize the Chroma DB
-    chroma_db_path = os.getenv("CHROMA_DB_PATH")
-    print(f"Initializing Chroma DB at: {chroma_db_path}")
-
-    # Ensure the directory exists
-    Path(chroma_db_path).mkdir(parents=True, exist_ok=True)
-
-    # Initialize the Chroma DB
-    init_chroma_db()
+# The startup event is now handled by the lifespan context manager above
 
 
 if __name__ == "__main__":

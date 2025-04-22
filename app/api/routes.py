@@ -2,17 +2,11 @@
 API routes for the application.
 """
 
-import os
-import sys
 from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 
 from app.retriever.ask import Retriever
-
-
-# Add the project root to the Python path to allow importing from data/processed
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 # Create router
 router = APIRouter()
