@@ -1,15 +1,13 @@
-"""
-Embedder module for converting text to vector embeddings.
-"""
+"""Embedder module for converting text to vector embeddings."""
 
-import os
 from dotenv import load_dotenv
 import chromadb
 from chromadb.config import Settings
 from pathlib import Path
 from datetime import datetime
+import uuid
+from typing import Dict, List, Optional, Tuple, Union, Any
 
-from app.vector_store.init_chroma import init_chroma_db
 from app.config import CHROMA_DB_PATH
 from app.logging_config import get_logger
 
@@ -21,16 +19,17 @@ load_dotenv()
 
 
 class Embedder:
-    """
-    Class for handling text embeddings.
+    """Class for handling text embeddings and storage in ChromaDB.
+    
+    This class provides methods to convert text into vector embeddings
+    and store them in a ChromaDB vector database for later retrieval.
     """
     
-    def __init__(self, model_name="default"):
-        """
-        Initialize the embedder.
+    def __init__(self, model_name: str = "default") -> None:
+        """Initialize the embedder with ChromaDB connection.
         
         Args:
-            model_name (str): Name of the embedding model to use.
+            model_name: Name of the embedding model to use. Defaults to "default".
         """
         self.model_name = model_name
         
@@ -51,17 +50,20 @@ class Embedder:
         # Initialize the collection
         self.collection = self.chroma_client.get_or_create_collection("documents")
     
-    def embed_text(self, text, doc_id=None, metadata=None):
-        """
-        Convert text to embeddings and store in ChromaDB.
+    def embed_text(self, text: str, doc_id: Optional[str] = None, 
+                  metadata: Optional[Dict[str, Any]] = None) -> str:
+        """Convert text to embeddings and store in ChromaDB.
+        
+        Embeds the provided text and stores it in the ChromaDB collection
+        with the given document ID and metadata.
         
         Args:
-            text (str): Text to embed.
-            doc_id (str, optional): Document ID. Defaults to None.
-            metadata (dict, optional): Metadata for the document. Defaults to None.
+            text: Text to embed.
+            doc_id: Document ID. If None, a UUID will be generated.
+            metadata: Metadata for the document. If None, default metadata will be created.
             
         Returns:
-            str: Document ID of the embedded text.
+            Document ID of the embedded text.
         """
         if doc_id is None:
             # Generate a simple ID if none provided
@@ -85,16 +87,17 @@ class Embedder:
         
         return doc_id
     
-    def embed_documents(self, documents):
-        """
-        Embed multiple documents.
+    def embed_documents(self, documents: List[Union[Tuple[str, str], Tuple[str, str, Dict[str, Any]]]]) -> List[str]:
+        """Embed multiple documents in a batch.
         
         Args:
-            documents (list): List of (doc_id, text, metadata) tuples.
-                metadata is optional and can be None.
+            documents: List of tuples containing:
+                - doc_id: Document ID
+                - text: Text to embed
+                - metadata: (Optional) Metadata for the document
             
         Returns:
-            list: List of document IDs.
+            List of document IDs for the embedded documents.
         """
         doc_ids = []
         for item in documents:

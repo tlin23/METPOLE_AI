@@ -1,12 +1,14 @@
-"""
-Utility helper functions for the application.
+"""Utility helper functions for the application.
+
+This module provides common utility functions used throughout the application
+for file operations, text processing, logging, and data handling.
 """
 
 import os
 import json
 import shutil
 from datetime import datetime
-from typing import Dict, Any, List, Optional, Union
+from typing import Dict, Any, List, Optional
 
 from app.logging_config import get_logger
 
@@ -15,25 +17,25 @@ logger = get_logger("utils.helpers")
 
 
 def get_timestamp() -> str:
-    """
-    Get current timestamp in ISO format.
+    """Get current timestamp in ISO format.
     
     Returns:
-        str: Current timestamp.
+        Current timestamp as an ISO-formatted string.
     """
     return datetime.now().isoformat()
 
 
 def save_json(data: Dict[str, Any], filepath: str) -> bool:
-    """
-    Save data to a JSON file.
+    """Save data to a JSON file.
+    
+    Creates any necessary directories and writes the data as formatted JSON.
     
     Args:
-        data (Dict[str, Any]): Data to save.
-        filepath (str): Path to save the file.
+        data: Dictionary data to save.
+        filepath: Path to save the file.
         
     Returns:
-        bool: True if successful, False otherwise.
+        True if successful, False otherwise.
     """
     try:
         # Create directory if it doesn't exist
@@ -48,14 +50,13 @@ def save_json(data: Dict[str, Any], filepath: str) -> bool:
 
 
 def load_json(filepath: str) -> Optional[Dict[str, Any]]:
-    """
-    Load data from a JSON file.
+    """Load data from a JSON file.
     
     Args:
-        filepath (str): Path to the JSON file.
+        filepath: Path to the JSON file.
         
     Returns:
-        Optional[Dict[str, Any]]: Loaded data or None if error.
+        Loaded data dictionary or None if file doesn't exist or an error occurs.
     """
     try:
         if not os.path.exists(filepath):
@@ -69,16 +70,18 @@ def load_json(filepath: str) -> Optional[Dict[str, Any]]:
 
 
 def chunk_text(text: str, chunk_size: int = 1000, overlap: int = 200) -> List[str]:
-    """
-    Split text into overlapping chunks.
+    """Split text into overlapping chunks.
+    
+    Divides text into chunks of specified size with overlap between
+    adjacent chunks to maintain context.
     
     Args:
-        text (str): Text to split.
-        chunk_size (int, optional): Size of each chunk. Defaults to 1000.
-        overlap (int, optional): Overlap between chunks. Defaults to 200.
+        text: Text to split.
+        chunk_size: Size of each chunk in characters. Defaults to 1000.
+        overlap: Overlap between chunks in characters. Defaults to 200.
         
     Returns:
-        List[str]: List of text chunks.
+        List of text chunks.
     """
     if not text:
         return []
@@ -96,14 +99,16 @@ def chunk_text(text: str, chunk_size: int = 1000, overlap: int = 200) -> List[st
 
 
 def sanitize_filename(filename: str) -> str:
-    """
-    Sanitize a filename by removing invalid characters.
+    """Sanitize a filename by removing invalid characters.
+    
+    Replaces characters that are invalid in filenames with underscores
+    and limits the length to 255 characters.
     
     Args:
-        filename (str): Filename to sanitize.
+        filename: Filename to sanitize.
         
     Returns:
-        str: Sanitized filename.
+        Sanitized filename safe for file system operations.
     """
     # Replace invalid characters with underscore
     invalid_chars = '<>:"/\\|?*'
@@ -118,15 +123,17 @@ def sanitize_filename(filename: str) -> str:
 
 
 def append_to_jsonl(data: Dict[str, Any], filepath: str) -> bool:
-    """
-    Append a JSON object as a new line to a JSONL file.
+    """Append a JSON object as a new line to a JSONL file.
+    
+    Creates any necessary directories and handles non-serializable objects
+    by converting them to strings.
     
     Args:
-        data (Dict[str, Any]): Data to append.
-        filepath (str): Path to the JSONL file.
+        data: Dictionary data to append.
+        filepath: Path to the JSONL file.
         
     Returns:
-        bool: True if successful, False otherwise.
+        True if successful, False otherwise.
     """
     try:
         # Create directory if it doesn't exist
@@ -154,15 +161,14 @@ def append_to_jsonl(data: Dict[str, Any], filepath: str) -> bool:
 
 
 def should_rotate_log(filepath: str, max_size_mb: int = 10) -> bool:
-    """
-    Check if a log file should be rotated based on its size.
+    """Check if a log file should be rotated based on its size.
     
     Args:
-        filepath (str): Path to the log file.
-        max_size_mb (int, optional): Maximum size in MB. Defaults to 10.
+        filepath: Path to the log file.
+        max_size_mb: Maximum size in megabytes. Defaults to 10.
         
     Returns:
-        bool: True if the file should be rotated, False otherwise.
+        True if the file should be rotated, False otherwise.
     """
     if not os.path.exists(filepath):
         return False
@@ -177,15 +183,17 @@ def should_rotate_log(filepath: str, max_size_mb: int = 10) -> bool:
 
 
 def rotate_log_file(filepath: str, max_backups: int = 5) -> bool:
-    """
-    Rotate a log file by renaming it and creating a new empty file.
+    """Rotate a log file by renaming it and creating a new empty file.
+    
+    Implements log rotation by shifting existing backup files and creating
+    a new empty log file. Removes the oldest backup if maximum number is reached.
     
     Args:
-        filepath (str): Path to the log file.
-        max_backups (int, optional): Maximum number of backup files to keep. Defaults to 5.
+        filepath: Path to the log file.
+        max_backups: Maximum number of backup files to keep. Defaults to 5.
         
     Returns:
-        bool: True if successful, False otherwise.
+        True if successful, False otherwise.
     """
     try:
         if not os.path.exists(filepath):
@@ -213,7 +221,8 @@ def rotate_log_file(filepath: str, max_backups: int = 5) -> bool:
         shutil.move(filepath, first_backup)
         
         # Create a new empty log file
-        with open(filepath, 'w', encoding='utf-8') as f:
+        with open(filepath, 'w', encoding='utf-8'):
+            # Using with statement without variable to create empty file
             pass
         
         return True
@@ -225,18 +234,20 @@ def rotate_log_file(filepath: str, max_backups: int = 5) -> bool:
 def save_feedback_log(feedback_data: Dict[str, Any], log_dir: str = "data/logs", 
                       filename: str = "feedback.jsonl", max_size_mb: int = 10, 
                       max_backups: int = 5) -> bool:
-    """
-    Save feedback data to a JSONL log file with rotation support.
+    """Save feedback data to a JSONL log file with rotation support.
+    
+    Adds a timestamp to the feedback data and appends it to a JSONL file.
+    Automatically rotates log files when they reach the specified size.
     
     Args:
-        feedback_data (Dict[str, Any]): Feedback data to log.
-        log_dir (str, optional): Directory for log files. Defaults to "data/logs".
-        filename (str, optional): Log filename. Defaults to "feedback.jsonl".
-        max_size_mb (int, optional): Maximum log file size in MB. Defaults to 10.
-        max_backups (int, optional): Maximum number of backup files. Defaults to 5.
+        feedback_data: Feedback data to log.
+        log_dir: Directory for log files. Defaults to "data/logs".
+        filename: Log filename. Defaults to "feedback.jsonl".
+        max_size_mb: Maximum log file size in MB. Defaults to 10.
+        max_backups: Maximum number of backup files. Defaults to 5.
         
     Returns:
-        bool: True if successful, False otherwise.
+        True if successful, False otherwise.
     """
     try:
         # Ensure log directory exists

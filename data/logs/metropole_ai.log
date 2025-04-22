@@ -1,0 +1,50 @@
+2025-04-22 11:15:59,993 - metropole_ai.vector_store.init_chroma - INFO - Initializing Chroma DB at: ./data/index
+2025-04-22 11:16:00,003 - metropole_ai.vector_store.init_chroma - INFO - Collection 'documents' initialized with 603 documents
+2025-04-22 11:17:49,436 - metropole_ai.vector_store.init_chroma - INFO - Initializing Chroma DB at: ./data/index
+2025-04-22 11:17:49,445 - metropole_ai.vector_store.init_chroma - INFO - Collection 'documents' initialized with 603 documents
+2025-04-22 11:18:27,296 - metropole_ai.vector_store.init_chroma - INFO - Initializing Chroma DB at: ./data/index
+2025-04-22 11:18:27,304 - metropole_ai.vector_store.init_chroma - INFO - Collection 'documents' initialized with 603 documents
+2025-04-22 11:19:01,139 - metropole_ai.vector_store.init_chroma - INFO - Initializing Chroma DB at: ./data/index
+2025-04-22 11:19:01,147 - metropole_ai.vector_store.init_chroma - INFO - Collection 'documents' initialized with 603 documents
+2025-04-22 11:19:39,033 - metropole_ai.vector_store.init_chroma - INFO - Initializing Chroma DB at: ./data/index
+2025-04-22 11:19:39,040 - metropole_ai.vector_store.init_chroma - INFO - Collection 'documents' initialized with 603 documents
+2025-04-22 11:20:03,302 - metropole_ai.vector_store.init_chroma - INFO - Initializing Chroma DB at: ./data/index
+2025-04-22 11:20:03,309 - metropole_ai.vector_store.init_chroma - INFO - Collection 'documents' initialized with 603 documents
+2025-04-22 11:20:13,935 - metropole_ai.vector_store.init_chroma - INFO - Initializing Chroma DB at: ./data/index
+2025-04-22 11:20:13,943 - metropole_ai.vector_store.init_chroma - INFO - Collection 'documents' initialized with 603 documents
+2025-04-22 11:20:31,597 - metropole_ai.vector_store.init_chroma - INFO - Initializing Chroma DB at: ./data/index
+2025-04-22 11:20:31,604 - metropole_ai.vector_store.init_chroma - INFO - Collection 'documents' initialized with 603 documents
+2025-04-22 11:20:48,309 - metropole_ai.vector_store.init_chroma - INFO - Initializing Chroma DB at: ./data/index
+2025-04-22 11:20:48,318 - metropole_ai.vector_store.init_chroma - INFO - Collection 'documents' initialized with 603 documents
+2025-04-22 11:22:11,134 - metropole_ai.vector_store.init_chroma - INFO - Initializing Chroma DB at: ./data/index
+2025-04-22 11:22:11,143 - metropole_ai.vector_store.init_chroma - INFO - Collection 'documents' initialized with 603 documents
+2025-04-22 11:22:28,827 - metropole_ai.vector_store.init_chroma - INFO - Initializing Chroma DB at: ./data/index
+2025-04-22 11:22:28,835 - metropole_ai.vector_store.init_chroma - INFO - Collection 'documents' initialized with 603 documents
+2025-04-22 11:22:54,569 - metropole_ai.vector_store.init_chroma - INFO - Initializing Chroma DB at: ./data/index
+2025-04-22 11:22:54,576 - metropole_ai.vector_store.init_chroma - INFO - Collection 'documents' initialized with 603 documents
+2025-04-22 11:23:40,010 - metropole_ai.vector_store.init_chroma - INFO - Initializing Chroma DB at: ./data/index
+2025-04-22 11:23:40,017 - metropole_ai.vector_store.init_chroma - INFO - Collection 'documents' initialized with 603 documents
+2025-04-22 11:23:53,695 - metropole_ai.vector_store.init_chroma - INFO - Initializing Chroma DB at: ./data/index
+2025-04-22 11:23:53,702 - metropole_ai.vector_store.init_chroma - INFO - Collection 'documents' initialized with 603 documents
+2025-04-22 11:24:13,893 - metropole_ai.vector_store.init_chroma - INFO - Initializing Chroma DB at: ./data/index
+2025-04-22 11:24:13,900 - metropole_ai.vector_store.init_chroma - INFO - Collection 'documents' initialized with 603 documents
+2025-04-22 11:24:33,112 - metropole_ai.vector_store.init_chroma - INFO - Initializing Chroma DB at: ./data/index
+2025-04-22 11:24:33,119 - metropole_ai.vector_store.init_chroma - INFO - Collection 'documents' initialized with 603 documents
+2025-04-22 11:24:58,848 - metropole_ai.vector_store.init_chroma - INFO - Initializing Chroma DB at: ./data/index
+2025-04-22 11:24:58,856 - metropole_ai.vector_store.init_chroma - INFO - Collection 'documents' initialized with 603 documents
+2025-04-22 11:25:29,121 - metropole_ai.vector_store.init_chroma - INFO - Initializing Chroma DB at: ./data/index
+2025-04-22 11:25:29,128 - metropole_ai.vector_store.init_chroma - INFO - Collection 'documents' initialized with 603 documents
+2025-04-22 11:25:57,400 - metropole_ai.vector_store.init_chroma - INFO - Initializing Chroma DB at: ./data/index
+2025-04-22 11:25:57,409 - metropole_ai.vector_store.init_chroma - INFO - Collection 'documents' initialized with 603 documents
+2025-04-22 11:26:23,827 - metropole_ai.vector_store.init_chroma - INFO - Initializing Chroma DB at: ./data/index
+2025-04-22 11:26:23,835 - metropole_ai.vector_store.init_chroma - INFO - Collection 'documents' initialized with 603 documents
+2025-04-22 11:27:03,886 - metropole_ai.vector_store.init_chroma - INFO - Initializing Chroma DB at: ./data/index
+2025-04-22 11:27:03,895 - metropole_ai.vector_store.init_chroma - INFO - Collection 'documents' initialized with 603 documents
+2025-04-22 11:27:33,778 - metropole_ai.vector_store.init_chroma - INFO - Initializing Chroma DB at: ./data/index
+2025-04-22 11:27:33,787 - metropole_ai.vector_store.init_chroma - INFO - Collection 'documents' initialized with 603 documents
+2025-04-22 11:28:05,711 - metropole_ai.vector_store.init_chroma - INFO - Initializing Chroma DB at: ./data/index
+2025-04-22 11:28:05,719 - metropole_ai.vector_store.init_chroma - INFO - Collection 'documents' initialized with 603 documents
+2025-04-22 11:29:07,373 - metropole_ai.vector_store.init_chroma - INFO - Initializing Chroma DB at: ./data/index
+2025-04-22 11:29:07,382 - metropole_ai.vector_store.init_chroma - INFO - Collection 'documents' initialized with 603 documents
+2025-04-22 11:30:42,307 - metropole_ai.vector_store.init_chroma - INFO - Initializing Chroma DB at: ./data/index
+2025-04-22 11:30:42,315 - metropole_ai.vector_store.init_chroma - INFO - Collection 'documents' initialized with 603 documents

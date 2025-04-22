@@ -1,15 +1,12 @@
-"""
-Retriever module for querying and retrieving information from embeddings.
-"""
+"""Retriever module for querying and retrieving information from embeddings."""
 
-import os
 from dotenv import load_dotenv
 import chromadb
 from chromadb.config import Settings
 from pathlib import Path
 import openai
+from typing import Dict, List, Any
 
-from app.vector_store.init_chroma import init_chroma_db
 from app.config import OPENAI_API_KEY, CHROMA_DB_PATH
 from app.logging_config import get_logger
 
@@ -29,33 +26,28 @@ try:
 except TypeError as e:
     if "unexpected keyword argument 'proxies'" in str(e):
         # If the error is about proxies, initialize without proxy settings
-        import openai._base_client
-        original_init = openai._base_client.SyncHttpxClientWrapper.__init__
-        
-        def patched_init(self, *args, **kwargs):
-            # Remove 'proxies' from kwargs if present
-            if 'proxies' in kwargs:
-                del kwargs['proxies']
-            return original_init(self, *args, **kwargs)
-        
-        # Apply the patch
-        openai._base_client.SyncHttpxClientWrapper.__init__ = patched_init
-        
-        # Try initializing again
+        # Create a client with default settings
         client = openai.OpenAI(api_key=OPENAI_API_KEY)
+        
+        # Log the issue
+        logger.warning("Proxy settings were ignored when initializing OpenAI client")
     else:
         # If it's a different TypeError, re-raise it
         raise
 
 
 class Retriever:
-    """
-    Class for retrieving information from embeddings and generating answers using OpenAI.
+    """Class for retrieving information from embeddings and generating answers using OpenAI.
+    
+    This class provides methods to query a vector database for relevant documents
+    and generate answers to user questions using OpenAI's language models.
     """
     
-    def __init__(self):
-        """
-        Initialize the retriever.
+    def __init__(self) -> None:
+        """Initialize the retriever with ChromaDB connection.
+        
+        Sets up connection to the ChromaDB vector database and initializes
+        the documents collection.
         """
         # Get the path for the Chroma database
         self.chroma_db_path = CHROMA_DB_PATH
@@ -74,16 +66,15 @@ class Retriever:
         # Get the collection
         self.collection = self.chroma_client.get_or_create_collection("documents")
     
-    def query(self, query_text, n_results=5):
-        """
-        Query the embeddings database.
+    def query(self, query_text: str, n_results: int = 5) -> Dict[str, Any]:
+        """Query the embeddings database for relevant documents.
         
         Args:
-            query_text (str): The query text.
-            n_results (int, optional): Number of results to return. Defaults to 5.
+            query_text: The query text to search for.
+            n_results: Number of results to return. Defaults to 5.
             
         Returns:
-            list: List of matching documents.
+            Dictionary containing query results with documents, metadatas, and distances.
         """
         # Query using cosine similarity
         results = self.collection.query(
@@ -92,32 +83,41 @@ class Retriever:
             include=["documents", "metadatas", "distances"],
         )
         
-        return results
+        # Convert to a standard dictionary
+        return dict(results)
     
-    def get_document(self, doc_id):
-        """
-        Retrieve a specific document by ID.
+    def get_document(self, doc_id: str) -> Dict[str, Any]:
+        """Retrieve a specific document by ID.
         
         Args:
-            doc_id (str): Document ID.
+            doc_id: Document ID to retrieve.
             
         Returns:
-            dict: Document data.
+            Dictionary containing the document data.
         """
         result = self.collection.get(ids=[doc_id])
-        return result
+        # Convert to a standard dictionary
+        return dict(result)
     
-    def generate_answer(self, question, chunks, model="gpt-3.5-turbo"):
-        """
-        Generate an answer to a question using OpenAI's GPT model and retrieved chunks.
+    def generate_answer(self, question: str, chunks: List[Any], 
+                       model: str = "gpt-3.5-turbo") -> Dict[str, Any]:
+        """Generate an answer to a question using OpenAI's GPT model and retrieved chunks.
+        
+        Uses the provided text chunks to generate a contextually relevant answer
+        to the user's question. Adds appropriate disclaimers based on the nature
+        of the answer.
         
         Args:
-            question (str): The user's question.
-            chunks (list): List of text chunks retrieved from the vector store.
-            model (str, optional): The OpenAI model to use. Defaults to "gpt-3.5-turbo".
+            question: The user's question.
+            chunks: List of text chunks retrieved from the vector store.
+            model: The OpenAI model to use. Defaults to "gpt-3.5-turbo".
             
         Returns:
-            dict: A dictionary containing the generated answer, source information, and flags.
+            A dictionary containing:
+                - answer: The generated answer text
+                - is_general_knowledge: Flag indicating if answer is based on general knowledge
+                - contains_diy_advice: Flag indicating if answer contains DIY advice
+                - source_info: Information about the sources used
         """
         # Construct the prompt with the retrieved chunks
         prompt = self._construct_prompt(question, chunks)
@@ -137,8 +137,9 @@ class Retriever:
         
         # Process the answer to detect if it's based on building data or general knowledge
         # and if it contains DIY advice
-        is_general_knowledge = "general knowledge" in answer_text.lower() or "i don't have specific information" in answer_text.lower()
-        contains_diy_advice = any(phrase in answer_text.lower() for phrase in ["diy", "do it yourself", "you can try", "you could try", "steps to", "how to"])
+        answer_lower = answer_text.lower() if answer_text else ""
+        is_general_knowledge = "general knowledge" in answer_lower or "i don't have specific information" in answer_lower
+        contains_diy_advice = any(phrase in answer_lower for phrase in ["diy", "do it yourself", "you can try", "you could try", "steps to", "how to"])
         
         # Prepare source information
         source_info = self._prepare_source_info(chunks)
@@ -153,9 +154,8 @@ class Retriever:
             answer_text += disclaimer
         
         # Add source trace
-        if source_info and not is_general_knowledge:
-            source_trace = "\n\nSource: " + source_info
-            answer_text += source_trace
+        if source_info and not is_general_knowledge and answer_text:
+            answer_text += f"\n\nSource: {source_info}"
         
         return {
             "answer": answer_text,
@@ -164,44 +164,48 @@ class Retriever:
             "source_info": source_info
         }
     
-    def _prepare_source_info(self, chunks):
-        """
-        Prepare source information from chunks.
+    def _prepare_source_info(self, chunks: List[Any]) -> str:
+        """Prepare formatted source information from chunks.
+        
+        Extracts metadata from chunks and formats it into a readable source citation.
         
         Args:
-            chunks (list): List of text chunks retrieved from the vector store.
+            chunks: List of text chunks retrieved from the vector store.
             
         Returns:
-            str: Formatted source information.
+            Formatted string containing source information.
         """
         sources = []
         for i, chunk in enumerate(chunks):
             # Extract metadata
             metadata = chunk.metadata if hasattr(chunk, 'metadata') and chunk.metadata else {}
-            chunk_id = metadata.get('chunk_id', f'unknown-{i}')
-            page_title = metadata.get('page_title', 'Unknown Page')
+            chunk_id = str(metadata.get('chunk_id', f'unknown-{i}'))
+            page_title = str(metadata.get('page_title', 'Unknown Page'))
             section = metadata.get('section_header', '')
             
-            # Format source info
-            source_info = f"Chunk {chunk_id}"
-            if section:
-                source_info += f" ({section})"
-            source_info += f" from {page_title}"
+            # Format source info using f-strings to avoid None concatenation
+            if section and isinstance(section, str):
+                source_info = f"Chunk {chunk_id} ({section}) from {page_title}"
+            else:
+                source_info = f"Chunk {chunk_id} from {page_title}"
             
             sources.append(source_info)
         
         return "; ".join(sources)
     
-    def _construct_prompt(self, question, chunks):
-        """
-        Construct a prompt for the OpenAI model that includes the question and retrieved chunks.
+    def _construct_prompt(self, question: str, chunks: List[Any]) -> str:
+        """Construct a prompt for the OpenAI model that includes the question and retrieved chunks.
+        
+        Creates a detailed prompt that includes the user's question, relevant content
+        chunks with their metadata, and instructions for the model on how to formulate
+        the answer.
         
         Args:
-            question (str): The user's question.
-            chunks (list): List of text chunks retrieved from the vector store.
+            question: The user's question.
+            chunks: List of text chunks retrieved from the vector store.
             
         Returns:
-            str: The constructed prompt.
+            The constructed prompt string ready to be sent to the OpenAI API.
         """
         # Start with the question
         prompt = f"Question: {question}\n\n"
@@ -210,23 +214,26 @@ class Retriever:
         prompt += "Building Content:\n"
         for i, chunk in enumerate(chunks):
             # Extract text and metadata
-            text = chunk.text if hasattr(chunk, 'text') else chunk
+            text = str(chunk.text if hasattr(chunk, 'text') else chunk)
             metadata = chunk.metadata if hasattr(chunk, 'metadata') and chunk.metadata else {}
             
             # Add source information if available
-            chunk_id = metadata.get('chunk_id', f'unknown-{i}')
-            page_title = metadata.get('page_title', 'Unknown Page')
+            chunk_id = str(metadata.get('chunk_id', f'unknown-{i}'))
+            page_title = str(metadata.get('page_title', 'Unknown Page'))
             section = metadata.get('section_header', '')
             url = metadata.get('url', '')
             
-            source_info = f" (ID: {chunk_id}"
-            if section:
-                source_info += f", Section: {section}"
+            # Build source info parts
+            source_parts = [f"ID: {chunk_id}"]
+            if section and isinstance(section, str):
+                source_parts.append(f"Section: {section}")
             if page_title:
-                source_info += f", Page: {page_title}"
-            if url:
-                source_info += f", URL: {url}"
-            source_info += ")"
+                source_parts.append(f"Page: {page_title}")
+            if url and isinstance(url, str):
+                source_parts.append(f"URL: {url}")
+            
+            # Join parts with commas
+            source_info = f" ({', '.join(source_parts)})"
             
             prompt += f"Chunk {i+1}{source_info}:\n{text}\n\n"
         
