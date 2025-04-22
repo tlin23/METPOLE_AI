@@ -3,18 +3,21 @@ API routes for the application.
 """
 
 import os
-import json
 import sys
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 
-from app.crawler.crawl import crawl, recursive_crawl
-from app.crawler.extract_content import process_all_html_files
+from app.crawler.crawl import crawl
 from app.embedder.embed import Embedder
-from app.embedder.embed_corpus import embed_corpus
 from app.retriever.ask import Retriever
 from app.utils.helpers import save_feedback_log
+from app.config import (
+    FEEDBACK_LOG_DIR,
+    FEEDBACK_LOG_FILE,
+    FEEDBACK_LOG_MAX_SIZE_MB,
+    FEEDBACK_LOG_MAX_BACKUPS
+)
 
 
 # Add the project root to the Python path to allow importing from data/processed
@@ -27,29 +30,11 @@ router = APIRouter()
 embedder = Embedder()
 retriever = Retriever()
 
-# Configure logging
-FEEDBACK_LOG_DIR = os.getenv("FEEDBACK_LOG_DIR", "data/logs")
-FEEDBACK_LOG_FILE = os.getenv("FEEDBACK_LOG_FILE", "feedback.jsonl")
-FEEDBACK_LOG_MAX_SIZE_MB = int(os.getenv("FEEDBACK_LOG_MAX_SIZE_MB", "10"))
-FEEDBACK_LOG_MAX_BACKUPS = int(os.getenv("FEEDBACK_LOG_MAX_BACKUPS", "5"))
-
 
 # Define models
 class CrawlRequest(BaseModel):
     url: str
 
-
-class CrawlAllResponse(BaseModel):
-    pages_crawled: int
-    chunks_processed: int
-    success: bool
-    message: str
-
-
-class EmbedResponse(BaseModel):
-    chunks_embedded: int
-    success: bool
-    message: str
 
 
 class CrawlResponse(BaseModel):
@@ -216,247 +201,6 @@ async def ask_question(request: AskRequest):
             message=f"Error: {str(e)}"
         )
 
-
-@router.post("/embed", response_model=EmbedResponse)
-async def embed_corpus_endpoint():
-    """
-    Re-embed the contents of metropole_corpus.json and update the Chroma index.
-    
-    Returns a summary of how many chunks were embedded.
-    """
-    try:
-        # Path to the corpus file
-        corpus_path = os.path.join('data', 'processed', 'metropole_corpus.json')
-        
-        # Check if the corpus file exists
-        if not os.path.exists(corpus_path):
-            return EmbedResponse(
-                chunks_embedded=0,
-                success=False,
-                message=f"Error: Corpus file not found at {corpus_path}"
-            )
-        
-        # Load the corpus to get the number of chunks
-        with open(corpus_path, 'r', encoding='utf-8') as f:
-            corpus = json.load(f)
-        
-        chunks_count = len(corpus)
-        
-        # Get the Chroma DB path
-        chroma_db_path = os.getenv("CHROMA_DB_PATH", "./data/index")
-        
-        # Embed the corpus
-        embed_corpus(
-            corpus_path=corpus_path,
-            chroma_path=chroma_db_path,
-            collection_name="documents",
-            batch_size=100
-        )
-        
-        return EmbedResponse(
-            chunks_embedded=chunks_count,
-            success=True,
-            message=f"Successfully embedded {chunks_count} chunks into the Chroma index"
-        )
-    
-    except Exception as e:
-        return EmbedResponse(
-            chunks_embedded=0,
-            success=False,
-            message=f"Error: {str(e)}"
-        )
-
-
-@router.post("/crawl_all", response_model=CrawlAllResponse)
-async def crawl_all():
-    """
-    Run the crawler on the Metropole website, process the HTML files, and generate the metropole_corpus.json file.
-    
-    Returns a summary of how many pages and chunks were parsed.
-    """
-    try:
-        # Step 1: Run the recursive crawler to fetch HTML content
-        start_url = "https://www.metropoleballard.com/home"
-        os.makedirs('data/html', exist_ok=True)
-        
-        content_dict = recursive_crawl(start_url, max_pages=50, save_to_files=True)
-        pages_crawled = len(content_dict)
-        
-        # Step 2: Process HTML files to extract structured content
-        html_directory = "data/html"
-        results = process_all_html_files(html_directory)
-        
-        # Create output directory if it doesn't exist
-        output_directory = "data/processed"
-        os.makedirs(output_directory, exist_ok=True)
-        
-        # Save results to JSON file
-        json_output_path = os.path.join(output_directory, "extracted_content.json")
-        with open(json_output_path, 'w', encoding='utf-8') as f:
-            json.dump(results, f, indent=2, ensure_ascii=False)
-        
-        # Step 3: Create content objects
-        all_chunks = []
-        
-        for file_path, content in results.items():
-            page_title = content['title']
-            page_name = os.path.basename(file_path).replace('.html', '')
-            
-            # Process each section
-            for section in content['sections']:
-                section_header = section['header']
-                
-                # Process each chunk in the section
-                for chunk in section['chunks']:
-                    # Create a structured object for each chunk
-                    chunk_object = {
-                        'page_title': page_title,
-                        'page_name': page_name,
-                        'section_header': section_header,
-                        'content': chunk['content'],
-                        'content_html': chunk['content_html']
-                    }
-                    
-                    all_chunks.append(chunk_object)
-        
-        # Save all chunks to a Python file
-        py_output_path = os.path.join(output_directory, "content_objects.py")
-        with open(py_output_path, 'w', encoding='utf-8') as f:
-            f.write("\"\"\"Generated content objects from HTML files.\"\"\"\n\n")
-            f.write("# This file is auto-generated. Do not edit directly.\n\n")
-            f.write("content_objects = [\n")
-            
-            # Remove duplicate chunks by tracking content we've seen
-            seen_content = set()
-            unique_chunks = []
-            
-            for chunk in all_chunks:
-                # Create a key based on content to detect duplicates
-                content_key = f"{chunk['page_name']}:{chunk['section_header']}:{chunk['content'][:100]}"
-                
-                if content_key not in seen_content:
-                    seen_content.add(content_key)
-                    unique_chunks.append(chunk)
-            
-            # Write unique chunks to file
-            for chunk in unique_chunks:
-                f.write("    {\n")
-                f.write(f"        'page_title': {json.dumps(chunk['page_title'])},\n")
-                f.write(f"        'page_name': {json.dumps(chunk['page_name'])},\n")
-                f.write(f"        'section_header': {json.dumps(chunk['section_header'])},\n")
-                f.write(f"        'content': {json.dumps(chunk['content'])},\n")
-                f.write(f"        'content_html': {json.dumps(chunk['content_html'])}\n")
-                f.write("    },\n")
-            
-            f.write("]\n")
-        
-        # Step 4: Import the content objects and add metadata and tags
-        try:
-            # Dynamically import the content_objects module
-            sys.path.insert(0, os.path.abspath(output_directory))
-            from content_objects import content_objects
-            
-            # Import necessary functions from add_metadata_and_tags
-            from app.crawler.add_metadata_and_tags import (
-                generate_page_ids,
-                extract_tags_with_keybert,
-                save_to_json
-            )
-            
-            # Initialize KeyBERT with MiniLM
-            try:
-                # Try to set the environment variable to disable HuggingFace Hub telemetry
-                # This is a workaround for the "cannot import name 'HF_HUB_DISABLE_TELEMETRY'" error
-                os.environ["HF_HUB_DISABLE_TELEMETRY"] = "1"
-                
-                from keybert import KeyBERT
-                model = KeyBERT(model='all-MiniLM-L6-v2')
-            except ImportError as e:
-                # If KeyBERT fails to import, use a simple tag extraction function instead
-                def extract_tags_with_keybert(text, model, num_tags=5):
-                    """
-                    Simple tag extraction function that uses word frequency as a fallback.
-                    """
-                    import re
-                    from collections import Counter
-                    
-                    # Skip empty or very short text
-                    if not text or len(text) < 20:
-                        return []
-                    
-                    # Tokenize and clean text
-                    words = re.findall(r'\b[a-zA-Z]{3,}\b', text.lower())
-                    
-                    # Remove common stop words
-                    stop_words = {'the', 'and', 'is', 'in', 'it', 'to', 'of', 'for', 'with', 'on', 'at', 'from', 'by', 'about', 'as', 'that', 'this', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'but', 'or', 'an', 'a'}
-                    filtered_words = [word for word in words if word not in stop_words]
-                    
-                    # Count word frequencies
-                    word_counts = Counter(filtered_words)
-                    
-                    # Return the most common words as tags
-                    return [word for word, count in word_counts.most_common(num_tags)]
-            
-            # Generate page IDs
-            page_ids = generate_page_ids(content_objects)
-            
-            # Process each content object
-            import uuid
-            processed_objects = []
-            
-            for chunk in content_objects:
-                # Generate a unique chunk ID
-                chunk_id = f"chunk_{str(uuid.uuid4())}"
-                
-                # Get the page ID for this chunk
-                page_id = page_ids[chunk['page_name']]
-                
-                # Extract tags using KeyBERT
-                tags = extract_tags_with_keybert(chunk['content'], model)
-                
-                # Create a processed object with metadata and tags
-                processed_object = {
-                    'chunk_id': chunk_id,
-                    'page_id': page_id,
-                    'page_title': chunk['page_title'],
-                    'page_name': chunk['page_name'],
-                    'section_header': chunk['section_header'],
-                    'content': chunk['content'],
-                    'content_html': chunk['content_html'],
-                    'tags': tags
-                }
-                
-                processed_objects.append(processed_object)
-            
-            # Save to JSON
-            output_path = os.path.join('data', 'processed', 'metropole_corpus.json')
-            with open(output_path, 'w', encoding='utf-8') as f:
-                json.dump(processed_objects, f, indent=2, ensure_ascii=False)
-            
-            chunks_processed = len(processed_objects)
-            
-            return CrawlAllResponse(
-                pages_crawled=pages_crawled,
-                chunks_processed=chunks_processed,
-                success=True,
-                message=f"Successfully crawled {pages_crawled} pages and processed {chunks_processed} chunks"
-            )
-            
-        except Exception as e:
-            return CrawlAllResponse(
-                pages_crawled=pages_crawled,
-                chunks_processed=0,
-                success=False,
-                message=f"Error processing content objects: {str(e)}"
-            )
-    
-    except Exception as e:
-        return CrawlAllResponse(
-            pages_crawled=0,
-            chunks_processed=0,
-            success=False,
-            message=f"Error: {str(e)}"
-        )
 
 
 @router.post("/feedback", response_model=FeedbackResponse)

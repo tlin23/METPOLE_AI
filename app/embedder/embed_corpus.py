@@ -20,6 +20,8 @@ import chromadb
 from chromadb.config import Settings
 from chromadb.utils import embedding_functions
 
+from app.config import CHROMA_DB_PATH
+
 # Set up logging
 logging.basicConfig(
     level=logging.INFO,
@@ -71,7 +73,7 @@ def embed_corpus(
     
     # Get the Chroma DB path
     if chroma_path is None:
-        chroma_path = os.getenv("CHROMA_DB_PATH", "./data/index")
+        chroma_path = CHROMA_DB_PATH
     
     # Create the directory if it doesn't exist
     Path(chroma_path).mkdir(parents=True, exist_ok=True)

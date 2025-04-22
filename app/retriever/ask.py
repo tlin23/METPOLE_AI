@@ -10,18 +10,18 @@ from pathlib import Path
 import openai
 
 from app.vector_store.init_chroma import init_chroma_db
+from app.config import OPENAI_API_KEY, CHROMA_DB_PATH
 
 # Load environment variables
 load_dotenv()
 
 # Initialize OpenAI client
-openai_api_key = os.getenv("OPENAI_API_KEY")
-if not openai_api_key:
+if not OPENAI_API_KEY:
     raise ValueError("OPENAI_API_KEY environment variable is not set")
 
 # Initialize OpenAI client with proper error handling for proxy settings
 try:
-    client = openai.OpenAI(api_key=openai_api_key)
+    client = openai.OpenAI(api_key=OPENAI_API_KEY)
 except TypeError as e:
     if "unexpected keyword argument 'proxies'" in str(e):
         # If the error is about proxies, initialize without proxy settings
@@ -38,7 +38,7 @@ except TypeError as e:
         openai._base_client.SyncHttpxClientWrapper.__init__ = patched_init
         
         # Try initializing again
-        client = openai.OpenAI(api_key=openai_api_key)
+        client = openai.OpenAI(api_key=OPENAI_API_KEY)
     else:
         # If it's a different TypeError, re-raise it
         raise
@@ -54,7 +54,7 @@ class Retriever:
         Initialize the retriever.
         """
         # Get the path for the Chroma database
-        self.chroma_db_path = os.getenv("CHROMA_DB_PATH", "./data/index")
+        self.chroma_db_path = CHROMA_DB_PATH
         
         # Create the directory if it doesn't exist
         Path(self.chroma_db_path).mkdir(parents=True, exist_ok=True)

@@ -12,6 +12,8 @@ from chromadb.config import Settings
 # Add the project root to the Python path
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
+from app.config import CHROMA_DB_PATH
+
 # Load environment variables
 load_dotenv()
 
@@ -23,7 +25,7 @@ def init_chroma_db():
         chromadb.PersistentClient: The initialized Chroma client.
     """
     # Get the path for the Chroma database
-    chroma_db_path = os.getenv("CHROMA_DB_PATH", "./data/index")
+    chroma_db_path = CHROMA_DB_PATH
     
     # Create the directory if it doesn't exist
     Path(chroma_db_path).mkdir(parents=True, exist_ok=True)

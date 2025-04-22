@@ -10,6 +10,7 @@ from pathlib import Path
 from datetime import datetime
 
 from app.vector_store.init_chroma import init_chroma_db
+from app.config import CHROMA_DB_PATH
 
 # Load environment variables
 load_dotenv()
@@ -30,7 +31,7 @@ class Embedder:
         self.model_name = model_name
         
         # Get the path for the Chroma database
-        self.chroma_db_path = os.getenv("CHROMA_DB_PATH", "./data/index")
+        self.chroma_db_path = CHROMA_DB_PATH
         
         # Create the directory if it doesn't exist
         Path(self.chroma_db_path).mkdir(parents=True, exist_ok=True)
