@@ -11,13 +11,6 @@ from typing import List, Optional, Dict, Any
 from app.crawler.crawl import crawl
 from app.embedder.embed import Embedder
 from app.retriever.ask import Retriever
-from app.utils.helpers import save_feedback_log
-from app.config import (
-    FEEDBACK_LOG_DIR,
-    FEEDBACK_LOG_FILE,
-    FEEDBACK_LOG_MAX_SIZE_MB,
-    FEEDBACK_LOG_MAX_BACKUPS,
-)
 
 
 # Add the project root to the Python path to allow importing from data/processed
@@ -200,44 +193,3 @@ async def ask_question(request: AskRequest):
             success=False,
             message=f"Error: {str(e)}",
         )
-
-
-@router.post("/feedback", response_model=FeedbackResponse)
-async def submit_feedback(request: FeedbackRequest):
-    """
-    Submit feedback about a question and response.
-
-    Logs the question, response, timestamp, and chunk IDs to a local JSONL file.
-    Additional metadata like rating, comments, user_id, and session_id can also be included.
-    """
-    try:
-        # Prepare feedback data for logging
-        feedback_data = {
-            "question": request.question,
-            "response": request.response,
-            "chunk_ids": request.chunk_ids or [],
-            "timestamp": None,  # Will be added by save_feedback_log
-            "rating": request.rating,
-            "comments": request.comments,
-            "user_id": request.user_id,
-            "session_id": request.session_id,
-        }
-
-        # Save to log file with rotation support
-        success = save_feedback_log(
-            feedback_data=feedback_data,
-            log_dir=FEEDBACK_LOG_DIR,
-            filename=FEEDBACK_LOG_FILE,
-            max_size_mb=FEEDBACK_LOG_MAX_SIZE_MB,
-            max_backups=FEEDBACK_LOG_MAX_BACKUPS,
-        )
-
-        if not success:
-            return FeedbackResponse(
-                success=False, message="Failed to save feedback to log file"
-            )
-
-        return FeedbackResponse(success=True, message="Feedback logged successfully")
-
-    except Exception as e:
-        return FeedbackResponse(success=False, message=f"Error: {str(e)}")
