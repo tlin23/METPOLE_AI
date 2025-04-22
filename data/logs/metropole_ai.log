@@ -48,3 +48,44 @@
 2025-04-22 11:29:07,382 - metropole_ai.vector_store.init_chroma - INFO - Collection 'documents' initialized with 603 documents
 2025-04-22 11:30:42,307 - metropole_ai.vector_store.init_chroma - INFO - Initializing Chroma DB at: ./data/index
 2025-04-22 11:30:42,315 - metropole_ai.vector_store.init_chroma - INFO - Collection 'documents' initialized with 603 documents
+2025-04-22 11:33:21,747 - metropole_ai.vector_store.init_chroma - INFO - Initializing Chroma DB at: ./data/index
+2025-04-22 11:33:21,756 - metropole_ai.vector_store.init_chroma - INFO - Collection 'documents' initialized with 603 documents
+2025-04-22 11:33:53,545 - metropole_ai.vector_store.init_chroma - INFO - Initializing Chroma DB at: ./data/index
+2025-04-22 11:33:53,552 - metropole_ai.vector_store.init_chroma - INFO - Collection 'documents' initialized with 603 documents
+2025-04-22 11:34:01,639 - metropole_ai.vector_store.init_chroma - INFO - Initializing Chroma DB at: ./data/index
+2025-04-22 11:34:01,647 - metropole_ai.vector_store.init_chroma - INFO - Collection 'documents' initialized with 603 documents
+2025-04-22 11:34:03,883 - metropole_ai.pipeline - INFO - Starting Metropole.AI pipeline
+2025-04-22 11:34:03,883 - metropole_ai.pipeline - INFO - Starting website crawl from https://www.metropoleballard.com/home
+2025-04-22 11:34:03,883 - metropole_ai.pipeline - INFO - Max pages: 2
+2025-04-22 11:34:04,652 - metropole_ai.pipeline - INFO - Crawling complete. Collected 2 pages in 0.77 seconds
+2025-04-22 11:34:04,652 - metropole_ai.pipeline - INFO - Processing HTML files to extract structured content
+2025-04-22 11:34:04,891 - metropole_ai.pipeline - INFO - HTML processing complete in 0.24 seconds
+2025-04-22 11:34:04,892 - metropole_ai.pipeline - INFO - Extracted 567 unique content chunks from 11 HTML files
+2025-04-22 11:34:04,892 - metropole_ai.pipeline - INFO - Adding metadata and tags to content
+2025-04-22 11:34:06,317 - metropole_ai.vector_store.init_chroma - INFO - Initializing Chroma DB at: ./data/index
+2025-04-22 11:34:06,326 - metropole_ai.vector_store.init_chroma - INFO - Collection 'documents' initialized with 603 documents
+2025-04-22 11:35:08,056 - metropole_ai.pipeline - INFO - Metadata and tagging complete in 59.66 seconds
+2025-04-22 11:35:08,056 - metropole_ai.pipeline - INFO - Processed 567 content chunks from 9 unique pages
+2025-04-22 11:35:08,056 - metropole_ai.pipeline - INFO - Generated 2232 tags (avg. 3.9 per chunk)
+2025-04-22 11:35:08,056 - metropole_ai.pipeline - INFO - Embedding corpus data
+2025-04-22 11:35:08,057 - metropole_ai.embedder.embed_corpus - INFO - Initializing Chroma DB at: ./data/index
+2025-04-22 11:35:08,057 - metropole_ai.embedder.embed_corpus - INFO - Loading default embedding model (all-MiniLM-L6-v2)...
+2025-04-22 11:35:08,289 - metropole_ai.embedder.embed_corpus - INFO - Loading corpus from data/processed/metropole_corpus.json
+2025-04-22 11:35:08,293 - metropole_ai.embedder.embed_corpus - INFO - Successfully loaded corpus with 567 chunks
+2025-04-22 11:35:08,294 - metropole_ai.embedder.embed_corpus - INFO - Preparing to embed 567 chunks
+2025-04-22 11:35:08,294 - metropole_ai.embedder.embed_corpus - INFO - Embedding batch 1/6 (100 chunks)
+2025-04-22 11:35:24,971 - metropole_ai.embedder.embed_corpus - INFO - Progress: 100/567 chunks embedded
+2025-04-22 11:35:24,973 - metropole_ai.embedder.embed_corpus - INFO - Embedding batch 2/6 (100 chunks)
+2025-04-22 11:35:39,712 - metropole_ai.embedder.embed_corpus - INFO - Progress: 200/567 chunks embedded
+2025-04-22 11:35:39,715 - metropole_ai.embedder.embed_corpus - INFO - Embedding batch 3/6 (100 chunks)
+2025-04-22 11:35:54,597 - metropole_ai.embedder.embed_corpus - INFO - Progress: 300/567 chunks embedded
+2025-04-22 11:35:54,598 - metropole_ai.embedder.embed_corpus - INFO - Embedding batch 4/6 (100 chunks)
+2025-04-22 11:36:08,372 - metropole_ai.embedder.embed_corpus - INFO - Progress: 400/567 chunks embedded
+2025-04-22 11:36:08,373 - metropole_ai.embedder.embed_corpus - INFO - Embedding batch 5/6 (100 chunks)
+2025-04-22 11:36:19,032 - metropole_ai.embedder.embed_corpus - INFO - Progress: 500/567 chunks embedded
+2025-04-22 11:36:19,032 - metropole_ai.embedder.embed_corpus - INFO - Embedding batch 6/6 (67 chunks)
+2025-04-22 11:36:26,877 - metropole_ai.embedder.embed_corpus - INFO - Progress: 567/567 chunks embedded
+2025-04-22 11:36:26,877 - metropole_ai.embedder.embed_corpus - INFO - Embedding complete! 567 chunks embedded in 78.82 seconds
+2025-04-22 11:36:26,877 - metropole_ai.embedder.embed_corpus - INFO - Collection 'metropole_documents' now contains 1164 documents
+2025-04-22 11:36:27,015 - metropole_ai.pipeline - INFO - Corpus embedding complete in 78.96 seconds
+2025-04-22 11:36:27,015 - metropole_ai.pipeline - INFO - Pipeline complete! Total time: 143.13 seconds
