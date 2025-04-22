@@ -226,3 +226,21 @@
 2025-04-22 11:49:38,402 - metropole_ai.vector_store.init_chroma - INFO - Collection 'documents' initialized with 603 documents
 2025-04-22 11:49:51,991 - metropole_ai.vector_store.init_chroma - INFO - Initializing Chroma DB at: ./data/index
 2025-04-22 11:49:52,000 - metropole_ai.vector_store.init_chroma - INFO - Collection 'documents' initialized with 603 documents
+2025-04-22 11:53:12,607 - metropole_ai.vector_store.init_chroma - INFO - Initializing Chroma DB at: ./data/index
+2025-04-22 11:53:12,616 - metropole_ai.vector_store.init_chroma - INFO - Collection 'documents' initialized with 603 documents
+2025-04-22 11:53:28,298 - metropole_ai.vector_store.init_chroma - INFO - Initializing Chroma DB at: ./data/index
+2025-04-22 11:53:28,306 - metropole_ai.vector_store.init_chroma - INFO - Collection 'documents' initialized with 603 documents
+2025-04-22 11:53:41,954 - metropole_ai.vector_store.init_chroma - INFO - Initializing Chroma DB at: ./data/index
+2025-04-22 11:53:41,962 - metropole_ai.vector_store.init_chroma - INFO - Collection 'documents' initialized with 603 documents
+2025-04-22 11:53:52,074 - metropole_ai.vector_store.init_chroma - INFO - Initializing Chroma DB at: ./data/index
+2025-04-22 11:53:52,083 - metropole_ai.vector_store.init_chroma - INFO - Collection 'documents' initialized with 603 documents
+2025-04-22 11:54:03,862 - metropole_ai.vector_store.init_chroma - INFO - Initializing Chroma DB at: ./data/index
+2025-04-22 11:54:03,870 - metropole_ai.vector_store.init_chroma - INFO - Collection 'documents' initialized with 603 documents
+2025-04-22 11:54:17,532 - metropole_ai.vector_store.init_chroma - INFO - Initializing Chroma DB at: ./data/index
+2025-04-22 11:54:17,540 - metropole_ai.vector_store.init_chroma - INFO - Collection 'documents' initialized with 603 documents
+2025-04-22 11:54:38,741 - metropole_ai.vector_store.init_chroma - INFO - Initializing Chroma DB at: ./data/index
+2025-04-22 11:54:38,749 - metropole_ai.vector_store.init_chroma - INFO - Collection 'documents' initialized with 603 documents
+2025-04-22 11:54:47,527 - metropole_ai.vector_store.init_chroma - INFO - Initializing Chroma DB at: ./data/index
+2025-04-22 11:54:47,536 - metropole_ai.vector_store.init_chroma - INFO - Collection 'documents' initialized with 603 documents
+2025-04-22 11:56:08,237 - metropole_ai.vector_store.init_chroma - INFO - Initializing Chroma DB at: ./data/index
+2025-04-22 11:56:08,245 - metropole_ai.vector_store.init_chroma - INFO - Collection 'documents' initialized with 603 documents
