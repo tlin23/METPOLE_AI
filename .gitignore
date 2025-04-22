@@ -20,6 +20,14 @@ var/
 .installed.cfg
 *.egg
 
+# Test coverage
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+coverage.xml
+*.cover
+
 # Environment variables
 .env
 
@@ -41,6 +49,24 @@ ENV/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Database files
+data/index/
+*.sqlite3
+
+# Log files
+data/logs/
+*.log
+*.jsonl
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/.cache/
+
+# Test directories
+test_chroma_path/
 
 # Data files that might be large or sensitive
 # Uncomment if you don't want to track these

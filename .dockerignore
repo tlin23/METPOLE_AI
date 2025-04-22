@@ -54,6 +54,26 @@ docker-compose.yml
 *.swp
 *.swo
 
+# Documentation
+README.md
+CONTRIBUTING.md
+DEPLOYMENT.md
+planning docs/
+
+# Tests
+tests/
+test_chroma_path/
+pytest.ini
+run_tests.py
+test_deployment.py
+
+# Deployment configs
+render.yaml
+fly.toml
+
+# All processed data
+data/processed/
+
 # Misc
 .DS_Store
 .env.local
