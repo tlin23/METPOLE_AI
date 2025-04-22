@@ -114,7 +114,7 @@ class Retriever:
             messages=[
                 {
                     "role": "system",
-                    "content": "You are a helpful assistant that answers questions based on the provided building content. If the answer cannot be found in the provided content, indicate that you're using general knowledge. If you provide DIY advice, indicate this as well.",
+                    "content": "You are a helpful assistant that answers questions based on the provided building content.",
                 },
                 {"role": "user", "content": prompt},
             ],
@@ -231,10 +231,7 @@ class Retriever:
             prompt += f"Chunk {i+1}{source_info}:\n{text}\n\n"
 
         # Add instructions for the model
-        prompt += """Based on the building content provided above, please answer the question.
-If the answer cannot be found in the provided content, please state that you're using general knowledge and provide the best answer you can.
-If you're providing DIY advice, please indicate this in your answer.
-Always reference the specific chunks you used to formulate your answer."""
+        prompt += """Based on the building content provided above, please answer the question. Do not reference the specific chunks you used to formulate your answer."""
 
         return prompt
 

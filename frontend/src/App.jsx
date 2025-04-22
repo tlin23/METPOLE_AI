@@ -110,19 +110,6 @@ function App() {
     setShowSourceInfo(!showSourceInfo);
   }
 
-  // Change source display mode
-  const changeSourceDisplayMode = (mode) => {
-    setSourceDisplayMode(mode);
-  }
-
-  // Cycle through display modes
-  const cycleDisplayMode = () => {
-    const modes = ['tooltip', 'panel', 'footer'];
-    const currentIndex = modes.indexOf(sourceDisplayMode);
-    const nextIndex = (currentIndex + 1) % modes.length;
-    setSourceDisplayMode(modes[nextIndex]);
-  }
-
   return (
     <div style={styles.container}>
       {/* App Header */}
