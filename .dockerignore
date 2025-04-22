@@ -39,9 +39,9 @@ ENV/
 env/
 
 # Data directories (mounted as volumes)
-data/index/
 data/html/
 data/logs/
+data/processed/
 
 # Docker
 Dockerfile
@@ -62,7 +62,7 @@ planning docs/
 
 # Tests
 tests/
-test_chroma_path/
+# test_chroma_path/  # Uncommented to include test database files
 pytest.ini
 run_tests.py
 test_deployment.py
@@ -73,9 +73,6 @@ archive/
 # Deployment configs
 render.yaml
 fly.toml
-
-# All processed data
-data/processed/
 
 # Misc
 .DS_Store

@@ -50,9 +50,9 @@ ENV/
 ehthumbs.db
 Thumbs.db
 
-# Database files
-data/index/
-*.sqlite3
+# Database files (now tracked)
+# data/index/  # Uncommented to track database files
+# *.sqlite3    # Uncommented to track database files
 
 # Log files
 data/logs/
@@ -72,6 +72,5 @@ test_chroma_path/
 archive/
 
 # Data files that might be large or sensitive
-# Uncomment if you don't want to track these
-# data/html/
-# data/processed/
+data/html/
+data/processed/
