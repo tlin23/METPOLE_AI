@@ -8,7 +8,6 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 
-from app.embedder.embed import Embedder
 from app.retriever.ask import Retriever
 
 
@@ -19,7 +18,6 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../.
 router = APIRouter()
 
 # Initialize components
-embedder = Embedder()
 retriever = Retriever()
 
 
