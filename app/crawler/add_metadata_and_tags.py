@@ -119,7 +119,6 @@ def process_content_objects() -> List[Dict[str, Any]]:
             "page_name": chunk["page_name"],
             "section_header": chunk["section_header"],
             "content": chunk["content"],
-            "content_html": chunk["content_html"],
             "tags": tags,
         }
 

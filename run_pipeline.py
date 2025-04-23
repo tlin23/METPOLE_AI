@@ -77,7 +77,7 @@ def process_html_content() -> None:
     start_time = time.time()
     results = process_all_html_files(html_directory)
 
-    # Save results to JSON file for inspection
+    # Save results to JSON file
     json_output_path = os.path.join(output_directory, "extracted_content.json")
     with open(json_output_path, "w", encoding="utf-8") as f:
         import json
@@ -103,7 +103,6 @@ def process_html_content() -> None:
                     "page_name": page_name,
                     "section_header": section_header,
                     "content": chunk["content"],
-                    "content_html": chunk["content_html"],
                 }
 
                 all_chunks.append(chunk_object)
@@ -136,7 +135,6 @@ def process_html_content() -> None:
                 f"        'section_header': {json.dumps(chunk['section_header'])},\n"
             )
             f.write(f"        'content': {json.dumps(chunk['content'])},\n")
-            f.write(f"        'content_html': {json.dumps(chunk['content_html'])}\n")
             f.write("    },\n")
 
         f.write("]\n")

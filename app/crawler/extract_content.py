@@ -3,6 +3,7 @@ Module for extracting structured content from HTML files.
 """
 
 import os
+from bs4.element import Tag
 from bs4 import BeautifulSoup
 from typing import List, Dict, Any, Optional
 
@@ -60,92 +61,47 @@ def extract_page_title(soup: BeautifulSoup) -> str:
     return os.path.basename(soup.title.string) if soup.title else "Untitled Page"
 
 
+def is_block_level(tag: Tag) -> bool:
+    return tag.name in ["p", "li", "h1", "h2", "h3"]
+
+
 def extract_sections(soup: BeautifulSoup) -> List[Dict[str, Any]]:
-    """
-    Extract sections with headers and content from the HTML.
-
-    Args:
-        soup (BeautifulSoup): Parsed HTML.
-
-    Returns:
-        List[Dict[str, Any]]: List of sections with headers and content.
-    """
     sections = []
     current_section = None
 
-    # First, try to find the main content area
-    main_content = find_main_content_area(soup)
-
-    if main_content:
-        # Find all headers (h1, h2, h3) and content elements (p, li) within the main content
-        content_elements = main_content.find_all(["h1", "h2", "h3", "p", "li", "div"])
-    else:
-        # Fallback to searching the entire document
-        content_elements = soup.find_all(["h1", "h2", "h3", "p", "li"])
+    content_elements = soup.find_all(["h1", "h2", "h3", "p", "li", "div", "span"])
 
     for element in content_elements:
-        # Skip elements that are likely not part of the main content
         if should_skip_element(element):
             continue
 
-        # If it's a div, check if it contains paragraph text
-        if element.name == "div" and element.get_text(strip=True):
-            # Only process divs with specific classes that likely contain content
-            if not (
-                element.has_attr("class")
-                and any(
-                    cls in ["tyJCtd", "mGzaTb", "Depvyb", "baZpAe", "zfr3Q"]
-                    for cls in element.get("class", [])
-                )
-            ):
-                continue
-
-            # Skip if it's just a container with no direct text
-            if not any(child.name in ["p", "span"] for child in element.children):
-                continue
-
-        # If we find a header, start a new section
+        # New section if header
         if element.name in ["h1", "h2", "h3"]:
-            # If we have a current section with content, add it to the list
             if current_section and current_section["chunks"]:
                 sections.append(current_section)
-
-            # Start a new section
             current_section = {
                 "header": element.get_text(strip=True),
                 "header_html": str(element),
                 "header_level": int(element.name[1]),
                 "chunks": [],
             }
-        # If we have content and a current section, add it to the current section
-        elif current_section is not None:
-            # Skip empty content
-            if not element.get_text(strip=True):
-                continue
+            continue
 
-            # Create a chunk with the content
-            chunk = {
-                "content": element.get_text(strip=True),
-                "content_html": str(element),
-                "section_header": current_section["header"],
-            }
-            current_section["chunks"].append(chunk)
-        # If we have content but no current section, create a default section
-        elif element.get_text(strip=True):
-            current_section = {
-                "header": "Introduction",
-                "header_html": "<h2>Introduction</h2>",
-                "header_level": 2,
-                "chunks": [
-                    {
-                        "content": element.get_text(strip=True),
-                        "content_html": str(element),
-                        "section_header": "Introduction",
-                    }
-                ],
-            }
+        # Only extract if not nested inside a block we've already processed
+        if current_section is not None:
+            # Only add chunks if it's not just nested clutter
+            if element.name in ["p", "li"] or (
+                element.name in ["div", "span"] and not element.find(is_block_level)
+            ):
+                raw_text = element.get_text(separator=" ", strip=True)
+                if raw_text:
+                    current_section["chunks"].append(
+                        {
+                            "content": raw_text,
+                            "section_header": current_section["header"],
+                        }
+                    )
 
-    # Add the last section if it exists
     if current_section and current_section["chunks"]:
         sections.append(current_section)
 
@@ -196,6 +152,7 @@ def should_skip_element(element) -> bool:
     Returns:
         bool: True if the element should be skipped, False otherwise.
     """
+    return False
     # Skip empty elements
     if not element.get_text(strip=True):
         return True
@@ -259,23 +216,50 @@ def process_all_html_files(directory: str) -> Dict[str, Dict[str, Any]]:
     Returns:
         Dict[str, Dict[str, Any]]: Dictionary mapping file paths to structured content.
     """
-    results = {}
+    raw_results = {}
 
     for filename in os.listdir(directory):
         if filename.endswith(".html"):
             file_path = os.path.join(directory, filename)
             try:
-                results[file_path] = extract_structured_content(file_path)
+                raw_results[file_path] = extract_structured_content(file_path)
             except Exception as e:
                 print(f"Error processing {file_path}: {e}")
 
-    return results
+        # Deduplicate chunks across all pages/sections
+    deduped_results = {}
+    seen_chunks = set()
+
+    for file_path, page in raw_results.items():
+        deduped_sections = []
+        for section in page["sections"]:
+            deduped_chunks = []
+            for chunk in section["chunks"]:
+                key = f"{file_path}:{section['header']}:{chunk['content'].strip()}"
+                if key not in seen_chunks:
+                    seen_chunks.add(key)
+                    deduped_chunks.append(chunk)
+            if deduped_chunks:
+                deduped_sections.append({**section, "chunks": deduped_chunks})
+        deduped_results[file_path] = {**page, "sections": deduped_sections}
+
+    return deduped_results
 
 
 if __name__ == "__main__":
     # Example usage
     html_directory = "data/html"
+
+    output_directory = "data/processed"
+
     results = process_all_html_files(html_directory)
+
+    # Save results to JSON file
+    json_output_path = os.path.join(output_directory, "extracted_content.json")
+    with open(json_output_path, "w", encoding="utf-8") as f:
+        import json
+
+        json.dump(results, f, indent=2, ensure_ascii=False)
 
     # Print summary
     print(f"Processed {len(results)} HTML files")
