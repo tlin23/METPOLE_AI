@@ -74,3 +74,19 @@ archive/
 # Data files that might be large or sensitive
 data/html/
 data/processed/
+
+
+
+
+
+
+
+
+# BEGIN MANAGED CHROMA INDEX SECTION
+# Only include the latest index directory
+data/index/*
+!data/index/chroma.sqlite3
+!data/index/11f766eb-7fbb-4595-abfd-e13624aa4c44/
+# END MANAGED CHROMA INDEX SECTION
+
+

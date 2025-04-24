@@ -13,31 +13,31 @@ A project for crawling, processing, and retrieving content from the Metropole Ba
 
 1. Clone the repo and navigate to the folder:
 
-    ```bash
-    git clone https://github.com/your-username/METPOLE_AI.git
-    cd METPOLE_AI
-    ```
+   ```bash
+   git clone https://github.com/your-username/METPOLE_AI.git
+   cd METPOLE_AI
+   ```
 
 2. Create and activate a virtual environment:
 
-    ```bash
-    python -m venv venv
-    source venv/bin/activate  # On Windows: venv\Scripts\activate
-    ```
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
 
 3. Install dependencies:
 
-    ```bash
-    pip install -r requirements.txt
-    ```
+   ```bash
+   pip install -r requirements.txt
+   ```
 
 4. Create a `.env` file:
 
-    ```env
-    OPENAI_API_KEY=your-openai-api-key
-    CHROMA_DB_PATH=./data/index
-    SECRET_KEY=your-secret-key
-    ```
+   ```env
+   OPENAI_API_KEY=your-openai-api-key
+   CHROMA_DB_PATH=./data/index
+   SECRET_KEY=your-secret-key
+   ```
 
 ## 🗄️ Vector Store
 
@@ -54,6 +54,24 @@ To run a demo of the vector store:
 ```bash
 python -m app.vector_store.demo
 ```
+
+### Git Index Management
+
+The project includes a script to manage which Chroma index directories are tracked by Git. By default, only the latest index directory is tracked, which helps keep the repository size manageable.
+
+The script automatically:
+
+1. Identifies the most recently modified index directory
+2. Updates the `.gitignore` file to exclude all other index directories
+3. Ensures the `chroma.sqlite3` file is always tracked
+
+To manually update which index is tracked:
+
+```bash
+python update_git_index.py
+```
+
+This script is also configured as a pre-commit hook, so it runs automatically before each commit to ensure only the latest index is tracked.
 
 ## ▶️ Run the app
 
@@ -128,6 +146,7 @@ The application can be deployed to cloud services using the provided configurati
 ### Deployment Options
 
 1. **Render.com (Recommended)**
+
    - Backend: Docker-based web service
    - Frontend: Static site
    - Configuration: `render.yaml`
@@ -150,6 +169,7 @@ pip install -r requirements.txt
 ```
 
 The test script verifies:
+
 - Backend API connectivity
 - Crawling functionality
 - Querying and asking questions
@@ -159,4 +179,5 @@ The test script verifies:
 ### CI/CD
 
 The repository includes GitHub Actions workflows for continuous deployment:
+
 - `.github/workflows/deploy.yml`: Deploys both backend and frontend to Render
