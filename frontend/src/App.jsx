@@ -193,6 +193,11 @@ function App() {
                                   <br />
                                   <strong>Page:</strong>{" "}
                                   {chunk.metadata?.page_title || "Unknown"}
+                                  <br />
+                                  <strong>Text:</strong>{" "}
+                                  {chunk.text || "No text available"}
+                                  <br />
+                                  <strong>Source:</strong>{" "}
                                 </div>
                               ))}
                             </div>
