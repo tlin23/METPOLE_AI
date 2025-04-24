@@ -57,9 +57,11 @@ python -m app.vector_store.demo
 
 ### Git Index Management
 
-The project includes a script to manage which Chroma index directories are tracked by Git. By default, only the latest index directory is tracked, which helps keep the repository size manageable.
+The project includes scripts to manage which Chroma index directories are tracked by Git. By default, only the latest index directory is tracked, which helps keep the repository size manageable.
 
-The script automatically:
+#### Automatic Index Tracking
+
+The `update_git_index.py` script automatically:
 
 1. Identifies the most recently modified index directory
 2. Updates the `.gitignore` file to exclude all other index directories
@@ -72,6 +74,22 @@ python update_git_index.py
 ```
 
 This script is also configured as a pre-commit hook, so it runs automatically before each commit to ensure only the latest index is tracked.
+
+#### Removing Old Indexes from Git
+
+If you have old index directories that are already tracked by Git, you can use the `remove_old_indexes.py` script to remove them from Git tracking (while keeping them on your filesystem):
+
+```bash
+python remove_old_indexes.py
+```
+
+This script:
+
+1. Identifies all index directories currently tracked by Git
+2. Removes all directories except the latest one from Git tracking
+3. Keeps the files on your filesystem, so your application will still work
+
+After running this script, you'll need to commit the changes to complete the removal process.
 
 ## ▶️ Run the app
 
