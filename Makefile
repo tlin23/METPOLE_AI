@@ -63,11 +63,15 @@ format:
 
 # Run the crawler
 crawl:
-	$(PYTHON) -c "from app.crawler.crawl import recursive_crawl; recursive_crawl('$(START_URL)', max_pages=$(MAX_PAGES), save_to_files=True)"
+	$(PYTHON) app/crawler/crawl.py --start-url $(START_URL) --max-pages $(MAX_PAGES)
+
+# Extract text from html files
+extract:
+	$(PYTHON) app/crawler/extract_content.py
 
 # Run the embedding process
 embed:
-	$(PYTHON) -c "from app.embedder.embed_corpus import embed_corpus; from app.config import CHROMA_DB_PATH; embed_corpus(corpus_path='data/processed/metropole_corpus.json', chroma_path=CHROMA_DB_PATH, collection_name='metropole_documents')"
+	$(PYTHON) app/embedder/embed_corpus.py
 
 # Run the full pipeline
 pipeline:

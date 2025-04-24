@@ -8,7 +8,7 @@ import sys
 import json
 import time
 from pathlib import Path
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any
 
 # Add the project root to the Python path
 sys.path.append(str(Path(__file__).parent.parent.parent))
@@ -46,8 +46,8 @@ def load_corpus(corpus_path: str) -> List[Dict[str, Any]]:
 
 
 def embed_corpus(
-    corpus_path: str,
-    chroma_path: Optional[str] = None,
+    corpus_path: str = "./data/processed/metropole_corpus.json",
+    chroma_path: str = CHROMA_DB_PATH,
     collection_name: str = "metropole_documents",
     batch_size: int = 100,
 ) -> None:
@@ -61,10 +61,6 @@ def embed_corpus(
         batch_size (int): Number of documents to embed in each batch.
     """
     start_time = time.time()
-
-    # Get the Chroma DB path
-    if chroma_path is None:
-        chroma_path = CHROMA_DB_PATH
 
     # Create the directory if it doesn't exist
     Path(chroma_path).mkdir(parents=True, exist_ok=True)
@@ -161,38 +157,4 @@ def embed_corpus(
 
 
 if __name__ == "__main__":
-    import argparse
-
-    parser = argparse.ArgumentParser(
-        description="Embed the Metropole corpus using all-MiniLM-L6-v2."
-    )
-    parser.add_argument(
-        "--corpus-path",
-        type=str,
-        default="./data/processed/metropole_corpus.json",
-        help="Path to the corpus file",
-    )
-    parser.add_argument(
-        "--chroma-path", type=str, default=None, help="Path to the Chroma DB"
-    )
-    parser.add_argument(
-        "--collection-name",
-        type=str,
-        default="metropole_documents",
-        help="Name of the collection to store embeddings in",
-    )
-    parser.add_argument(
-        "--batch-size",
-        type=int,
-        default=100,
-        help="Number of documents to embed in each batch",
-    )
-
-    args = parser.parse_args()
-
-    embed_corpus(
-        corpus_path=args.corpus_path,
-        chroma_path=args.chroma_path,
-        collection_name=args.collection_name,
-        batch_size=args.batch_size,
-    )
+    embed_corpus()
