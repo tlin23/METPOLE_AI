@@ -5,7 +5,7 @@ import pprint
 
 retriever = Retriever()
 
-query = "Who is John Ashenhurst?"
-results = retriever.query(query, n_results=5)
+query = "Who are the board members?"
+results = retriever.query(query, n_results=10)
 
 pprint.pprint(results)

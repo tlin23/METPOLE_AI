@@ -192,6 +192,8 @@ class Retriever:
         # Start with the question
         prompt = f"Question: {question}\n\n"
 
+        prompt += """Based on the context provided below, please answer the question. Use only information that you deem relevant. Do not reference the specific chunks you used to formulate your answer. \n\n"""
+
         # Add the building content from the retrieved chunks
         prompt += "Building Content:\n"
         for i, chunk in enumerate(chunks):
@@ -202,27 +204,20 @@ class Retriever:
             )
 
             # Add source information if available
-            chunk_id = str(metadata.get("chunk_id", f"unknown-{i}"))
             page_title = str(metadata.get("page_title", "Unknown Page"))
             section = metadata.get("section_header", "")
-            url = metadata.get("url", "")
 
             # Build source info parts
-            source_parts = [f"ID: {chunk_id}"]
+            source_parts = []
             if section and isinstance(section, str):
                 source_parts.append(f"Section: {section}")
             if page_title:
                 source_parts.append(f"Page: {page_title}")
-            if url and isinstance(url, str):
-                source_parts.append(f"URL: {url}")
 
             # Join parts with commas
             source_info = f" ({', '.join(source_parts)})"
 
             prompt += f"Chunk {i+1}{source_info}:\n{text}\n\n"
-
-        # Add instructions for the model
-        prompt += """Based on the building content provided above, please answer the question. Do not reference the specific chunks you used to formulate your answer."""
 
         return prompt
 

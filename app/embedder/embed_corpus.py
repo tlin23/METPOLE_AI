@@ -123,7 +123,9 @@ def embed_corpus(
 
         # Extract data for this batch
         ids = [chunk["chunk_id"] for chunk in batch]
-        documents = [chunk["content"] for chunk in batch]
+        documents = [
+            f"[Tags: {', '.join(chunk['tags'])}]\n{chunk['content']}" for chunk in batch
+        ]
         metadatas = [
             {
                 "page_id": chunk["page_id"],
