@@ -8,6 +8,7 @@ import sys
 import json
 import time
 from pathlib import Path
+from collections import Counter
 from typing import Dict, List, Any
 
 # Add the project root to the Python path
@@ -43,6 +44,13 @@ def load_corpus(corpus_path: str) -> List[Dict[str, Any]]:
     except Exception as e:
         logger.error(f"Error loading corpus: {e}")
         raise
+
+
+def assert_unique_chunk_ids(corpus: List[Dict[str, Any]]):
+    ids = [chunk["chunk_id"] for chunk in corpus]
+    dupes = [id for id, count in Counter(ids).items() if count > 1]
+    if dupes:
+        raise ValueError(f"Duplicate chunk_id(s) found: {dupes}")
 
 
 def embed_corpus(
@@ -103,6 +111,7 @@ def embed_corpus(
 
     # Load the corpus
     corpus = load_corpus(corpus_path)
+    assert_unique_chunk_ids(corpus)
 
     # Prepare data for embedding
     total_chunks = len(corpus)

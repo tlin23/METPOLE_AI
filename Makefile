@@ -73,6 +73,9 @@ extract:
 embed:
 	$(PYTHON) app/embedder/embed_corpus.py
 
+retri:
+	$(PYTHON) test_retrieval.py
+
 # Run the full pipeline
 pipeline:
 	$(PYTHON) run_pipeline.py --start-url $(START_URL) --max-pages $(MAX_PAGES)

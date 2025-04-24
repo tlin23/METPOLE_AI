@@ -3,6 +3,18 @@ import json
 import hashlib
 from bs4 import BeautifulSoup
 import re
+from collections import Counter
+from keybert import KeyBERT
+import uuid
+
+
+def is_repetitive(text, threshold=0.3):
+    words = text.split()
+    if len(words) < 10:
+        return False
+    common = Counter(words)
+    most_common = common.most_common(1)[0]
+    return most_common[1] / len(words) > threshold
 
 
 def normalize(text: str) -> str:
@@ -21,12 +33,28 @@ def hash_id(text):
     return "chunk_" + hashlib.md5(normalized.encode("utf-8")).hexdigest()
 
 
-def extract_chunks_from_html(html, page_name, page_title, page_id, max_tokens=500):
+def extract_tags_with_keybert(text, model, num_tags=5):
+    text = text.strip()
+    if not text or len(text.split()) < 20:
+        return []
+    keywords = model.extract_keywords(
+        text,
+        keyphrase_ngram_range=(1, 2),
+        stop_words="english",
+        use_mmr=True,
+        diversity=0.7,
+        top_n=num_tags,
+    )
+    return [kw for kw, _ in keywords]
+
+
+def extract_chunks_from_html(
+    html, page_name, page_title, page_id, seen_hashes, max_tokens=500
+):
     soup = BeautifulSoup(html, "html.parser")
     chunks = []
     current_header = None
     current_text = ""
-    seen_hashes = set()
 
     def flush_chunk():
         nonlocal current_text
@@ -36,20 +64,23 @@ def extract_chunks_from_html(html, page_name, page_title, page_id, max_tokens=50
             current_text = ""
             return
 
-        # Hash the normalized version for deduplication
+        # Deduplicate
         chunk_hash = hash_id(content)
-
         if chunk_hash in seen_hashes:
             current_text = ""
             return
 
-        # Optional: reject overly repetitive chunks
+        # Reject overly repetitive content
+        if is_repetitive(content):
+            current_text = ""
+            return
+
+        # Reject low diversity (already exists)
         unique_words = set(normalize(content).split())
         if len(unique_words) < 5:
             current_text = ""
             return
 
-        # Add chunk
         chunks.append(
             {
                 "chunk_id": chunk_hash,
@@ -88,8 +119,12 @@ def extract_chunks_from_html(html, page_name, page_title, page_id, max_tokens=50
 def process_all_html_files(
     input_dir="data/html", output_path="data/processed/metropole_corpus.json"
 ):
+    print("Initializing KeyBERT with MiniLM model...")
+    model = KeyBERT(model="all-MiniLM-L6-v2")
+
     all_chunks = []
-    grouped_by_file = {}
+    page_ids = {}
+    seen_hashes = set()
 
     for root, _, files in os.walk(input_dir):
         for file in files:
@@ -101,20 +136,25 @@ def process_all_html_files(
                 html = f.read()
 
             page_name = file.replace(".html", "")
-            page_id = "page_" + hashlib.md5(page_name.encode("utf-8")).hexdigest()
+            page_id = page_ids.setdefault(page_name, f"page_{str(uuid.uuid4())[:8]}")
             page_title = (
                 f"metropoleballard.com - {page_name.split('_')[-1].capitalize()}"
             )
 
-            chunks = extract_chunks_from_html(html, page_name, page_title, page_id)
-            grouped_by_file[file_path] = chunks
-            all_chunks.extend(chunks)
+            raw_chunks = extract_chunks_from_html(
+                html, page_name, page_title, page_id, seen_hashes
+            )
+            for chunk in raw_chunks:
+                # Add unique chunk_id and tags
+                chunk["tags"] = extract_tags_with_keybert(chunk["content"], model)
+                all_chunks.append(chunk)
 
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(all_chunks, f, indent=2)
 
     print(f"[extract_content.py] Extracted {len(all_chunks)} chunks to {output_path}")
-    return grouped_by_file
+    return all_chunks
 
 
 if __name__ == "__main__":

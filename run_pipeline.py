@@ -60,38 +60,6 @@ def crawl_website(start_url: str, max_pages: Optional[int] = None) -> Dict[str, 
     return content_dict
 
 
-def add_metadata_and_tags() -> None:
-    """
-    Add metadata and tags to the content.
-    """
-    logger.info("Adding metadata and tags to content")
-
-    # Import the add_metadata_and_tags module
-    from app.crawler.add_metadata_and_tags import process_content_objects, save_to_json
-
-    # Process content objects
-    start_time = time.time()
-    processed_objects = process_content_objects()
-
-    # Save to JSON
-    output_path = os.path.join("data", "processed", "metropole_corpus.json")
-    save_to_json(processed_objects, output_path)
-
-    elapsed_time = time.time() - start_time
-
-    # Print summary
-    page_count = len(set(obj["page_id"] for obj in processed_objects))
-    tag_count = sum(len(obj["tags"]) for obj in processed_objects)
-
-    logger.info(f"Metadata and tagging complete in {elapsed_time:.2f} seconds")
-    logger.info(
-        f"Processed {len(processed_objects)} content chunks from {page_count} unique pages"
-    )
-    logger.info(
-        f"Generated {tag_count} tags (avg. {tag_count/len(processed_objects):.1f} per chunk)"
-    )
-
-
 def embed_corpus_data() -> None:
     """
     Embed the corpus and store in ChromaDB.
@@ -131,10 +99,7 @@ def run_pipeline(start_url: str, max_pages: Optional[int] = None) -> None:
     # Step 2: Process HTML content
     process_all_html_files()
 
-    # Step 3: Add metadata and tags
-    add_metadata_and_tags()
-
-    # Step 4: Embed the corpus
+    # Step 3: Embed the corpus
     embed_corpus_data()
 
     total_elapsed_time = time.time() - total_start_time
