@@ -49,7 +49,9 @@ class Retriever:
         )
 
         # Get the collection
-        self.collection = self.chroma_client.get_or_create_collection("documents")
+        self.collection = self.chroma_client.get_or_create_collection(
+            "metropole_documents"
+        )
 
     def query(self, query_text: str, n_results: int = 5) -> Dict[str, Any]:
         """Query the embeddings database for relevant documents.

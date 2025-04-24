@@ -85,3 +85,10 @@ clean:
 	find . -type f -name ".coverage" -delete
 	find . -type d -name "htmlcov" -exec rm -rf {} +
 	find . -type f -name "coverage.xml" -delete
+	find . -type f -name "repomix-output.xml" -delete
+
+repo-py-only:
+	npx repomix . --include '**/*.py'
+
+repo-py-js:
+	npx repomix . --include '**/*.py', 'frontend/src'
