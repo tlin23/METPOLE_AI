@@ -7,6 +7,7 @@ from pathlib import Path
 from openai import OpenAI
 from typing import Dict, List, Any
 
+from app.api.models import ChunkResult
 from app.config import OPENAI_API_KEY, CHROMA_DB_PATH
 from app.logging_config import get_logger
 
@@ -74,7 +75,7 @@ class Retriever:
         return dict(results)
 
     def generate_answer(
-        self, question: str, chunks: List[Any], model: str = "gpt-3.5-turbo"
+        self, question: str, chunks: List[ChunkResult], model: str = "gpt-3.5-turbo"
     ) -> Dict[str, Any]:
         """Generate an answer to a question using OpenAI's GPT model and retrieved chunks.
 
@@ -142,7 +143,7 @@ class Retriever:
             "source_info": source_info,
         }
 
-    def _prepare_source_info(self, chunks: List[Any]) -> str:
+    def _prepare_source_info(self, chunks: List[ChunkResult]) -> str:
         """Prepare formatted source information from chunks.
 
         Extracts metadata from chunks and formats it into a readable source citation.

@@ -3,9 +3,8 @@ API routes for the application.
 """
 
 from fastapi import APIRouter
-from pydantic import BaseModel
-from typing import List, Optional, Dict, Any
 
+from app.api.models import AskRequest, ChunkResult, AskResponse
 from app.retriever.ask import Retriever
 
 # Create router
@@ -13,29 +12,6 @@ router = APIRouter()
 
 # Initialize components
 retriever = Retriever()
-
-
-# Define models
-class AskRequest(BaseModel):
-    question: str
-    top_k: Optional[int] = 5
-
-
-class ChunkResult(BaseModel):
-    text: str
-    metadata: Optional[Dict[str, Any]] = None
-    distance: Optional[float] = None
-
-
-class AskResponse(BaseModel):
-    question: str
-    chunks: List[ChunkResult]
-    answer: Optional[str] = None
-    is_general_knowledge: Optional[bool] = False
-    contains_diy_advice: Optional[bool] = False
-    source_info: Optional[str] = None
-    success: bool
-    message: str
 
 
 @router.post("/ask", response_model=AskResponse)
