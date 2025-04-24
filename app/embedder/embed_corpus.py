@@ -81,12 +81,29 @@ def embed_corpus(
         path=chroma_path, settings=Settings(anonymized_telemetry=False)
     )
 
-    # Create or get the collection
-    collection = client.get_or_create_collection(
-        name=collection_name,
-        embedding_function=embedding_function,
-        metadata={"description": "Metropole corpus embeddings"},
-    )
+    # Check if the collection already exists and has documents
+    existing_collections = {col.name: col for col in client.list_collections()}
+    if collection_name in existing_collections:
+        collection = client.get_collection(collection_name)
+        count = collection.count()
+        if count > 0:
+            logger.info(
+                f"Deleting and recreating collection '{collection_name}' with {count} documents"
+            )
+            client.delete_collection(collection_name)
+            collection = client.create_collection(
+                name=collection_name,
+                embedding_function=embedding_function,
+                metadata={"description": "Metropole corpus embeddings"},
+            )
+        else:
+            collection._embedding_function = embedding_function
+    else:
+        collection = client.create_collection(
+            name=collection_name,
+            embedding_function=embedding_function,
+            metadata={"description": "Metropole corpus embeddings"},
+        )
 
     # Load the corpus
     corpus = load_corpus(corpus_path)
