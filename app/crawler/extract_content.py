@@ -72,9 +72,6 @@ def extract_sections(soup: BeautifulSoup) -> List[Dict[str, Any]]:
     content_elements = soup.find_all(["h1", "h2", "h3", "p", "li", "div", "span"])
 
     for element in content_elements:
-        if should_skip_element(element):
-            continue
-
         # New section if header
         if element.name in ["h1", "h2", "h3"]:
             if current_section and current_section["chunks"]:

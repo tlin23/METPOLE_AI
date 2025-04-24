@@ -1,114 +1,118 @@
-import { useState, useRef, useEffect } from 'react'
-import axios from 'axios'
-import './App.css'
-import styles from './App.styles.js'
+import { useState, useRef, useEffect } from "react";
+import axios from "axios";
+import "./App.css";
+import styles from "./App.styles.js";
 
 function App() {
-  const [messages, setMessages] = useState([])
-  const [inputValue, setInputValue] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [inputFocused, setInputFocused] = useState(false)
-  const [showSourceInfo, setShowSourceInfo] = useState(false)
-  const [sourceDisplayMode, setSourceDisplayMode] = useState('panel') // 'tooltip', 'panel', or 'footer'
-  const messagesEndRef = useRef(null)
+  const [messages, setMessages] = useState([]);
+  const [inputValue, setInputValue] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [inputFocused, setInputFocused] = useState(false);
+  const [showSourceInfo, setShowSourceInfo] = useState(false);
+  const messagesEndRef = useRef(null);
 
   // Welcome message
   const welcomeMessage = {
-    id: 'welcome',
-    text: 'Welcome to Metropole.AI! I can help answer questions about the building, maintenance, rules, and more. How can I assist you today?',
-    sender: 'bot',
+    id: "welcome",
+    text: "Welcome to Metropole.AI! I can help answer questions about the building, maintenance, rules, and more. How can I assist you today?",
+    sender: "bot",
     sourceInfo: null,
-    chunks: []
-  }
+    chunks: [],
+  };
 
   // Display welcome message on initial load
   useEffect(() => {
-    setMessages([welcomeMessage])
-  }, [])
+    setMessages([welcomeMessage]);
+  }, []);
 
   // Scroll to bottom of messages when messages change
   useEffect(() => {
-    scrollToBottom()
-  }, [messages])
+    scrollToBottom();
+  }, [messages]);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
   // Reset chat function
   const handleReset = () => {
-    setMessages([welcomeMessage])
-    setInputValue('')
-  }
+    setMessages([welcomeMessage]);
+    setInputValue("");
+  };
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    if (!inputValue.trim()) return
+    e.preventDefault();
+    if (!inputValue.trim()) return;
 
     const userMessage = {
       id: Date.now(),
       text: inputValue,
-      sender: 'user'
-    }
+      sender: "user",
+    };
 
     // Add user message to chat
-    setMessages(prevMessages => [...prevMessages, userMessage])
-    setInputValue('')
-    setIsLoading(true)
+    setMessages((prevMessages) => [...prevMessages, userMessage]);
+    setInputValue("");
+    setIsLoading(true);
 
     try {
       // Send request to backend API
-      const response = await axios.post('/api/ask', {
+      const response = await axios.post("/api/ask", {
         question: userMessage.text,
-        top_k: 5
-      })
+        top_k: 5,
+      });
 
       // Check if the request was successful
       if (response.data.success) {
         // Add bot response to chat
-        setMessages(prevMessages => [
+        setMessages((prevMessages) => [
           ...prevMessages,
           {
             id: Date.now(),
-            text: (response.data.answer || "I'm sorry, I couldn't find an answer to that.").replace(/\n+Source:.*/s, ''),  // sanitize trailing source text
-            sender: 'bot',
+            text: (
+              response.data.answer ||
+              "I'm sorry, I couldn't find an answer to that."
+            ).replace(/\n+Source:.*/s, ""), // sanitize trailing source text
+            sender: "bot",
             sourceInfo: response.data.source_info,
-            chunks: response.data.chunks || []
-          }
-        ])
+            chunks: response.data.chunks || [],
+          },
+        ]);
       } else {
         // Handle unsuccessful response
-        setMessages(prevMessages => [
+        setMessages((prevMessages) => [
           ...prevMessages,
           {
             id: Date.now(),
-            text: response.data.message || "Sorry, there was an error processing your request.",
-            sender: 'bot',
+            text:
+              response.data.message ||
+              "Sorry, there was an error processing your request.",
+            sender: "bot",
             sourceInfo: null,
-            chunks: []
-          }
-        ])
+            chunks: [],
+          },
+        ]);
       }
     } catch (error) {
-      console.error('Error calling API:', error)
+      console.error("Error calling API:", error);
       // Add error message to chat
-      setMessages(prevMessages => [
+      setMessages((prevMessages) => [
         ...prevMessages,
         {
           id: Date.now(),
           text: "Sorry, there was an error processing your request. Please try again.",
-          sender: 'bot'
-        }
-      ])
+          sender: "bot",
+        },
+      ]);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   // Toggle source info display
   const toggleSourceInfo = () => {
     setShowSourceInfo(!showSourceInfo);
-  }
+  };
 
   return (
     <div style={styles.container}>
@@ -127,10 +131,7 @@ function App() {
               Show Sources
             </label>
           </div>
-          <button
-            onClick={handleReset}
-            style={styles.resetButton}
-          >
+          <button onClick={handleReset} style={styles.resetButton}>
             Start Over
           </button>
         </div>
@@ -145,45 +146,60 @@ function App() {
               No messages yet. Start a conversation!
             </div>
           ) : (
-            messages.map(message => (
+            messages.map((message) => (
               <div
                 key={message.id}
                 style={{
                   ...styles.messageContainer,
-                  ...(message.sender === 'user' ? styles.messageRight : styles.messageLeft)
+                  ...(message.sender === "user"
+                    ? styles.messageRight
+                    : styles.messageLeft),
                 }}
               >
-                <div style={{ position: 'relative' }}>
+                <div style={{ position: "relative" }}>
                   <div
                     style={{
                       ...styles.messageBubble,
-                      ...(message.sender === 'user' ? styles.userBubble : styles.botBubble),
-                      ...(message.sender === 'bot' ? { whiteSpace: 'pre-wrap' } : {})
+                      ...(message.sender === "user"
+                        ? styles.userBubble
+                        : styles.botBubble),
+                      ...(message.sender === "bot"
+                        ? { whiteSpace: "pre-wrap" }
+                        : {}),
                     }}
                   >
                     {message.text}
                   </div>
 
                   {/* Source Information Display */}
-                  {message.sender === 'bot' && showSourceInfo && message.sourceInfo && (
-                    <>
-                      {/* Collapsible Panel Source Display */}
-                      {sourceDisplayMode === 'panel' && (
-                        <details style={styles.sourcePanel}>
-                          <summary style={styles.sourcePanelSummary}>Source Information</summary>
-                          <div style={styles.sourcePanelContent}>
-                            {message.chunks.map((chunk, index) => (
-                              <div key={index} style={styles.sourceChunk}>
-                                <strong>Chunk ID:</strong> {chunk.metadata?.chunk_id || 'Unknown'}<br />
-                                <strong>Section:</strong> {chunk.metadata?.section_header || 'N/A'}<br />
-                                <strong>Page:</strong> {chunk.metadata?.page_title || 'Unknown'}
-                              </div>
-                            ))}
-                          </div>
-                        </details>
-                      )}
-                    </>
-                  )}
+                  {message.sender === "bot" &&
+                    showSourceInfo &&
+                    message.sourceInfo && (
+                      <>
+                        {/* Collapsible Panel Source Display */}
+                        {
+                          <details style={styles.sourcePanel}>
+                            <summary style={styles.sourcePanelSummary}>
+                              Source Information
+                            </summary>
+                            <div style={styles.sourcePanelContent}>
+                              {message.chunks.map((chunk, index) => (
+                                <div key={index} style={styles.sourceChunk}>
+                                  <strong>Chunk ID:</strong>{" "}
+                                  {chunk.metadata?.chunk_id || "Unknown"}
+                                  <br />
+                                  <strong>Section:</strong>{" "}
+                                  {chunk.metadata?.section_header || "N/A"}
+                                  <br />
+                                  <strong>Page:</strong>{" "}
+                                  {chunk.metadata?.page_title || "Unknown"}
+                                </div>
+                              ))}
+                            </div>
+                          </details>
+                        }
+                      </>
+                    )}
                 </div>
               </div>
             ))
@@ -192,10 +208,7 @@ function App() {
         </div>
 
         {/* Input Form */}
-        <form
-          onSubmit={handleSubmit}
-          style={styles.form}
-        >
+        <form onSubmit={handleSubmit} style={styles.form}>
           <input
             type="text"
             value={inputValue}
@@ -205,7 +218,7 @@ function App() {
             placeholder="Ask a question about the building..."
             style={{
               ...styles.input,
-              ...(inputFocused ? styles.inputFocus : {})
+              ...(inputFocused ? styles.inputFocus : {}),
             }}
           />
           <button
@@ -213,15 +226,15 @@ function App() {
             disabled={isLoading}
             style={{
               ...styles.button,
-              ...(isLoading ? styles.buttonDisabled : {})
+              ...(isLoading ? styles.buttonDisabled : {}),
             }}
           >
-            {isLoading ? 'Sending...' : 'Send'}
+            {isLoading ? "Sending..." : "Send"}
           </button>
         </form>
       </main>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;
