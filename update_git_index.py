@@ -89,6 +89,9 @@ data/index/*
     if not new_section.endswith("\n"):
         new_section += "\n"
 
+    # Remove excessive blank lines at the end of the file
+    gitignore_content = gitignore_content.rstrip("\n") + "\n\n"
+
     # Check if the managed section already exists
     start_pos = gitignore_content.find(start_marker)
     end_pos = gitignore_content.find(end_marker)
@@ -96,13 +99,14 @@ data/index/*
     if start_pos != -1 and end_pos != -1:
         # Replace the existing section
         gitignore_content = (
-            gitignore_content[:start_pos]
+            gitignore_content[:start_pos].rstrip("\n")
+            + "\n\n"
             + new_section
-            + gitignore_content[end_pos + len(end_marker) :]
+            + gitignore_content[end_pos + len(end_marker) :].lstrip("\n")
         )
     else:
         # Append the new section
-        gitignore_content += new_section
+        gitignore_content = gitignore_content.rstrip("\n") + "\n\n" + new_section
 
     # Ensure the entire gitignore content ends with a newline
     if not gitignore_content.endswith("\n"):
