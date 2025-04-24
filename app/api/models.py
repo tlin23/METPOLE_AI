@@ -26,3 +26,4 @@ class AskResponse(BaseModel):
     source_info: Optional[str] = None
     success: bool
     message: str
+    prompt: Optional[str] = None

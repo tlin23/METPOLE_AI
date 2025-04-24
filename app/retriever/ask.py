@@ -54,7 +54,7 @@ class Retriever:
             "metropole_documents"
         )
 
-    def query(self, query_text: str, n_results: int = 5) -> Dict[str, Any]:
+    def query(self, query_text: str, n_results: int = 5) -> chromadb.QueryResult:
         """Query the embeddings database for relevant documents.
 
         Args:
@@ -72,7 +72,7 @@ class Retriever:
         )
 
         # Convert to a standard dictionary
-        return dict(results)
+        return results
 
     def generate_answer(
         self, question: str, chunks: List[ChunkResult], model: str = "gpt-3.5-turbo"
@@ -141,6 +141,7 @@ class Retriever:
             "is_general_knowledge": is_general_knowledge,
             "contains_diy_advice": contains_diy_advice,
             "source_info": source_info,
+            "prompt": prompt,
         }
 
     def _prepare_source_info(self, chunks: List[ChunkResult]) -> str:

@@ -43,7 +43,7 @@ def init_chroma_db():
 
     # Create a default collection if it doesn't exist
     collection = client.get_or_create_collection(
-        name="documents",
+        name="metropole_documents",
         metadata={"description": "Main document collection for MetPol AI"},
     )
 

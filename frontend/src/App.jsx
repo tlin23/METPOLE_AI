@@ -76,6 +76,7 @@ function App() {
             sender: "bot",
             sourceInfo: response.data.source_info,
             chunks: response.data.chunks || [],
+            prompt: response.data.prompt || "",
           },
         ]);
       } else {
@@ -182,6 +183,7 @@ function App() {
                             <summary style={styles.sourcePanelSummary}>
                               Source Information
                             </summary>
+                            Prompt: {message.prompt}
                             <div style={styles.sourcePanelContent}>
                               {message.chunks.map((chunk, index) => (
                                 <div key={index} style={styles.sourceChunk}>

@@ -5,7 +5,7 @@ import pprint
 
 retriever = Retriever()
 
-query = "What is metropole?"
+query = "Who is John Ashenhurst?"
 results = retriever.query(query, n_results=5)
 
 pprint.pprint(results)

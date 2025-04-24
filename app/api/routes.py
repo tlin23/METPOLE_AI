@@ -60,6 +60,7 @@ async def ask_question(request: AskRequest):
             source_info=answer_result["source_info"],
             success=True,
             message="Question answered successfully with AI-generated response",
+            prompt=answer_result["prompt"],
         )
 
     except Exception as e:
