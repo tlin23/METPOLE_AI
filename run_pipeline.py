@@ -60,92 +60,6 @@ def crawl_website(start_url: str, max_pages: Optional[int] = None) -> Dict[str, 
     return content_dict
 
 
-def process_html_content() -> None:
-    """
-    Process HTML files to extract structured content.
-    """
-    logger.info("Processing HTML files to extract structured content")
-
-    # Directory containing HTML files
-    html_directory = "data/html"
-
-    # Create output directory if it doesn't exist
-    output_directory = "data/processed"
-    os.makedirs(output_directory, exist_ok=True)
-
-    # Process all HTML files
-    start_time = time.time()
-    results = process_all_html_files(html_directory)
-
-    # Save results to JSON file
-    json_output_path = os.path.join(output_directory, "extracted_content.json")
-    with open(json_output_path, "w", encoding="utf-8") as f:
-        import json
-
-        json.dump(results, f, indent=2, ensure_ascii=False)
-
-    # Create Python objects for each page
-    all_chunks = []
-
-    for file_path, content in results.items():
-        page_title = content["title"]
-        page_name = os.path.basename(file_path).replace(".html", "")
-
-        # Process each section
-        for section in content["sections"]:
-            section_header = section["header"]
-
-            # Process each chunk in the section
-            for chunk in section["chunks"]:
-                # Create a structured object for each chunk
-                chunk_object = {
-                    "page_title": page_title,
-                    "page_name": page_name,
-                    "section_header": section_header,
-                    "content": chunk["content"],
-                }
-
-                all_chunks.append(chunk_object)
-
-    # Save all chunks to a Python file
-    py_output_path = os.path.join(output_directory, "content_objects.py")
-    with open(py_output_path, "w", encoding="utf-8") as f:
-        f.write('"""Generated content objects from HTML files."""\n\n')
-        f.write("# This file is auto-generated. Do not edit directly.\n\n")
-        f.write("content_objects = [\n")
-
-        # Remove duplicate chunks by tracking content we've seen
-        seen_content = set()
-        unique_chunks = []
-
-        for chunk in all_chunks:
-            # Create a key based on content to detect duplicates
-            content_key = f"{chunk['page_name']}:{chunk['section_header']}:{chunk['content'][:100]}"
-
-            if content_key not in seen_content:
-                seen_content.add(content_key)
-                unique_chunks.append(chunk)
-
-        # Write unique chunks to file
-        for chunk in unique_chunks:
-            f.write("    {\n")
-            f.write(f"        'page_title': {json.dumps(chunk['page_title'])},\n")
-            f.write(f"        'page_name': {json.dumps(chunk['page_name'])},\n")
-            f.write(
-                f"        'section_header': {json.dumps(chunk['section_header'])},\n"
-            )
-            f.write(f"        'content': {json.dumps(chunk['content'])},\n")
-            f.write("    },\n")
-
-        f.write("]\n")
-
-    elapsed_time = time.time() - start_time
-    logger.info(f"HTML processing complete in {elapsed_time:.2f} seconds")
-    logger.info(
-        f"Extracted {len(unique_chunks)} unique content chunks from {len(results)} HTML files"
-    )
-
-
 def add_metadata_and_tags() -> None:
     """
     Add metadata and tags to the content.
@@ -215,7 +129,7 @@ def run_pipeline(start_url: str, max_pages: Optional[int] = None) -> None:
     crawl_website(start_url, max_pages)
 
     # Step 2: Process HTML content
-    process_html_content()
+    process_all_html_files()
 
     # Step 3: Add metadata and tags
     add_metadata_and_tags()
