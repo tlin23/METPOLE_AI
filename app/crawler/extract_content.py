@@ -6,6 +6,32 @@ import re
 from collections import Counter
 from keybert import KeyBERT
 import uuid
+from ftfy import fix_text
+
+
+def clean_text(text: str) -> str:
+    # Fix garbled Unicode (e.g., \u2019 to ’)
+    text = fix_text(text)
+
+    # Remove invisible/control characters (e.g., zero-width space)
+    text = re.sub(r"[\u200b\u200e\u200f\u202a-\u202e]", "", text)
+
+    # Normalize smart punctuation
+    text = (
+        text.replace("“", '"')
+        .replace("”", '"')
+        .replace("‘", "'")
+        .replace("’", "'")
+        .replace("–", "-")
+        .replace("—", "-")
+        .replace("…", "...")
+    )
+
+    # Remove all newlines and surrounding whitespace
+    text = re.sub(r"\s*\n\s*", " ", text)  # flatten all newlines
+    text = re.sub(r"\s+", " ", text)  # collapse multiple spaces
+
+    return text.strip()
 
 
 def is_repetitive(text, threshold=0.3):
@@ -24,10 +50,6 @@ def normalize(text: str) -> str:
     return " ".join(text.split())  # Remove extra spaces
 
 
-def clean_text(text):
-    return " ".join(text.split())
-
-
 def hash_id(text):
     normalized = normalize(text)
     return "chunk_" + hashlib.md5(normalized.encode("utf-8")).hexdigest()
@@ -35,7 +57,7 @@ def hash_id(text):
 
 def extract_tags_with_keybert(text, model, num_tags=5):
     text = text.strip()
-    if not text or len(text.split()) < 20:
+    if not text or len(text.split()) < 10:
         return []
     keywords = model.extract_keywords(
         text,
@@ -60,7 +82,7 @@ def extract_chunks_from_html(
         nonlocal current_text
         content = current_text.strip()
 
-        if not content or len(content) < 50:
+        if not content or len(content) < 20:
             current_text = ""
             return
 
@@ -88,7 +110,7 @@ def extract_chunks_from_html(
                 "page_name": page_name,
                 "page_title": page_title,
                 "section_header": current_header or "No header",
-                "content": content,
+                "content": clean_text(content),
                 "tags": [],
             }
         )
@@ -151,7 +173,7 @@ def process_all_html_files(
 
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(all_chunks, f, indent=2)
+        json.dump(all_chunks, f, indent=2, ensure_ascii=False)
 
     print(f"[extract_content.py] Extracted {len(all_chunks)} chunks to {output_path}")
     return all_chunks
