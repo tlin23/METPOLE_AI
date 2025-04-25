@@ -80,5 +80,5 @@ data/processed/
 # Only include the latest index directory
 data/index/*
 !data/index/chroma.sqlite3
-!data/index/5a7a590a-035d-4824-af00-504d40e46b5d/
+!data/index/d12be60d-0c19-4592-999a-325151da68c9/
 # END MANAGED CHROMA INDEX SECTION
