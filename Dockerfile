@@ -26,5 +26,8 @@ ENV CHROMA_DB_PATH=/data/index
 # Expose port
 EXPOSE 8000
 
+# Include pregenerated ChromaDB index
+COPY data/index /app/data/index
+
 # Command to run the application
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

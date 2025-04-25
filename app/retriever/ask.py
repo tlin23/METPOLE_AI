@@ -54,6 +54,8 @@ class Retriever:
             "metropole_documents"
         )
 
+        logger.info(f"Collection loaded: {self.collection.count()} documents found")
+
     def query(self, query_text: str, n_results: int = 5) -> chromadb.QueryResult:
         """Query the embeddings database for relevant documents.
 

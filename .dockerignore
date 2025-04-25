@@ -38,10 +38,12 @@ venv/
 ENV/
 env/
 
-# Data directories (mounted as volumes)
-data/html/
-data/logs/
-data/processed/
+# Ignore all data except index and processed corpus
+data/*
+!data/index/
+!data/index/**
+!data/processed/
+!data/processed/metropole_corpus.json
 
 # Docker
 Dockerfile
