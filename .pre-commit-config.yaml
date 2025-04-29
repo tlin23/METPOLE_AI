@@ -1,4 +1,14 @@
 repos:
+  - repo: local
+    hooks:
+      - id: manage-git-index
+        name: Manage Git Index and .gitignore
+        description: Updates .gitignore and removes old indexes from Git
+        entry: python manage_git_index.py
+        language: python
+        pass_filenames: false
+        always_run: true
+
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
@@ -23,14 +33,3 @@ repos:
     hooks:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix]
-
-  # Custom local hooks
-  - repo: local
-    hooks:
-      - id: update-git-index
-        name: Update Git Index
-        description: Updates .gitignore to only include the latest Chroma index directory
-        entry: python update_git_index.py
-        language: python
-        pass_filenames: false
-        always_run: true
