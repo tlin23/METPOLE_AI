@@ -99,3 +99,13 @@ repo-py:
 
 repo-py-js:
 	npx repomix . --include '**/*.py', 'frontend/src'
+
+# Rebuild the virtual environment using Python 3.11
+reset-env:
+	@echo "🚨 Resetting Python 3.11 environment..."
+	rm -rf venv
+	python3.11 -m venv venv
+	source venv/bin/activate && \
+	pip install --upgrade pip setuptools wheel && \
+	pip install -r requirements.txt
+	@echo "✅ Environment reset complete!"
