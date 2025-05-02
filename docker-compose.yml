@@ -1,42 +1,27 @@
-version: '3.8'
+version: "3.9"
 
 services:
-  app:
+  backend:
     build:
       context: .
       dockerfile: Dockerfile
-    ports:
-      - "8000:8000"
+    container_name: metpol-backend
     volumes:
-      - chroma_data:/data/index
-      - ./data/html:/app/data/html
-      - ./data/processed:/app/data/processed
-      - ./data/logs:/app/data/logs
+      - ./app/data:/app/app/data  # Persist embeddings/index
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - CHROMA_DB_PATH=/data/index
-      - SECRET_KEY=${SECRET_KEY:-default_secret_key}
+      - CHROMA_DB_PATH=/app/app/data/index
+    ports:
+      - "8000:8000"
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
 
-  # Frontend service
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+    container_name: metpol-frontend
+    environment:
+      - BACKEND_API_URL=http://localhost:8000
     ports:
       - "3000:80"
-    depends_on:
-      - app
-    environment:
-      - BACKEND_API_URL=http://app:8000
     restart: unless-stopped
-
-volumes:
-  chroma_data:
-    driver: local

@@ -5,6 +5,8 @@ from contextlib import asynccontextmanager
 import uvicorn
 from pathlib import Path
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from app.api.routes import router as api_router
 from app.vector_store.init_chroma import init_chroma_db
 
@@ -62,13 +64,15 @@ app.add_middleware(
 # Include API routes
 app.include_router(api_router, prefix="/api")
 
+# Serve React static files
+frontend_path = os.path.join(os.path.dirname(__file__), "frontend", "dist")
+app.mount("/", StaticFiles(directory=frontend_path, html=True), name="static")
 
+
+# Serve index.html on root
 @app.get("/")
-def read_root():
-    return {"message": "Hello World"}
-
-
-# The startup event is now handled by the lifespan context manager above
+async def serve_index():
+    return FileResponse(os.path.join(frontend_path, "index.html"))
 
 
 if __name__ == "__main__":

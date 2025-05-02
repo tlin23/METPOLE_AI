@@ -1,37 +1,15 @@
 services:
-  # Backend API service
   - type: web
-    name: metpol-ai-backend
-    env: docker
-    region: oregon
-    plan: standard
+    name: metpol-ai
+    runtime: docker
+    repo: https://github.com/tlin23/METPOLE_AI
     branch: main
-    dockerfilePath: ./Dockerfile
-    dockerContext: .
-    numInstances: 1
-    healthCheckPath: /
+    plan: free
+    dockerContext: . # root with your unified Dockerfile
     envVars:
-      - key: OPENAI_API_KEY
-        sync: false
-      - key: SECRET_KEY
-        generateValue: true
       - key: CHROMA_DB_PATH
-        value: /data/index
+        value: /app/data/index
     disk:
-      name: data
-      mountPath: /data
-      sizeGB: 10
-
-  # Frontend static site
-  - type: web
-    name: metpol-ai-frontend
-    env: docker
-    region: oregon
-    plan: standard
-    branch: main
-    dockerfilePath: ./frontend/Dockerfile
-    dockerContext: ./frontend
-    numInstances: 1
-    envVars:
-      - key: BACKEND_API_URL
-        value: https://metpol-ai-backend.onrender.com
+      name: metpol-data
+      mountPath: /app/data
+      sizeGB: 1

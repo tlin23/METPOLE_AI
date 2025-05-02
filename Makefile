@@ -86,6 +86,9 @@ clean:
 	find . -type f -name "coverage.xml" -delete
 	find . -type f -name "repomix-output.xml" -delete
 
+repo:
+	npx repomix .
+
 repo-py:
 	npx repomix . --include '**/*.py'
 

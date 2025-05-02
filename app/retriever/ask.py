@@ -32,14 +32,14 @@ class Retriever:
     and generate answers to user questions using OpenAI's language models.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, chroma_path: str = None) -> None:
         """Initialize the retriever with ChromaDB connection.
 
         Sets up connection to the ChromaDB vector database and initializes
-        the documents collection.
+        the documents collection. Allows overriding path for testing.
         """
-        # Get the path for the Chroma database
-        self.chroma_db_path = CHROMA_DB_PATH
+        # Allow override from parameter or fallback to env
+        self.chroma_db_path = chroma_path or CHROMA_DB_PATH
 
         # Create the directory if it doesn't exist
         Path(self.chroma_db_path).mkdir(parents=True, exist_ok=True)

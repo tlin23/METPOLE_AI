@@ -1,84 +1,59 @@
-# Git
-.git
-.gitignore
-
-# Python
+# Byte-compiled / cache files
 __pycache__/
 *.py[cod]
 *$py.class
+
+# C extensions
 *.so
-.Python
-env/
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-*.egg-info/
-.installed.cfg
-*.egg
-.pytest_cache/
-.coverage
+
+# Virtual environments
+.venv/
+venv/
+
+# Jupyter Notebooks
+*.ipynb
+
+# VS Code settings
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Logs and coverage
+*.log
+coverage/
 htmlcov/
+*.cover
+*.py,cover
+.hypothesis/
+
+# Python test and coverage
+.pytest_cache/
 .tox/
 .nox/
-.hypothesis/
-.coverage.*
-coverage.xml
-*.cover
+.cache/
 
-# Virtual Environment
-venv/
-ENV/
-env/
+# Local env and config
+.env
+.env.*
 
-# Ignore all data except index and processed corpus
-data/*
-!data/index/
-!data/index/**
-!data/processed/
-!data/processed/metropole_corpus.json
+# Build artifacts
+build/
+dist/
+*.egg-info/
 
-# Docker
-Dockerfile
-docker-compose.yml
-.dockerignore
+# Frontend build output
+frontend/node_modules/
+frontend/dist/
 
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
+# Data output
+app/data/html/
+app/data/processed/
+app/data/logs/
 
-# Documentation
-README.md
-CONTRIBUTING.md
-DEPLOYMENT.md
-planning docs/
-
-# Tests
-tests/
-# test_chroma_path/  # Uncommented to include test database files
-pytest.ini
-run_tests.py
-test_deployment.py
-
-# Archive
-archive/
-
-# Deployment configs
-render.yaml
-fly.toml
-
-# Misc
-.DS_Store
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+# Other
+repomix-output.xml
