@@ -93,17 +93,22 @@ def run_pipeline(start_url: str, max_pages: Optional[int] = None) -> None:
     logger.info("Starting Metropole.AI pipeline")
     total_start_time = time.time()
 
-    # Step 1: Crawl the website
-    crawl_website(start_url, max_pages)
+    try:
+        # Step 1: Crawl the website
+        crawl_website(start_url, max_pages)
 
-    # Step 2: Process HTML content
-    process_all_html_files()
+        # Step 2: Process HTML content
+        process_all_html_files()
 
-    # Step 3: Embed the corpus
-    embed_corpus_data()
+        # Step 3: Embed the corpus
+        embed_corpus_data()
 
-    total_elapsed_time = time.time() - total_start_time
-    logger.info(f"Pipeline complete! Total time: {total_elapsed_time:.2f} seconds")
+        total_elapsed_time = time.time() - total_start_time
+        logger.info(f"Pipeline complete! Total time: {total_elapsed_time:.2f} seconds")
+
+    except Exception:
+        logger.exception("Pipeline failed due to an unexpected error.")
+        raise
 
 
 if __name__ == "__main__":

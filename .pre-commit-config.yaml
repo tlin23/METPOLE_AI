@@ -9,6 +9,14 @@ repos:
         pass_filenames: false
         always_run: true
 
+      - id: run-pytest
+        name: Run Pytest before commit
+        description: Run the test suite to prevent regressions
+        entry: ./run_pytest_with_env.sh
+        language: script
+        pass_filenames: false
+        always_run: true
+
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:

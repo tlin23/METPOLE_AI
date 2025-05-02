@@ -75,6 +75,9 @@ archive/
 data/html/
 data/processed/
 
+tests/temp_html/
+tests/*.json
+
 
 
 # BEGIN MANAGED CHROMA INDEX SECTION
