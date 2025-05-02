@@ -10,11 +10,9 @@ import logging
 import sys
 from pathlib import Path
 from logging.handlers import RotatingFileHandler
+from app.config import FEEDBACK_LOG_DIR
 
-
-# Create logs directory if it doesn't exist
-LOG_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "logs")
-Path(LOG_DIR).mkdir(parents=True, exist_ok=True)
+Path(FEEDBACK_LOG_DIR).mkdir(parents=True, exist_ok=True)
 
 
 # Configure the root logger
@@ -78,7 +76,7 @@ def configure_logging(
 logger = configure_logging(
     logger_name="metropole_ai",
     log_level=logging.INFO,
-    log_file=os.path.join(LOG_DIR, "metropole_ai.log"),
+    log_file=os.path.join(FEEDBACK_LOG_DIR, "metropole_ai.log"),
 )
 
 

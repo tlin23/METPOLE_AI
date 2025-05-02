@@ -1,11 +1,5 @@
-import sys
 import json
 from unittest.mock import patch, MagicMock
-from pathlib import Path
-
-# Only needed if running manually; ignored in real pytest discovery
-if __name__ == "__main__":
-    sys.path.append(str(Path(__file__).resolve().parents[2]))
 
 from app.crawler import extract_content
 

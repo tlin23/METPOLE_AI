@@ -50,7 +50,7 @@ Thank you for your interest in contributing to Metropole.AI! This document provi
 
    ```env
    OPENAI_API_KEY=your-openai-api-key
-   CHROMA_DB_PATH=./data/index
+   CHROMA_DB_PATH=./app/data/index
    SECRET_KEY=your-secret-key
    ```
 
@@ -244,6 +244,7 @@ The project includes a comprehensive test suite. For more details, see [tests/RE
 The project is organized into the following directories:
 
 - **app/**: Main application code
+
   - **api/**: FastAPI routes and API endpoints
   - **crawler/**: Web crawling and content extraction
   - **embedder/**: Text embedding and vector storage
@@ -251,7 +252,8 @@ The project is organized into the following directories:
   - **utils/**: Utility functions
   - **vector_store/**: Vector database initialization and demo
 
-- **data/**: Data storage
+- **app/data/**: Data storage
+
   - **html/**: Raw HTML files
   - **processed/**: Processed content and corpus
   - **index/**: Vector database files

@@ -1,11 +1,7 @@
-import sys
 import json
 import pytest
 from unittest.mock import patch, MagicMock
-from pathlib import Path
 
-# Add project root to Python path
-sys.path.append(str(Path(__file__).resolve().parents[2]))
 
 from app.embedder.embed_corpus import load_corpus, assert_unique_chunk_ids, embed_corpus
 

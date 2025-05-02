@@ -147,7 +147,7 @@ def recursive_crawl(
 
     # Create data directory if saving to files
     if save_to_files:
-        os.makedirs("data/html", exist_ok=True)
+        os.makedirs("app/data/html", exist_ok=True)
 
     page_count = 0
 
@@ -183,7 +183,7 @@ def recursive_crawl(
             if not filename.endswith(".html"):
                 filename += ".html"
 
-            with open(f"data/html/{filename}", "w", encoding="utf-8") as f:
+            with open(f"app/data/html/{filename}", "w", encoding="utf-8") as f:
                 f.write(html_content)
 
         # Parse the HTML

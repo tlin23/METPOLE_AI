@@ -35,13 +35,13 @@ A project for crawling, processing, and retrieving content from the Metropole Ba
 
    ```env
    OPENAI_API_KEY=your-openai-api-key
-   CHROMA_DB_PATH=./data/index
+   CHROMA_DB_PATH=./app/data/index
    SECRET_KEY=your-secret-key
    ```
 
 ## 🗄️ Vector Store
 
-The project uses Chroma as a persistent vector store for embeddings. The vector store is initialized at `./data/index` by default, but this can be changed in the `.env` file.
+The project uses Chroma as a persistent vector store for embeddings. The vector store is initialized at `./app/data/index` by default, but this can be changed in the `.env` file.
 
 To initialize the vector store:
 

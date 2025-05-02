@@ -1,10 +1,5 @@
-import sys
 import pytest
 from unittest.mock import MagicMock, patch
-from pathlib import Path
-
-# Add project root to Python path for local test running
-sys.path.append(str(Path(__file__).resolve().parents[2]))
 
 from app.api.models import ChunkResult
 from app.retriever.ask import Retriever

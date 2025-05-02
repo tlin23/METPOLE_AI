@@ -1,9 +1,4 @@
-import sys
 from unittest.mock import patch
-from pathlib import Path
-
-# Add project root to Python path when running locally
-sys.path.append(str(Path(__file__).resolve().parents[2]))
 
 from app.crawler import crawl
 

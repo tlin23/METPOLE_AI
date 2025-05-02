@@ -54,7 +54,7 @@ def assert_unique_chunk_ids(corpus: List[Dict[str, Any]]):
 
 
 def embed_corpus(
-    corpus_path: str = "./data/processed/metropole_corpus.json",
+    corpus_path: str = "./app/data/processed/metropole_corpus.json",
     chroma_path: str = CHROMA_DB_PATH,
     collection_name: str = "metropole_documents",
     batch_size: int = 100,

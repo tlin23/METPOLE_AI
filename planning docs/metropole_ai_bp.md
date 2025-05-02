@@ -7,6 +7,7 @@ This blueprint breaks down the project into a series of safe, iterative chunks. 
 ### 🔨 PHASE 1: Project Scaffolding & Setup
 
 **Chunk 1: Initialize Local Dev Environment**
+
 - Create a Python virtual environment
 - Install required packages: `requests`, `beautifulsoup4`, `chromadb`, `fastapi`, `keybert`, `uvicorn`, `openai`, `python-dotenv`
 - Create `.env` for secrets (e.g. OpenAI key)
@@ -18,6 +19,7 @@ You are a Python developer. Set up a new virtual environment and install the fol
 
 **Chunk 2: Project Directory Structure**
 Create the following scaffold:
+
 ```
 metropole_ai/
 ├── app/
@@ -26,7 +28,7 @@ metropole_ai/
 │   ├── embedder/
 │   ├── retriever/
 │   └── utils/
-├── data/
+│   └── data/
 ├── .env
 ├── main.py
 └── requirements.txt
@@ -71,7 +73,7 @@ Write a test suite to validate metropole_corpus.json. Check required fields exis
 **Chunk 7: Setup Chroma Index**
 
 ```prompt
-Create a Chroma persistent vector store. Add a script that initializes a new index and connects it to your FastAPI backend. Use a local file path (e.g., ./data/index).
+Create a Chroma persistent vector store. Add a script that initializes a new index and connects it to your FastAPI backend. Use a local file path (e.g., ./app/data/index).
 ```
 
 **Chunk 8: Embed Chunks**

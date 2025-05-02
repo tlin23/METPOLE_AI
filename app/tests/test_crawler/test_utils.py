@@ -1,9 +1,4 @@
-import sys
-from pathlib import Path
 from unittest.mock import MagicMock
-
-# Add project root to Python path (only needed if running outside pytest)
-sys.path.append(str(Path(__file__).resolve().parents[2]))
 
 from app.crawler import utils
 

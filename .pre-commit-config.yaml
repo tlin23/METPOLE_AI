@@ -10,10 +10,10 @@ repos:
         always_run: true
 
       - id: run-pytest
-        name: Run Pytest before commit
-        description: Run the test suite to prevent regressions
-        entry: ./run_pytest_with_env.sh
-        language: script
+        name: Run Make Test
+        description: Run the test suite using Makefile to prevent regressions
+        entry: make test
+        language: system
         pass_filenames: false
         always_run: true
 
@@ -24,7 +24,7 @@ repos:
       - id: end-of-file-fixer
       - id: check-yaml
       - id: check-added-large-files
-        exclude: "^data/index/"
+        exclude: "^app/data/index/"
       - id: check-merge-conflict
       - id: debug-statements
       - id: mixed-line-ending

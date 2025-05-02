@@ -14,7 +14,7 @@ from app.crawler.utils import (
 
 
 def process_all_html_files(
-    input_dir="data/html", output_path="data/processed/metropole_corpus.json"
+    input_dir="app/data/html", output_path="app/data/processed/metropole_corpus.json"
 ):
     print("Initializing KeyBERT with MiniLM model...")
     model = KeyBERT(model="all-MiniLM-L6-v2")
@@ -72,8 +72,8 @@ def process_all_html_files(
 
 
 if __name__ == "__main__":
-    html_directory = "data/html"
-    output_directory = "data/processed"
+    html_directory = "app/data/html"
+    output_directory = "app/data/processed"
     os.makedirs(output_directory, exist_ok=True)
     output_file = os.path.join(output_directory, "metropole_corpus.json")
     process_all_html_files(html_directory, output_file)

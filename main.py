@@ -11,10 +11,6 @@ from app.vector_store.init_chroma import init_chroma_db
 # Load environment variables
 load_dotenv()
 
-# Set default Chroma DB path if not in environment
-if not os.getenv("CHROMA_DB_PATH"):
-    os.environ["CHROMA_DB_PATH"] = "./data/index"
-
 
 # Define lifespan context manager
 @asynccontextmanager

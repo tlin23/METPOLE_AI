@@ -8,7 +8,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-INDEX_DIR = Path("./data/index")
+INDEX_DIR = Path("./app/data/index")
 GITIGNORE_PATH = Path("./.gitignore")
 
 
@@ -52,8 +52,8 @@ def update_gitignore(latest_dir):
     new_section = f"""
 {start_marker}
 # Only include the latest index directory
-data/index/*
-!data/index/chroma.sqlite3
+app/data/index/*
+!app/data/index/chroma.sqlite3
 !{latest_dir_relative}/
 {end_marker}
 """
@@ -88,14 +88,15 @@ data/index/*
 
 def remove_old_indexes_from_git(latest_dir_name):
     result = subprocess.run(
-        ["git", "ls-files", "data/index/"], capture_output=True, text=True, check=True
+        ["git", "ls-files", "app/data/index/"],
+        capture_output=True,
+        text=True,
+        check=True,
     )
     tracked_files = result.stdout.strip().split("\n")
     tracked_dirs = set()
 
-    uuid_pattern = (
-        r"data/index/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/"
-    )
+    uuid_pattern = r"app/data/index/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/"
 
     for file_path in tracked_files:
         match = re.match(uuid_pattern, file_path)
@@ -108,7 +109,7 @@ def remove_old_indexes_from_git(latest_dir_name):
         return False
 
     for dir_name in dirs_to_remove:
-        dir_path = f"data/index/{dir_name}"
+        dir_path = f"app/data/index/{dir_name}"
         print(f"Removing {dir_path} from Git tracking...")
         subprocess.run(["git", "rm", "--cached", "-r", dir_path], check=True)
 

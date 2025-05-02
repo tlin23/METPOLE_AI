@@ -1,6 +1,8 @@
 # Metropole.AI Makefile
 # This file defines common development tasks
 
+
+
 .PHONY: run test lint format embed crawl serve clean help
 
 # Default Python interpreter
@@ -10,8 +12,9 @@ PYTHON := python3
 START_URL := https://www.metropoleballard.com/home
 MAX_PAGES := 50
 
-# Default test settings
-TEST_PATH := tests/
+# Load environment variables from .env
+include .env
+export
 
 help:
 	@echo "Metropole.AI Makefile"
@@ -39,15 +42,7 @@ serve:
 
 # Run all tests
 test:
-	$(PYTHON) run_tests.py -v
-
-# Run unit tests only
-test-unit:
-	$(PYTHON) run_tests.py -v -m unit
-
-# Run tests with coverage
-test-cov:
-	$(PYTHON) run_tests.py -v -c --html-report
+	PYTHONPATH=. ./venv/bin/python -m pytest
 
 # Run linting checks
 lint:
@@ -63,19 +58,19 @@ format:
 
 # Run the crawler
 crawl:
-	$(PYTHON) app/crawler/crawl.py --start-url $(START_URL) --max-pages $(MAX_PAGES)
+	python3 -m app.crawler.crawl --start-url $(START_URL) --max-pages $(MAX_PAGES)
 
 # Extract text from html files
 extract:
-	$(PYTHON) app/crawler/extract_content.py
+	python3 -m app.crawler.extract_content
 
 # Run the embedding process
 embed:
-	$(PYTHON) app/embedder/embed_corpus.py
+	python3 -m app.embedder.embed_corpus
 
 # Run the full pipeline
 pipeline:
-	$(PYTHON) run_pipeline.py --start-url $(START_URL) --max-pages $(MAX_PAGES)
+	python3 -m app.run_pipeline --start-url $(START_URL) --max-pages $(MAX_PAGES)
 
 # Clean up cache and temporary files
 clean:

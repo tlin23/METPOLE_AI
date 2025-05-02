@@ -13,13 +13,9 @@ Usage:
 """
 
 import os
-import sys
 import argparse
 import time
 from typing import Dict, Optional
-
-# Add the project root to the Python path
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 # Import app modules
 from app.logging_config import get_logger
@@ -47,7 +43,7 @@ def crawl_website(start_url: str, max_pages: Optional[int] = None) -> Dict[str, 
     logger.info(f"Max pages: {max_pages if max_pages is not None else 'unlimited'}")
 
     # Create data directory if it doesn't exist
-    os.makedirs("data/html", exist_ok=True)
+    os.makedirs("app/data/html", exist_ok=True)
 
     # Crawl the website
     start_time = time.time()
@@ -67,7 +63,7 @@ def embed_corpus_data() -> None:
     logger.info("Embedding corpus data")
 
     # Path to the corpus file
-    corpus_path = os.path.join("data", "processed", "metropole_corpus.json")
+    corpus_path = os.path.join("app", "data", "processed", "metropole_corpus.json")
 
     # Embed the corpus
     start_time = time.time()
