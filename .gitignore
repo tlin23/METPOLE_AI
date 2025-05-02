@@ -78,6 +78,7 @@ data/processed/
 tests/temp_html/
 tests/*.json
 
+repomix-output.xml
 
 
 # BEGIN MANAGED CHROMA INDEX SECTION
