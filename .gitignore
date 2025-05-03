@@ -82,9 +82,11 @@ repomix-output.xml
 
 
 
+
+
 # BEGIN MANAGED CHROMA INDEX SECTION
 # Only include the latest index directory
 app/data/index/*
 !app/data/index/chroma.sqlite3
-!app/data/index/aa1e30dc-7ff2-4f49-aa83-304d4dea78b3/
+!app/data/index/0c20bfe2-1b12-4efe-99fd-a9f24315e110/
 # END MANAGED CHROMA INDEX SECTION
