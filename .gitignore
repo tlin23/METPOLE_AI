@@ -79,11 +79,3 @@ tests/temp_html/
 tests/*.json
 
 repomix-output.xml
-
-
-# BEGIN MANAGED CHROMA INDEX SECTION
-# Only include the latest index directory
-backend/data/index/*
-!backend/data/index/chroma.sqlite3
-!backend/data/index/a08ae816-29c3-4121-9910-2d563f98e8fd/
-# END MANAGED CHROMA INDEX SECTION
