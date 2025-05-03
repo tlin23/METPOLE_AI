@@ -87,7 +87,7 @@ clean:
 	find . -type f -name "repomix-output.xml" -delete
 
 repo:
-	npx repomix .
+	npx repomix . --ignore '**/*.md'
 
 repo-py:
 	npx repomix . --include '**/*.py'

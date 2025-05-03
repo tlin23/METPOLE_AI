@@ -5,10 +5,20 @@ services:
     repo: https://github.com/tlin23/METPOLE_AI
     branch: main
     plan: free
-    dockerContext: . # root with your unified Dockerfile
+    dockerContext: .
     envVars:
       - key: CHROMA_DB_PATH
         value: /app/data/index
+      - key: OPENAI_API_KEY
+        sync: false # Set manually in Render dashboard for security
+      - key: FEEDBACK_LOG_DIR
+        value: app/data/logs
+      - key: FEEDBACK_LOG_FILE
+        value: feedback.jsonl
+      - key: FEEDBACK_LOG_MAX_SIZE_MB
+        value: "10"
+      - key: FEEDBACK_LOG_MAX_BACKUPS
+        value: "5"
     disk:
       name: metpol-data
       mountPath: /app/data
