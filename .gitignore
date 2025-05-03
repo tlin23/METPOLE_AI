@@ -55,7 +55,7 @@ Thumbs.db
 # *.sqlite3    # Uncommented to track database files
 
 # Log files
-app/data/logs/
+backend/data/logs/
 *.log
 *.jsonl
 
@@ -72,21 +72,17 @@ test_chroma_path/
 archive/
 
 # Data files that might be large or sensitive
-app/data/html/
-app/data/processed/
+backend/data/html/
+backend/data/processed/
 
 tests/temp_html/
 tests/*.json
 
 repomix-output.xml
 
-
-
-
-
 # BEGIN MANAGED CHROMA INDEX SECTION
 # Only include the latest index directory
-app/data/index/*
-!app/data/index/chroma.sqlite3
-!app/data/index/0c20bfe2-1b12-4efe-99fd-a9f24315e110/
+backend/data/index/*
+!backend/data/index/chroma.sqlite3
+!backend/data/index/0c20bfe2-1b12-4efe-99fd-a9f24315e110/
 # END MANAGED CHROMA INDEX SECTION

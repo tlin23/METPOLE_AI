@@ -22,7 +22,7 @@ Create the following scaffold:
 
 ```
 metropole_ai/
-├── app/
+├── backend/
 │   ├── api/
 │   ├── crawler/
 │   ├── embedder/
@@ -73,7 +73,7 @@ Write a test suite to validate metropole_corpus.json. Check required fields exis
 **Chunk 7: Setup Chroma Index**
 
 ```prompt
-Create a Chroma persistent vector store. Add a script that initializes a new index and connects it to your FastAPI backend. Use a local file path (e.g., ./app/data/index).
+Create a Chroma persistent vector store. Add a script that initializes a new index and connects it to your FastAPI backend. Use a local file path (e.g., ./backend/data/index).
 ```
 
 **Chunk 8: Embed Chunks**

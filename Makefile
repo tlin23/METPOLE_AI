@@ -3,7 +3,7 @@
 
 
 
-.PHONY: run test lint format embed crawl serve clean help
+.PHONY: help serve serve-prod front test lint format crawl extract embed pipeline clean repo repo-py repo-py-js reset-env
 
 # Default Python interpreter
 PYTHON := python3
@@ -20,25 +20,35 @@ help:
 	@echo "Metropole.AI Makefile"
 	@echo "====================="
 	@echo "Available commands:"
-	@echo "  make run         - Run the FastAPI server with hot reload"
-	@echo "  make serve       - Run the FastAPI server without hot reload"
+	@echo "  make serve       - Run the FastAPI server with hot reload"
+	@echo "  make serve-prod  - Run the FastAPI server without hot reload"
+	@echo "  make front       - Run the frontend development server"
 	@echo "  make test        - Run all tests"
-	@echo "  make test-unit   - Run unit tests only"
-	@echo "  make test-cov    - Run tests with coverage report"
 	@echo "  make lint        - Run linting checks (ruff, mypy)"
 	@echo "  make format      - Format code with black"
 	@echo "  make crawl       - Run the crawler"
+	@echo "  make extract     - Extract text from HTML files"
 	@echo "  make embed       - Run the embedding process"
 	@echo "  make pipeline    - Run the full pipeline (crawl, process, embed)"
 	@echo "  make clean       - Clean up cache and temporary files"
+	@echo "  make repo        - Run repomix on all files except markdown"
+	@echo "  make repo-py     - Run repomix on Python files only"
+	@echo "  make repo-py-js  - Run repomix on Python and JavaScript files"
+	@echo "  make reset-env   - Rebuild the virtual environment using Python 3.11"
 
 # Run the FastAPI server with hot reload
-run:
-	uvicorn main:app --reload --host 127.0.0.1 --port 8000
+serve:
+	uvicorn backend.server:service --reload --host 127.0.0.1 --port 8000
 
 # Run the FastAPI server without hot reload (for production-like environment)
-serve:
-	uvicorn main:app --host 0.0.0.0 --port 8000
+serve-prod:
+	uvicorn backend.server:service --host 0.0.0.0 --port 8000
+
+# Run both frontend and backend development servers
+front:
+	@echo "Starting frontend development server..."
+	cd frontend && npm run dev
+	@echo "Frontend development server started."
 
 # Run all tests
 test:
@@ -49,28 +59,28 @@ lint:
 	@which ruff > /dev/null || (echo "Error: ruff is not installed. Install with 'pip install ruff'"; exit 1)
 	@which mypy > /dev/null || (echo "Error: mypy is not installed. Install with 'pip install mypy'"; exit 1)
 	ruff check .
-	mypy app/ tests/
+	mypy backend/ tests/
 
 # Format code
 format:
 	@which black > /dev/null || (echo "Error: black is not installed. Install with 'pip install black'"; exit 1)
-	black app/ tests/ *.py
+	black backend/ tests/ *.py
 
 # Run the crawler
 crawl:
-	python3 -m app.crawler.crawl --start-url $(START_URL) --max-pages $(MAX_PAGES)
+	python3 -m backend.crawler.crawl --start-url $(START_URL) --max-pages $(MAX_PAGES)
 
 # Extract text from html files
 extract:
-	python3 -m app.crawler.extract_content
+	python3 -m backend.crawler.extract_content
 
 # Run the embedding process
 embed:
-	python3 -m app.embedder.embed_corpus
+	python3 -m backend.embedder.embed_corpus
 
 # Run the full pipeline
 pipeline:
-	python3 -m app.run_pipeline --start-url $(START_URL) --max-pages $(MAX_PAGES)
+	python3 -m backend.pipeline --start-url $(START_URL) --max-pages $(MAX_PAGES)
 
 # Clean up cache and temporary files
 clean:
