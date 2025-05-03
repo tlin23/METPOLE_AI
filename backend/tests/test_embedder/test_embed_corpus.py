@@ -56,9 +56,17 @@ def test_assert_unique_chunk_ids_fail():
 @patch("backend.embedder.embed_corpus.chromadb.PersistentClient")
 @patch("backend.embedder.embed_corpus.embedding_functions.DefaultEmbeddingFunction")
 def test_embed_corpus(mock_embed_fn_class, mock_chroma_class, tmp_path, sample_corpus):
-    corpus_path = tmp_path / "corpus.json"
+    # Create a separate directory for the corpus file to prevent it from being deleted
+    # when clean_index=True removes the chroma_path directory
+    corpus_dir = tmp_path / "corpus_dir"
+    corpus_dir.mkdir()
+    corpus_path = corpus_dir / "corpus.json"
     with open(corpus_path, "w", encoding="utf-8") as f:
         json.dump(sample_corpus, f)
+
+    # Create a separate directory for the Chroma DB
+    chroma_dir = tmp_path / "chroma_dir"
+    chroma_dir.mkdir()
 
     mock_embed_fn = MagicMock()
     mock_embed_fn.embed_documents.return_value = [[0.1, 0.2, 0.3]]
@@ -74,9 +82,10 @@ def test_embed_corpus(mock_embed_fn_class, mock_chroma_class, tmp_path, sample_c
 
     embed_corpus(
         corpus_path=str(corpus_path),
-        chroma_path=str(tmp_path),
+        chroma_path=str(chroma_dir),
         collection_name="test_collection",
         batch_size=1,
+        clean_index=True,  # Test with clean_index=True to ensure it works properly
     )
 
     mock_collection.add.assert_called()

@@ -7,6 +7,7 @@ and store the text and metadata in Chroma.
 import sys
 import json
 import time
+import shutil
 from pathlib import Path
 from collections import Counter
 from typing import Dict, List, Any
@@ -58,6 +59,7 @@ def embed_corpus(
     chroma_path: str = CHROMA_DB_PATH,
     collection_name: str = "metropole_documents",
     batch_size: int = 100,
+    clean_index: bool = True,
 ) -> None:
     """
     Embed the corpus using all-MiniLM-L6-v2 and store in Chroma.
@@ -67,11 +69,18 @@ def embed_corpus(
         chroma_path (Optional[str]): Path to the Chroma DB. If None, uses the CHROMA_DB_PATH env var or default.
         collection_name (str): Name of the collection to store embeddings in.
         batch_size (int): Number of documents to embed in each batch.
+        clean_index (bool): Whether to remove existing index files before embedding.
     """
     start_time = time.time()
 
+    # Clean the index directory if requested
+    chroma_path_obj = Path(chroma_path)
+    if clean_index and chroma_path_obj.exists():
+        logger.info(f"Removing existing index directory: {chroma_path}")
+        shutil.rmtree(chroma_path)
+
     # Create the directory if it doesn't exist
-    Path(chroma_path).mkdir(parents=True, exist_ok=True)
+    chroma_path_obj.mkdir(parents=True, exist_ok=True)
 
     logger.info(f"Initializing Chroma DB at: {chroma_path}")
 
@@ -166,4 +175,4 @@ def embed_corpus(
 
 
 if __name__ == "__main__":
-    embed_corpus()
+    embed_corpus(clean_index=True)  # Always clean the index when running directly

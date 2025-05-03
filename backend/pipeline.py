@@ -72,6 +72,7 @@ def embed_corpus_data() -> None:
         chroma_path=CHROMA_DB_PATH,
         collection_name="metropole_documents",
         batch_size=100,
+        clean_index=True,  # Ensure we remove the existing index before embedding
     )
 
     elapsed_time = time.time() - start_time
