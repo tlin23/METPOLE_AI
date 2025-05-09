@@ -1,6 +1,7 @@
 from unittest.mock import patch
 
 from backend.crawler import crawl
+import tempfile
 
 
 @patch("backend.crawler.crawl.requests.get")
@@ -50,9 +51,10 @@ def test_extract_links_internal_and_relative():
 
 @patch("backend.crawler.crawl.fetch_url", return_value="<html><body>Test</body></html>")
 def test_recursive_crawl_single_page(mock_fetch):
-    output = crawl.recursive_crawl("http://example.com", max_pages=1)
-    assert "http://example.com" in output
-    assert "Test" in output["http://example.com"]
+    with tempfile.TemporaryDirectory() as temp_dir:
+        output = crawl.recursive_crawl(temp_dir, "http://example.com", max_pages=1)
+        assert "http://example.com" in output
+        assert "Test" in output["http://example.com"]
 
 
 @patch(
@@ -60,6 +62,7 @@ def test_recursive_crawl_single_page(mock_fetch):
     return_value="<html><body><a href='/about'>More</a></body></html>",
 )
 def test_recursive_crawl_follows_internal_links(mock_fetch):
-    output = crawl.recursive_crawl("http://example.com", max_pages=2)
-    assert "http://example.com" in output
-    assert any("about" in url for url in output)
+    with tempfile.TemporaryDirectory() as temp_dir:
+        output = crawl.recursive_crawl(temp_dir, "http://example.com", max_pages=2)
+        assert "http://example.com" in output
+        assert any("about" in url for url in output)

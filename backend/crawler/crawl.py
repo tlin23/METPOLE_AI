@@ -7,8 +7,6 @@ import os
 import urllib.parse
 from typing import Dict, List, Optional
 
-HTML_DIR = "backend/data/html"
-
 
 def fetch_url(url: str) -> Optional[str]:
     """Fetch content from a URL.
@@ -130,7 +128,9 @@ def extract_links(soup: Optional[BeautifulSoup], base_url: str) -> List[str]:
 
 
 def recursive_crawl(
-    start_url: str, max_pages: Optional[int] = None, save_to_files: bool = False
+    html_dir: str,
+    start_url: str,
+    max_pages: Optional[int] = None,
 ) -> Dict[str, str]:
     """Recursively crawl a website starting from a given URL.
 
@@ -142,9 +142,9 @@ def recursive_crawl(
     Returns:
         Dictionary mapping URLs to their HTML content.
     """
-    if os.path.exists(HTML_DIR):
-        shutil.rmtree(HTML_DIR)
-    os.makedirs(HTML_DIR, exist_ok=False)
+    if os.path.exists(html_dir):
+        shutil.rmtree(html_dir)
+    os.makedirs(html_dir, exist_ok=False)
 
     visited = set()
     to_visit = [start_url]
@@ -172,21 +172,19 @@ def recursive_crawl(
         page_content[current_url] = html_content
         page_count += 1
 
-        # Save to file if requested
-        if save_to_files:
-            # Create a filename from the URL
-            parsed_url = urllib.parse.urlparse(current_url)
-            path = parsed_url.path
-            if not path or path == "/":
-                path = "/index"
+        # Create a filename from the URL
+        parsed_url = urllib.parse.urlparse(current_url)
+        path = parsed_url.path
+        if not path or path == "/":
+            path = "/index"
 
-            # Replace special characters
-            filename = f"{parsed_url.netloc}{path}".replace("/", "_").replace(":", "_")
-            if not filename.endswith(".html"):
-                filename += ".html"
+        # Replace special characters
+        filename = f"{parsed_url.netloc}{path}".replace("/", "_").replace(":", "_")
+        if not filename.endswith(".html"):
+            filename += ".html"
 
-            with open(f"backend/data/html/{filename}", "w", encoding="utf-8") as f:
-                f.write(html_content)
+        with open(f"{html_dir}/{filename}", "w", encoding="utf-8") as f:
+            f.write(html_content)
 
         # Parse the HTML
         soup = parse_html(html_content)
@@ -207,33 +205,3 @@ def recursive_crawl(
 
     print(f"Crawling complete. Visited {len(visited)} pages.")
     return page_content
-
-
-# def crawl(url: str) -> Tuple[Optional[str], Dict[str, Any]]:
-#     """Crawl a URL and extract its text content.
-
-#     Args:
-#         url: The URL to crawl.
-
-#     Returns:
-#         A tuple containing:
-#             - The extracted text content (or None if extraction failed)
-#             - A metadata dictionary with information about the crawled page
-#     """
-#     html = fetch_url(url)
-#     soup = parse_html(html)
-#     text = extract_text(soup)
-
-#     # Extract metadata
-#     title = "No title"
-#     if soup and hasattr(soup, "title") and soup.title:
-#         title = str(soup.title.string) if soup.title.string else "No title"
-
-#     metadata = {
-#         "url": url,
-#         "title": title,
-#         "crawl_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-#         "source": "web_crawl",
-#     }
-
-#     return text, metadata

@@ -70,9 +70,10 @@ def test_embed_corpus(mock_embed_fn_class, mock_chroma_class, tmp_path, sample_c
     mock_chroma_class.return_value = mock_client
 
     embed_corpus(
+        corpus_path=str(corpus_path),
+        chroma_db_path=str(chroma_dir),
         collection_name="test_collection",
         batch_size=1,
-        corpus_path=str(corpus_path),
     )
 
     mock_collection.add.assert_called()

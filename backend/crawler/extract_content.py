@@ -11,17 +11,13 @@ from backend.crawler.utils import (
 )
 from backend.configer.logging_config import get_logger
 
-INPUT_DIR = "backend/data/html"
-OUTPUT_DIR = "backend/data/processed"
-CHUNKS_JSON_PATH = os.path.join(OUTPUT_DIR, "chunks.json")
-CORPUS_PATH = os.path.join(OUTPUT_DIR, "metropole_corpus.json")
 
 logger = get_logger("crawler.extract_content")
 
 
 def extract_chunks_without_tags(
-    input_dir=INPUT_DIR,
-    output_path=CHUNKS_JSON_PATH,
+    input_dir,
+    output_path,
 ):
     """
     Extract chunks from HTML files in the input directory and save them to a JSON file.
@@ -84,8 +80,8 @@ def extract_chunks_without_tags(
 
 
 def add_tags_to_chunks(
-    input_path=CHUNKS_JSON_PATH,
-    output_path=CORPUS_PATH,
+    input_path,
+    output_path,
 ):
     """
     Add tags to chunks using KeyBERT and save the updated chunks to a new JSON file.

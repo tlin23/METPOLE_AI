@@ -84,6 +84,10 @@ embed:
 pipeline:
 	python3 -m backend.pipeline --step all --start-url $(START_URL) --max-pages $(MAX_PAGES)
 
+# Run the full prod pipeline
+pipeline-prod:
+	python3 -m backend.pipeline --step all --start-url $(START_URL) --max-pages $(MAX_PAGES) -p
+
 # Clean up cache and temporary files
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} +

@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import patch
 
-from backend.pipeline import run_pipeline
+from backend.pipeline import run_pipeline, HTML_DIR
 
 
 @patch("backend.pipeline.recursive_crawl")
@@ -25,9 +25,7 @@ def test_run_pipeline_all_steps_called(mock_embed, mock_process, mock_crawl):
     run_pipeline(start_url="http://example.com", max_pages=1)
 
     # Assert all steps were called
-    mock_crawl.assert_called_once_with(
-        "http://example.com", max_pages=1, save_to_files=True
-    )
+    mock_crawl.assert_called_once_with(HTML_DIR, "http://example.com", max_pages=1)
     mock_process.assert_called_once()
     mock_embed.assert_called_once()
 

@@ -14,9 +14,7 @@ import chromadb
 from chromadb.config import Settings
 from chromadb.utils import embedding_functions
 
-from backend.configer.config import CHROMA_DB_PATH
 from backend.configer.logging_config import get_logger
-from backend.crawler.extract_content import CORPUS_PATH
 
 # Get logger for this module
 logger = get_logger("embedder.embed_corpus")
@@ -44,9 +42,10 @@ def load_corpus(corpus_path: str) -> List[Dict[str, Any]]:
 
 
 def embed_corpus(
-    collection_name: str = "metropole_documents",
-    batch_size: int = 100,
-    corpus_path: str = CORPUS_PATH,
+    corpus_path: str,
+    chroma_db_path: str,
+    collection_name: str,
+    batch_size: int,
 ) -> None:
     """
     Embed the corpus using all-MiniLM-L6-v2 and store in Chroma.
@@ -54,17 +53,17 @@ def embed_corpus(
     Args:
         collection_name (str): Name of the collection to store embeddings in.
         batch_size (int): Number of documents to embed in each batch.
-        corpus_path (str): Path to the corpus file. Defaults to CORPUS_PATH.
+        corpus_path (str): Path to the corpus file.
     """
     start_time = time.time()
 
     # Clean the index directory if it exists
-    logger.info(f"Cleaning Chroma DB path: {CHROMA_DB_PATH}")
-    if os.path.exists(CHROMA_DB_PATH):
-        shutil.rmtree(CHROMA_DB_PATH)
-    os.makedirs(CHROMA_DB_PATH, exist_ok=False)
+    logger.info(f"Cleaning Chroma DB path: {corpus_path}")
+    if os.path.exists(chroma_db_path):
+        shutil.rmtree(chroma_db_path)
+    os.makedirs(chroma_db_path, exist_ok=False)
 
-    logger.info(f"Initializing Chroma DB at: {CHROMA_DB_PATH}")
+    logger.info(f"Initializing Chroma DB at: {chroma_db_path}")
 
     # Initialize the embedding function
     # Note: DefaultEmbeddingFunction uses the 'all-MiniLM-L6-v2' model internally
@@ -73,7 +72,7 @@ def embed_corpus(
 
     # Initialize the Chroma client
     client = chromadb.PersistentClient(
-        path=CHROMA_DB_PATH, settings=Settings(anonymized_telemetry=False)
+        path=chroma_db_path, settings=Settings(anonymized_telemetry=False)
     )
 
     # Check if the collection already exists and has documents
