@@ -12,6 +12,8 @@ PYTHON := python3
 START_URL := https://www.metropoleballard.com/home
 MAX_PAGES := 50
 
+PIPELINE := backend/pipeline.py
+
 # Load environment variables from .env
 include .env
 export
@@ -68,19 +70,19 @@ format:
 
 # Run the crawler
 crawl:
-	python3 -m backend.crawler.crawl --start-url $(START_URL) --max-pages $(MAX_PAGES)
+	python3 -m backend.pipeline --step crawl --start-url $(START_URL) --max-pages $(MAX_PAGES)
 
 # Extract text from html files
 extract:
-	python3 -m backend.crawler.extract_content
+	python3 -m backend.pipeline --step process
 
 # Run the embedding process
 embed:
-	python3 -m backend.embedder.embed_corpus
+	python3 -m backend.pipeline --step embed
 
 # Run the full pipeline
 pipeline:
-	python3 -m backend.pipeline --start-url $(START_URL) --max-pages $(MAX_PAGES)
+	python3 -m backend.pipeline --step all --start-url $(START_URL) --max-pages $(MAX_PAGES)
 
 # Clean up cache and temporary files
 clean:

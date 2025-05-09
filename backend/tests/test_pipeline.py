@@ -5,7 +5,7 @@ from backend.pipeline import run_pipeline
 
 
 @patch("backend.pipeline.recursive_crawl")
-@patch("backend.pipeline.process_all_html_files")
+@patch("backend.pipeline.process_html_files")
 @patch("backend.pipeline.embed_corpus_data")
 def test_run_pipeline_all_steps_called(mock_embed, mock_process, mock_crawl):
     # Mock crawl output
@@ -33,7 +33,7 @@ def test_run_pipeline_all_steps_called(mock_embed, mock_process, mock_crawl):
 
 
 @patch("backend.pipeline.recursive_crawl")
-@patch("backend.pipeline.process_all_html_files")
+@patch("backend.pipeline.process_html_files")
 @patch("backend.pipeline.embed_corpus_data")
 def test_run_pipeline_error_handling(mock_embed, mock_process, mock_crawl):
     # Simulate crawl error

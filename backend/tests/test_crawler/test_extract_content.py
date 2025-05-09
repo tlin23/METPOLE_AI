@@ -1,7 +1,10 @@
 import json
 from unittest.mock import patch, MagicMock
 
-from backend.crawler import extract_content
+from backend.crawler.extract_content import (
+    add_tags_to_chunks,
+    extract_chunks_without_tags,
+)
 
 
 @patch("backend.crawler.extract_content.partition_html")
@@ -32,8 +35,16 @@ def test_process_all_html_files(
     mock_splitter_class.return_value = mock_splitter
 
     # Run extraction
+    chunks_path = tmp_path / "chunks.json"
     output_path = tmp_path / "corpus.json"
-    result = extract_content.process_all_html_files(str(html_dir), str(output_path))
+    extract_chunks_without_tags(
+        input_dir=html_dir,
+        output_path=chunks_path,
+    )
+    result = add_tags_to_chunks(
+        input_path=chunks_path,
+        output_path=output_path,
+    )
 
     # Assertions
     assert isinstance(result, list)

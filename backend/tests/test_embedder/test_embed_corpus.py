@@ -5,7 +5,6 @@ from unittest.mock import patch, MagicMock
 
 from backend.embedder.embed_corpus import (
     load_corpus,
-    assert_unique_chunk_ids,
     embed_corpus,
 )
 
@@ -43,16 +42,6 @@ def test_load_corpus(tmp_path, sample_corpus):
     assert loaded[0]["chunk_id"] == "chunk_1"
 
 
-def test_assert_unique_chunk_ids_pass(sample_corpus):
-    assert_unique_chunk_ids(sample_corpus)
-
-
-def test_assert_unique_chunk_ids_fail():
-    dupe_corpus = [{"chunk_id": "chunk_1"}, {"chunk_id": "chunk_1"}]
-    with pytest.raises(ValueError, match="Duplicate chunk_id"):
-        assert_unique_chunk_ids(dupe_corpus)
-
-
 @patch("backend.embedder.embed_corpus.chromadb.PersistentClient")
 @patch("backend.embedder.embed_corpus.embedding_functions.DefaultEmbeddingFunction")
 def test_embed_corpus(mock_embed_fn_class, mock_chroma_class, tmp_path, sample_corpus):
@@ -81,11 +70,9 @@ def test_embed_corpus(mock_embed_fn_class, mock_chroma_class, tmp_path, sample_c
     mock_chroma_class.return_value = mock_client
 
     embed_corpus(
-        corpus_path=str(corpus_path),
-        chroma_path=str(chroma_dir),
         collection_name="test_collection",
         batch_size=1,
-        clean_index=True,  # Test with clean_index=True to ensure it works properly
+        corpus_path=str(corpus_path),
     )
 
     mock_collection.add.assert_called()

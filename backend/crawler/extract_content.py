@@ -8,15 +8,31 @@ from backend.crawler.utils import (
     clean_text,
     hash_id,
     extract_tags_with_keybert,
-)  # Move helpers to a utils module
+)
+from backend.configer.logging_config import get_logger
+
+INPUT_DIR = "backend/data/html"
+OUTPUT_DIR = "backend/data/processed"
+CHUNKS_JSON_PATH = os.path.join(OUTPUT_DIR, "chunks.json")
+CORPUS_PATH = os.path.join(OUTPUT_DIR, "metropole_corpus.json")
+
+logger = get_logger("crawler.extract_content")
 
 
-def process_all_html_files(
-    input_dir="backend/data/html",
-    output_path="backend/data/processed/metropole_corpus.json",
+def extract_chunks_without_tags(
+    input_dir=INPUT_DIR,
+    output_path=CHUNKS_JSON_PATH,
 ):
-    print("Initializing KeyBERT with MiniLM model...")
-    model = KeyBERT(model="all-MiniLM-L6-v2")
+    """
+    Extract chunks from HTML files in the input directory and save them to a JSON file.
+    Each chunk is a dictionary containing the chunk ID, page ID, page name, page title,
+    section header, and content.
+    """
+    print("Extracting chunks from HTML files...")
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    if os.path.isfile(output_path):
+        os.remove(output_path)
+
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
 
     all_chunks = []
@@ -48,7 +64,6 @@ def process_all_html_files(
                 if chunk_id in seen_hashes or len(chunk_text) < 20:
                     continue
 
-                tags = extract_tags_with_keybert(chunk_text, model)
                 all_chunks.append(
                     {
                         "chunk_id": chunk_id,
@@ -57,12 +72,10 @@ def process_all_html_files(
                         "page_title": page_title,
                         "section_header": "Auto",
                         "content": chunk_text,
-                        "tags": tags,
                     }
                 )
                 seen_hashes.add(chunk_id)
 
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(all_chunks, f, indent=2, ensure_ascii=False)
 
@@ -70,10 +83,31 @@ def process_all_html_files(
     return all_chunks
 
 
-if __name__ == "__main__":
-    html_directory = "backend/data/html"
-    output_directory = "backend/data/processed"
-    os.makedirs(output_directory, exist_ok=True)
-    output_file = os.path.join(output_directory, "metropole_corpus.json")
-    process_all_html_files(html_directory, output_file)
-    print(f"[extract_content.py] Processed HTML files and saved to {output_file}")
+def add_tags_to_chunks(
+    input_path=CHUNKS_JSON_PATH,
+    output_path=CORPUS_PATH,
+):
+    """
+    Add tags to chunks using KeyBERT and save the updated chunks to a new JSON file.
+    Each chunk is a dictionary containing the chunk ID, page ID, page name, page title,
+    section header, content, and tags.
+    """
+    print("Adding tags to chunks...")
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    if os.path.isfile(output_path):
+        os.remove(output_path)
+
+    print("Loading KeyBERT model for tag extraction...")
+    model = KeyBERT(model="all-MiniLM-L6-v2")
+
+    with open(input_path, "r", encoding="utf-8") as f:
+        chunks = json.load(f)
+
+    for chunk in chunks:
+        chunk["tags"] = extract_tags_with_keybert(chunk["content"], model)
+
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(chunks, f, indent=2, ensure_ascii=False)
+
+    print(f"[extract_content.py] Added tags to chunks and saved to {output_path}")
+    return chunks

@@ -1,11 +1,13 @@
 """Crawler module for fetching and processing web content."""
 
+import shutil
 import requests
 from bs4 import BeautifulSoup
 import os
 import urllib.parse
-from datetime import datetime
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Dict, List, Optional
+
+HTML_DIR = "backend/data/html"
 
 
 def fetch_url(url: str) -> Optional[str]:
@@ -140,14 +142,14 @@ def recursive_crawl(
     Returns:
         Dictionary mapping URLs to their HTML content.
     """
+    if os.path.exists(HTML_DIR):
+        shutil.rmtree(HTML_DIR)
+    os.makedirs(HTML_DIR, exist_ok=False)
+
     visited = set()
     to_visit = [start_url]
     page_content = {}
     base_domain = urllib.parse.urlparse(start_url).netloc
-
-    # Create data directory if saving to files
-    if save_to_files:
-        os.makedirs("backend/data/html", exist_ok=True)
 
     page_count = 0
 
@@ -207,38 +209,31 @@ def recursive_crawl(
     return page_content
 
 
-def crawl(url: str) -> Tuple[Optional[str], Dict[str, Any]]:
-    """Crawl a URL and extract its text content.
+# def crawl(url: str) -> Tuple[Optional[str], Dict[str, Any]]:
+#     """Crawl a URL and extract its text content.
 
-    Args:
-        url: The URL to crawl.
+#     Args:
+#         url: The URL to crawl.
 
-    Returns:
-        A tuple containing:
-            - The extracted text content (or None if extraction failed)
-            - A metadata dictionary with information about the crawled page
-    """
-    html = fetch_url(url)
-    soup = parse_html(html)
-    text = extract_text(soup)
+#     Returns:
+#         A tuple containing:
+#             - The extracted text content (or None if extraction failed)
+#             - A metadata dictionary with information about the crawled page
+#     """
+#     html = fetch_url(url)
+#     soup = parse_html(html)
+#     text = extract_text(soup)
 
-    # Extract metadata
-    title = "No title"
-    if soup and hasattr(soup, "title") and soup.title:
-        title = str(soup.title.string) if soup.title.string else "No title"
+#     # Extract metadata
+#     title = "No title"
+#     if soup and hasattr(soup, "title") and soup.title:
+#         title = str(soup.title.string) if soup.title.string else "No title"
 
-    metadata = {
-        "url": url,
-        "title": title,
-        "crawl_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "source": "web_crawl",
-    }
+#     metadata = {
+#         "url": url,
+#         "title": title,
+#         "crawl_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+#         "source": "web_crawl",
+#     }
 
-    return text, metadata
-
-
-if __name__ == "__main__":
-    # Example usage for recursive crawling
-    start_url = "https://www.metropoleballard.com/home"
-    content_dict = recursive_crawl(start_url, max_pages=50, save_to_files=True)
-    print(f"Collected {len(content_dict)} pages")
+#     return text, metadata

@@ -4,16 +4,11 @@ Script to load the metropole_corpus.json file, embed each chunk using all-MiniLM
 and store the text and metadata in Chroma.
 """
 
-import sys
 import json
+import os
 import time
 import shutil
-from pathlib import Path
-from collections import Counter
 from typing import Dict, List, Any
-
-# Add the project root to the Python path
-sys.path.append(str(Path(__file__).parent.parent.parent))
 
 import chromadb
 from chromadb.config import Settings
@@ -21,6 +16,7 @@ from chromadb.utils import embedding_functions
 
 from backend.configer.config import CHROMA_DB_PATH
 from backend.configer.logging_config import get_logger
+from backend.crawler.extract_content import CORPUS_PATH
 
 # Get logger for this module
 logger = get_logger("embedder.embed_corpus")
@@ -47,42 +43,28 @@ def load_corpus(corpus_path: str) -> List[Dict[str, Any]]:
         raise
 
 
-def assert_unique_chunk_ids(corpus: List[Dict[str, Any]]):
-    ids = [chunk["chunk_id"] for chunk in corpus]
-    dupes = [id for id, count in Counter(ids).items() if count > 1]
-    if dupes:
-        raise ValueError(f"Duplicate chunk_id(s) found: {dupes}")
-
-
 def embed_corpus(
-    corpus_path: str = "./backend/data/processed/metropole_corpus.json",
-    chroma_path: str = CHROMA_DB_PATH,
     collection_name: str = "metropole_documents",
     batch_size: int = 100,
-    clean_index: bool = True,
+    corpus_path: str = CORPUS_PATH,
 ) -> None:
     """
     Embed the corpus using all-MiniLM-L6-v2 and store in Chroma.
 
     Args:
-        corpus_path (str): Path to the corpus file.
-        chroma_path (Optional[str]): Path to the Chroma DB. If None, uses the CHROMA_DB_PATH env var or default.
         collection_name (str): Name of the collection to store embeddings in.
         batch_size (int): Number of documents to embed in each batch.
-        clean_index (bool): Whether to remove existing index files before embedding.
+        corpus_path (str): Path to the corpus file. Defaults to CORPUS_PATH.
     """
     start_time = time.time()
 
-    # Clean the index directory if requested
-    chroma_path_obj = Path(chroma_path)
-    if clean_index and chroma_path_obj.exists():
-        logger.info(f"Removing existing index directory: {chroma_path}")
-        shutil.rmtree(chroma_path)
+    # Clean the index directory if it exists
+    logger.info(f"Cleaning Chroma DB path: {CHROMA_DB_PATH}")
+    if os.path.exists(CHROMA_DB_PATH):
+        shutil.rmtree(CHROMA_DB_PATH)
+    os.makedirs(CHROMA_DB_PATH, exist_ok=False)
 
-    # Create the directory if it doesn't exist
-    chroma_path_obj.mkdir(parents=True, exist_ok=True)
-
-    logger.info(f"Initializing Chroma DB at: {chroma_path}")
+    logger.info(f"Initializing Chroma DB at: {CHROMA_DB_PATH}")
 
     # Initialize the embedding function
     # Note: DefaultEmbeddingFunction uses the 'all-MiniLM-L6-v2' model internally
@@ -91,7 +73,7 @@ def embed_corpus(
 
     # Initialize the Chroma client
     client = chromadb.PersistentClient(
-        path=chroma_path, settings=Settings(anonymized_telemetry=False)
+        path=CHROMA_DB_PATH, settings=Settings(anonymized_telemetry=False)
     )
 
     # Check if the collection already exists and has documents
@@ -120,7 +102,6 @@ def embed_corpus(
 
     # Load the corpus
     corpus = load_corpus(corpus_path)
-    assert_unique_chunk_ids(corpus)
 
     # Prepare data for embedding
     total_chunks = len(corpus)
@@ -138,22 +119,25 @@ def embed_corpus(
         # Extract data for this batch
         ids = [chunk["chunk_id"] for chunk in batch]
         documents = [
-            f"[Tags: {', '.join(chunk['tags'])}]\n{chunk['content']}" for chunk in batch
+            (
+                f"[Tags: {', '.join(chunk['tags'])}]\n{chunk['content']}"
+                if chunk.get("tags")
+                else chunk["content"]
+            )
+            for chunk in batch
         ]
-        metadatas = [
-            {
+
+        metadatas = []
+        for chunk in batch:
+            metadata = {
                 "page_id": chunk["page_id"],
                 "page_title": chunk["page_title"],
                 "page_name": chunk["page_name"],
                 "section_header": chunk["section_header"],
-                "tags": (
-                    ",".join(chunk["tags"])
-                    if isinstance(chunk["tags"], list)
-                    else chunk["tags"]
-                ),
             }
-            for chunk in batch
-        ]
+            if "tags" in chunk and isinstance(chunk["tags"], list):
+                metadata["tags"] = ",".join(chunk["tags"])
+            metadatas.append(metadata)
 
         # Add to collection
         logger.info(
@@ -172,7 +156,3 @@ def embed_corpus(
     logger.info(
         f"Collection '{collection_name}' now contains {collection.count()} documents"
     )
-
-
-if __name__ == "__main__":
-    embed_corpus(clean_index=True)  # Always clean the index when running directly
