@@ -3,6 +3,8 @@ API routes for the application.
 """
 
 from fastapi import APIRouter
+from fastapi.responses import JSONResponse
+
 
 from backend.api.models import AskRequest, ChunkResult, AskResponse
 from backend.configer.config import INDEX_DIR
@@ -13,6 +15,14 @@ router = APIRouter()
 
 # Initialize components
 retriever = Retriever(INDEX_DIR)
+
+
+@router.get("/health")
+async def health_check():
+    """
+    Health check endpoint to verify the server is running.
+    """
+    return JSONResponse(content={"status": "ok"})
 
 
 @router.post("/ask", response_model=AskResponse)
