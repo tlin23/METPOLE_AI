@@ -13,7 +13,6 @@ Usage:
 """
 
 import argparse
-import os
 import time
 from typing import Dict, Optional
 
@@ -25,14 +24,14 @@ from backend.crawler.extract_content import (
     add_tags_to_chunks,
 )
 from backend.embedder.embed_corpus import embed_corpus
-
-HTML_DIR = "backend/data/html"
-INDEX_DIR = "backend/data/index"
-PROCESSED_DIR = "backend/data/processed"
-CHUNKS_JSON_PATH = os.path.join(PROCESSED_DIR, "chunks.json")
-CORPUS_PATH = os.path.join(PROCESSED_DIR, "metropole_corpus.json")
-COLLECTION_NAME = "metropole_documents"
-BATCH_SIZE = 100
+from backend.configer.config import (
+    HTML_DIR,
+    INDEX_DIR,
+    CHUNKS_JSON_PATH,
+    CORPUS_PATH,
+    COLLECTION_NAME,
+    BATCH_SIZE,
+)
 
 # Get logger for this module
 logger = get_logger("pipeline")

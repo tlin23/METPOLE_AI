@@ -5,13 +5,14 @@ API routes for the application.
 from fastapi import APIRouter
 
 from backend.api.models import AskRequest, ChunkResult, AskResponse
+from backend.configer.config import INDEX_DIR
 from backend.retriever.ask import Retriever
 
 # Create router
 router = APIRouter()
 
 # Initialize components
-retriever = Retriever()
+retriever = Retriever(INDEX_DIR)
 
 
 @router.post("/ask", response_model=AskResponse)

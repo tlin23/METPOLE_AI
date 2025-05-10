@@ -8,7 +8,7 @@ from openai import OpenAI
 from typing import Dict, List, Any
 
 from backend.api.models import ChunkResult
-from backend.configer.config import OPENAI_API_KEY, CHROMA_DB_PATH
+from backend.configer.config import OPENAI_API_KEY
 from backend.configer.logging_config import get_logger
 
 # Get logger for this module
@@ -39,8 +39,7 @@ class Retriever:
         the documents collection. Allows overriding path for testing.
         """
         # Allow override from parameter or fallback to env
-        self.chroma_db_path = chroma_path or CHROMA_DB_PATH
-
+        self.chroma_db_path = chroma_path
         # Create the directory if it doesn't exist
         Path(self.chroma_db_path).mkdir(parents=True, exist_ok=True)
 

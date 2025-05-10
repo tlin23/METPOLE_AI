@@ -10,9 +10,12 @@ import logging
 import sys
 from pathlib import Path
 from logging.handlers import RotatingFileHandler
-from backend.configer.config import FEEDBACK_LOG_DIR
 
-Path(FEEDBACK_LOG_DIR).mkdir(parents=True, exist_ok=True)
+
+# Feedback logging settings
+LOGS_DIR = "backend/logs"
+
+Path(LOGS_DIR).mkdir(parents=True, exist_ok=True)
 
 
 # Configure the root logger
@@ -76,7 +79,7 @@ def configure_logging(
 logger = configure_logging(
     logger_name="metropole_ai",
     log_level=logging.INFO,
-    log_file=os.path.join(FEEDBACK_LOG_DIR, "metropole_ai.log"),
+    log_file=os.path.join(LOGS_DIR, "metropole_ai.log"),
 )
 
 
