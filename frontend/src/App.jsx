@@ -56,15 +56,17 @@ function App() {
     setIsLoading(true);
 
     try {
-      // Send request to backend API
-      const response = await axios.post("/api/ask", {
-        question: userMessage.text,
-        top_k: 5,
-      });
+      // Send request to backend API using full URL
+      const response = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/api/ask`,
+        {
+          question: userMessage.text,
+          top_k: 5,
+        }
+      );
 
       // Check if the request was successful
       if (response.data.success) {
-        // Add bot response to chat
         setMessages((prevMessages) => [
           ...prevMessages,
           {
@@ -72,7 +74,7 @@ function App() {
             text: (
               response.data.answer ||
               "I'm sorry, I couldn't find an answer to that."
-            ).replace(/\n+Source:.*/s, ""), // sanitize trailing source text
+            ).replace(/\n+Source:.*/s, ""),
             sender: "bot",
             sourceInfo: response.data.source_info,
             chunks: response.data.chunks || [],
@@ -80,7 +82,6 @@ function App() {
           },
         ]);
       } else {
-        // Handle unsuccessful response
         setMessages((prevMessages) => [
           ...prevMessages,
           {
@@ -95,8 +96,7 @@ function App() {
         ]);
       }
     } catch (error) {
-      console.error("Error calling API:", error);
-      // Add error message to chat
+      console.error("API error:", error.response?.data || error.message);
       setMessages((prevMessages) => [
         ...prevMessages,
         {

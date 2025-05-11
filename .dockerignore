@@ -1,0 +1,91 @@
+# flyctl launch added from .gitignore
+# Python
+**/__pycache__
+**/*.py[cod]
+**/*$py.class
+**/*.so
+**/.Python
+**/env
+**/build
+**/develop-eggs
+**/dist
+**/downloads
+**/eggs
+**/.eggs
+**/lib
+**/lib64
+**/parts
+**/sdist
+**/var
+**/*.egg-info
+**/.installed.cfg
+**/*.egg
+
+# Test coverage
+**/.coverage
+**/.coverage.*
+**/htmlcov
+**/.pytest_cache
+**/coverage.xml
+**/*.cover
+
+# Environment variables
+**/.env
+
+# Virtual Environment
+**/venv
+**/ENV
+
+# IDE specific files
+**/.idea
+**/.vscode
+**/*.swp
+**/*.swo
+
+# OS specific files
+**/.DS_Store
+**/.DS_Store?
+**/._*
+**/.Spotlight-V100
+**/.Trashes
+**/ehthumbs.db
+**/Thumbs.db
+
+# Database files (now tracked)
+# data/index/  # Uncommented to track database files
+# *.sqlite3    # Uncommented to track database files
+
+# Log files
+**/backend/data/logs
+**/*.log
+**/*.jsonl
+
+# Frontend
+**/frontend/node_modules
+**/frontend/dist
+**/frontend/build
+**/frontend/.cache
+
+# Test directories
+**/test_chroma_path
+
+# Archive folder
+**/archive
+
+# Data files that might be large or sensitive
+**/backend/data/html
+**/backend/data/processed
+
+**/tests/temp_html
+**/tests/*.json
+
+**/repomix-output.xml
+
+# flyctl launch added from .pytest_cache/.gitignore
+# Created by pytest automatically.
+.pytest_cache/**/*
+
+# flyctl launch added from .ruff_cache/.gitignore
+# Automatically created by ruff.
+.ruff_cache/**/*
+fly.toml

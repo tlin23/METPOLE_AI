@@ -6,7 +6,7 @@
 .PHONY: help serve serve-prod front test lint format crawl extract embed pipeline clean repo repo-py repo-py-js reset-env
 
 # Default Python interpreter
-PYTHON := python3
+PYTHON := $(shell which python)
 
 # Default URL for crawling
 START_URL := https://www.metropoleballard.com/home
@@ -54,7 +54,8 @@ front:
 
 # Run all tests
 test:
-	PYTHONPATH=. ./venv/bin/python -m pytest
+	PYTHONPATH=backend ./backend/venv/bin/python -m pytest
+
 
 # Run linting checks
 lint:
