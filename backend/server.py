@@ -20,7 +20,7 @@ service.add_middleware(
     allow_origins=[
         "http://localhost:5173",  # Local dev (Vite)
         "http://localhost:3000",  # Docker
-        "https://metpol-ai.vercel.app",  # Your Vercel frontend
+        "https://metpole-ai.vercel.app",  # Your Vercel frontend
     ],
     allow_credentials=True,
     allow_methods=["*"],
