@@ -5,9 +5,6 @@
 
 .PHONY: help serve serve-prod front test lint format crawl extract embed pipeline clean repo repo-py repo-py-js reset-env
 
-# Default Python interpreter
-PYTHON := $(shell which python)
-
 # Default URL for crawling
 START_URL := https://www.metropoleballard.com/home
 MAX_PAGES := 50
@@ -56,8 +53,8 @@ front:
 test:
 	PYTHONPATH=backend ./backend/venv/bin/python -m pytest
 
-test-chatbot:
-	$(PYTHON) backend/tests/test_qa/test_chatbot_with_server.py
+test-qa:
+	python3 backend/tests/test_qa/test_qa.py
 
 # Run linting checks
 lint:
