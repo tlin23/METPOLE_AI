@@ -79,5 +79,6 @@ backend/data/doc_text/
 
 backend/tests/temp_html/
 backend/tests/*.json
+backend/tests/**/test_answers.txt
 
 repomix-output.xml
