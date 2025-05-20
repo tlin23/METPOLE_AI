@@ -77,7 +77,7 @@ backend/data/processed/
 backend/data/offline_docs/
 backend/data/doc_text/
 
-tests/temp_html/
-tests/*.json
+backend/tests/temp_html/
+backend/tests/*.json
 
 repomix-output.xml
