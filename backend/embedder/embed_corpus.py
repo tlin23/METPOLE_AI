@@ -20,6 +20,51 @@ from backend.configer.logging_config import get_logger
 logger = get_logger("embedder.embed_corpus")
 
 
+def cleanup_inactive_directories(
+    chroma_db_path: str, active_collection_ids: List[str]
+) -> None:
+    """
+    Clean up inactive collection directories.
+
+    Args:
+        chroma_db_path: Path to the ChromaDB directory
+        active_collection_ids: List of active collection IDs
+    """
+    if not os.path.exists(chroma_db_path):
+        return
+
+    # Convert active IDs to strings for comparison
+    active_ids = [str(id) for id in active_collection_ids]
+    logger.info(f"Active collection IDs: {active_ids}")
+
+    # Get all directories in the ChromaDB path
+    for item in os.listdir(chroma_db_path):
+        full_path = os.path.join(chroma_db_path, item)
+        # Skip if not a directory or if it's the SQLite file
+        if not os.path.isdir(full_path) or item == "chroma.sqlite3":
+            continue
+
+        # If directory is not in active IDs, remove it
+        if item not in active_ids:
+            logger.info(f"Found inactive collection directory: {item}")
+            try:
+                # Check if directory contains collection data
+                has_data = all(
+                    os.path.exists(os.path.join(full_path, f))
+                    for f in ["data_level0.bin", "length.bin", "header.bin"]
+                )
+                if has_data:
+                    logger.info(
+                        f"Removing inactive collection directory with data: {item}"
+                    )
+                    shutil.rmtree(full_path)
+                else:
+                    logger.info(f"Removing empty collection directory: {item}")
+                    shutil.rmtree(full_path)
+            except Exception as e:
+                logger.error(f"Error removing directory {item}: {e}")
+
+
 def load_corpus(corpus_path: str) -> List[Dict[str, Any]]:
     """
     Load the corpus from a JSON file.
@@ -57,11 +102,9 @@ def embed_corpus(
     """
     start_time = time.time()
 
-    # Clean the index directory if it exists
-    logger.info(f"Cleaning Chroma DB path: {corpus_path}")
-    if os.path.exists(chroma_db_path):
-        shutil.rmtree(chroma_db_path)
-    os.makedirs(chroma_db_path, exist_ok=False)
+    # Create the index directory if it doesn't exist
+    logger.info(f"Ensuring Chroma DB path exists: {chroma_db_path}")
+    os.makedirs(chroma_db_path, exist_ok=True)
 
     logger.info(f"Initializing Chroma DB at: {chroma_db_path}")
 
@@ -75,29 +118,27 @@ def embed_corpus(
         path=chroma_db_path, settings=Settings(anonymized_telemetry=False)
     )
 
-    # Check if the collection already exists and has documents
-    existing_collections = {col.name: col for col in client.list_collections()}
-    if collection_name in existing_collections:
-        collection = client.get_collection(collection_name)
-        count = collection.count()
-        if count > 0:
-            logger.info(
-                f"Deleting and recreating collection '{collection_name}' with {count} documents"
-            )
-            client.delete_collection(collection_name)
-            collection = client.create_collection(
-                name=collection_name,
-                embedding_function=embedding_function,
-                metadata={"description": "Metropole corpus embeddings"},
-            )
-        else:
-            collection._embedding_function = embedding_function
-    else:
-        collection = client.create_collection(
-            name=collection_name,
-            embedding_function=embedding_function,
-            metadata={"description": "Metropole corpus embeddings"},
-        )
+    # Get list of active collection IDs before any changes
+    active_collections = client.list_collections()
+    active_collection_ids = [col.id for col in active_collections]
+
+    # Clean up the target collection if it exists
+    if collection_name in [col.name for col in active_collections]:
+        logger.info(f"Cleaning up existing collection '{collection_name}'")
+        client.delete_collection(collection_name)
+        logger.info(f"Deleted collection '{collection_name}'")
+
+    # Create a fresh collection
+    logger.info(f"Creating new collection '{collection_name}'")
+    collection = client.create_collection(
+        name=collection_name,
+        embedding_function=embedding_function,
+        metadata={"description": "Metropole corpus embeddings"},
+    )
+
+    # Clean up any inactive directories
+    logger.info("Cleaning up inactive collection directories")
+    cleanup_inactive_directories(chroma_db_path, active_collection_ids)
 
     # Load the corpus
     corpus = load_corpus(corpus_path)

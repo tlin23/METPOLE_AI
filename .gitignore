@@ -74,6 +74,8 @@ archive/
 # Data files that might be large or sensitive
 backend/data/html/
 backend/data/processed/
+backend/data/offline_docs/
+backend/data/raw_docs/
 
 tests/temp_html/
 tests/*.json

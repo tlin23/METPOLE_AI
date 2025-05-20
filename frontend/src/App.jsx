@@ -199,7 +199,10 @@ function App() {
                                   <strong>Text:</strong>{" "}
                                   {chunk.text || "No text available"}
                                   <br />
-                                  <strong>Source:</strong>{" "}
+                                  <strong>Relevance Score:</strong>{" "}
+                                  {chunk.distance
+                                    ? chunk.distance.toFixed(3)
+                                    : "N/A"}
                                 </div>
                               ))}
                             </div>

@@ -1,12 +1,12 @@
 import pytest
 from unittest.mock import patch
 
-from backend.pipeline import run_pipeline, HTML_DIR
+from backend.online_content_pipeline import run_pipeline, HTML_DIR
 
 
-@patch("backend.pipeline.recursive_crawl")
-@patch("backend.pipeline.process_html_files")
-@patch("backend.pipeline.embed_corpus_data")
+@patch("backend.online_content_pipeline.recursive_crawl")
+@patch("backend.online_content_pipeline.process_html_files")
+@patch("backend.online_content_pipeline.embed_corpus_data")
 def test_run_pipeline_all_steps_called(mock_embed, mock_process, mock_crawl):
     # Mock crawl output
     mock_crawl.return_value = {"http://example.com": "<html>Test</html>"}
@@ -30,9 +30,9 @@ def test_run_pipeline_all_steps_called(mock_embed, mock_process, mock_crawl):
     mock_embed.assert_called_once()
 
 
-@patch("backend.pipeline.recursive_crawl")
-@patch("backend.pipeline.process_html_files")
-@patch("backend.pipeline.embed_corpus_data")
+@patch("backend.online_content_pipeline.recursive_crawl")
+@patch("backend.online_content_pipeline.process_html_files")
+@patch("backend.online_content_pipeline.embed_corpus_data")
 def test_run_pipeline_error_handling(mock_embed, mock_process, mock_crawl):
     # Simulate crawl error
     mock_crawl.side_effect = Exception("Crawl failed")

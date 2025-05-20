@@ -53,7 +53,7 @@ def test_query_returns_results(mock_openai, mock_chroma, tmp_path):
     mock_chroma.return_value.get_or_create_collection.return_value = mock_collection
 
     retriever = Retriever(chroma_path=str(chroma_path))
-    results = retriever.query("What is Metropole?")
+    results = retriever.query("What is Metropole?", n_results=2)
     assert "documents" in results
     assert len(results["documents"][0]) == 2
 

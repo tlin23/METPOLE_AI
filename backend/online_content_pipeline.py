@@ -29,7 +29,7 @@ from backend.configer.config import (
     INDEX_DIR,
     CHUNKS_JSON_PATH,
     CORPUS_PATH,
-    COLLECTION_NAME,
+    WEB_COLLECTION_NAME,
     BATCH_SIZE,
 )
 
@@ -96,19 +96,18 @@ def embed_corpus_data() -> None:
     """
     Embed the corpus and store in ChromaDB.
     """
-    logger.info("Embedding corpus data")
-
-    # Embed the corpus
+    logger.info("Embedding corpus")
     start_time = time.time()
+
     embed_corpus(
         corpus_path=CORPUS_PATH,
         chroma_db_path=INDEX_DIR,
-        collection_name=COLLECTION_NAME,
+        collection_name=WEB_COLLECTION_NAME,
         batch_size=BATCH_SIZE,
     )
 
     elapsed_time = time.time() - start_time
-    logger.info(f"Corpus embedding complete in {elapsed_time:.2f} seconds")
+    logger.info(f"Embedding complete in {elapsed_time:.2f} seconds")
 
 
 def run_pipeline(

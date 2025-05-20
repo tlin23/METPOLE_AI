@@ -71,23 +71,23 @@ format:
 
 # Run the crawler
 crawl:
-	python3 -m backend.pipeline --step crawl --start-url $(START_URL) --max-pages $(MAX_PAGES)
+	python3 -m backend.online_content_pipeline --step crawl --start-url $(START_URL) --max-pages $(MAX_PAGES)
 
 # Extract text from html files
 extract:
-	python3 -m backend.pipeline --step process
+	python3 -m backend.online_content_pipeline --step process
 
 # Run the embedding process
 embed:
-	python3 -m backend.pipeline --step embed
+	python3 -m backend.online_content_pipeline --step embed
 
 # Run the full pipeline
 pipeline:
-	python3 -m backend.pipeline --step all --start-url $(START_URL) --max-pages $(MAX_PAGES)
+	python3 -m backend.online_content_pipeline --step all --start-url $(START_URL) --max-pages $(MAX_PAGES)
 
 # Run the full prod pipeline
 pipeline-prod:
-	python3 -m backend.pipeline --step all --start-url $(START_URL) --max-pages $(MAX_PAGES) -p
+	python3 -m backend.online_content_pipeline --step all --start-url $(START_URL) --max-pages $(MAX_PAGES) --production
 
 # Clean up cache and temporary files
 clean:
@@ -121,3 +121,26 @@ reset-env:
 	pip install --upgrade pip setuptools wheel && \
 	pip install -r requirements.txt
 	@echo "✅ Environment reset complete!"
+
+# Run complete pipeline
+offline-all:
+	python -m backend.pipeline.offline_content_pipeline --step all
+
+offline-all-prod:
+	python -m backend.pipeline.offline_content_pipeline --step all --production
+
+# Extract raw text
+offline-extract:
+	python -m backend.pipeline.offline_content_pipeline --step extract
+
+# Run only document processing
+offline-process:
+	python -m backend.pipeline.offline_content_pipeline --step process
+
+# Run only embedding
+offline-embed:
+	python -m backend.pipeline.offline_content_pipeline --step embed
+
+# Inspect vector database contents
+inspect-db:
+	python -m backend.scripts.inspect_db
