@@ -22,10 +22,9 @@ from backend.configer.logging_config import get_logger
 from backend.embedder.embed_corpus import embed_corpus
 from backend.configer.config import INDEX_DIR, BATCH_SIZE, OFFLINE_COLLECTION_NAME
 from .process_documents import (
-    extract_document_text,
-    extract_chunks_without_tags,
-    add_tags_to_chunks,
-    RAW_TEXT_DIR,
+    process_documents,
+    extract_chunks,
+    add_tags,
     PROCESSED_DIR,
 )
 
@@ -46,19 +45,23 @@ def extract_documents(input_dir: str) -> Dict[str, str]:
     logger.info(f"Extracting text from documents in {input_dir}")
     start_time = time.time()
 
-    extracted_texts = extract_document_text(input_dir)
+    # Process documents and get structured content
+    structured_docs = process_documents(input_dir)
 
     elapsed_time = time.time() - start_time
     logger.info(f"Document extraction complete in {elapsed_time:.2f} seconds")
 
-    return extracted_texts
+    return structured_docs
 
 
-def process_document_text(production: bool = True) -> List[Dict[str, Any]]:
+def process_document_text(
+    structured_docs: List[Dict[str, Any]], production: bool = True
+) -> List[Dict[str, Any]]:
     """
     Process extracted text files to create chunks and add metadata.
 
     Args:
+        structured_docs: List of structured documents to process
         production: If True, run the full pipeline including tag extraction.
 
     Returns:
@@ -67,14 +70,14 @@ def process_document_text(production: bool = True) -> List[Dict[str, Any]]:
     logger.info("Processing document text files")
     start_time = time.time()
 
-    # Step 1: Extract chunks without tags
+    # Step 1: Extract chunks
     chunks_path = os.path.join(PROCESSED_DIR, "doc_chunks.json")
-    chunks = extract_chunks_without_tags(RAW_TEXT_DIR, chunks_path)
+    chunks = extract_chunks(structured_docs, chunks_path)
 
     # Step 2: Add tags to chunks if in production mode
     if production:
         corpus_path = os.path.join(PROCESSED_DIR, "doc_corpus.json")
-        chunks = add_tags_to_chunks(chunks_path, corpus_path)
+        chunks = add_tags(chunks, corpus_path)
     else:
         import shutil
 
@@ -133,10 +136,10 @@ def run_offline_pipeline(
 
     try:
         # Step 1: Extract raw text from documents
-        extract_documents(input_dir)
+        structured_docs = extract_documents(input_dir)
 
         # Step 2: Process text files and extract content
-        process_document_text(production)
+        process_document_text(structured_docs, production)
 
         # Step 3: Embed the corpus
         embed_document_chunks(collection_name, batch_size)

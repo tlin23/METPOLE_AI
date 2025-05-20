@@ -13,8 +13,8 @@ from backend.pipeline.processors import PDFProcessor, MSGProcessor, DOCXProcesso
 DEFAULT_DOCS_ROOT = "backend/data/offline_docs"
 PROCESSED_DIR = "backend/data/processed"
 RAW_TEXT_DIR = "backend/data/raw_docs"
-CHUNK_SIZE = 500
-CHUNK_OVERLAP = 50
+CHUNK_SIZE = 1000  # Increased chunk size
+CHUNK_OVERLAP = 100  # Increased overlap
 SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".dotx", ".doc", ".msg"}
 
 # Initialize logger
@@ -69,19 +69,65 @@ def extract_chunks(
     logger.info("Extracting chunks...")
 
     text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=CHUNK_SIZE, chunk_overlap=CHUNK_OVERLAP
+        chunk_size=CHUNK_SIZE,
+        chunk_overlap=CHUNK_OVERLAP,
+        separators=[
+            "\n\n",
+            "\n",
+            ". ",
+            "! ",
+            "? ",
+            "; ",
+            ": ",
+            " ",
+            "",
+        ],  # Added space after punctuation
+        length_function=len,
+        is_separator_regex=False,
     )
 
     all_chunks = []
     for doc in structured_docs:
         for block in doc["content"]:
+            # Get the content text from the block
+            content = block.get("content", "")
+
+            # Handle property blocks differently
+            if block.get("type") == "properties":
+                # Convert properties to a readable string format
+                props = content if isinstance(content, dict) else {}
+                content = "Document Properties:\n"
+                if props.get("title"):
+                    content += f"Title: {props['title']}\n"
+                if props.get("author"):
+                    content += f"Author: {props['author']}\n"
+                if props.get("created"):
+                    content += f"Created: {props['created']}\n"
+                if props.get("modified"):
+                    content += f"Modified: {props['modified']}\n"
+                if props.get("statistics"):
+                    stats = props["statistics"]
+                    content += f"Statistics: {stats.get('paragraphs', 0)} paragraphs, {stats.get('tables', 0)} tables"
+                logger.debug(f"Converted properties block to text: {content}")
+
+            if not isinstance(content, str):
+                logger.warning(
+                    f"Skipping block with non-string content:\n"
+                    f"Type: {type(content)}\n"
+                    f"Content: {content}\n"
+                    f"Block structure:\n{json.dumps(block, indent=2, ensure_ascii=False)}"
+                )
+                continue
+
             # Split block content into chunks
-            chunks = text_splitter.split_text(block["content"])
+            chunks = text_splitter.split_text(content)
 
             # Create chunk data
             for chunk in chunks:
                 chunk = " ".join(chunk.split()).strip()  # Clean text
-                if len(chunk) < 20:  # Skip very short chunks
+
+                # Skip chunks that are too short or start with punctuation
+                if len(chunk) < 20 or chunk[0] in ".!?;:":
                     continue
 
                 chunk_data = {
@@ -96,6 +142,9 @@ def extract_chunks(
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(all_chunks, f, indent=2, ensure_ascii=False)
 
+    logger.info(
+        f"Extracted {len(all_chunks)} chunks from {len(structured_docs)} documents"
+    )
     return all_chunks
 
 
