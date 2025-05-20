@@ -108,6 +108,7 @@ def extract_chunks_from_raw_docs(
     )
 
     all_chunks = []
+    seen_hashes = set()
     raw_docs_dir = Path(input_dir)
     json_files = list(raw_docs_dir.glob("*.json"))
     logger.info(f"Found {len(json_files)} JSON files in {input_dir}")
@@ -153,8 +154,11 @@ def extract_chunks_from_raw_docs(
                     )
                     continue
 
-                document_id = hash_id(metadata.get("filename", file_path.name))
                 chunk_id = hash_id(chunk)
+                if chunk_id in seen_hashes:
+                    continue
+                seen_hashes.add(chunk_id)
+                document_id = hash_id(metadata.get("filename", file_path.name))
                 document_title = metadata.get("filename", file_path.name)
                 document_name = Path(metadata.get("filename", file_path.name)).stem
                 chunk_data = {
