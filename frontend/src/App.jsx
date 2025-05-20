@@ -191,10 +191,10 @@ function App() {
                                   {chunk.metadata?.chunk_id || "Unknown"}
                                   <br />
                                   <strong>Section:</strong>{" "}
-                                  {chunk.metadata?.section_header || "N/A"}
+                                  {chunk.metadata?.section || "N/A"}
                                   <br />
                                   <strong>Page:</strong>{" "}
-                                  {chunk.metadata?.page_title || "Unknown"}
+                                  {chunk.metadata?.document_title || "Unknown"}
                                   <br />
                                   <strong>Text:</strong>{" "}
                                   {chunk.text || "No text available"}

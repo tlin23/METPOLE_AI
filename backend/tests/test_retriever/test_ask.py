@@ -20,8 +20,8 @@ def sample_chunks():
             text="This is a test chunk",
             metadata={
                 "chunk_id": "chunk_123",
-                "page_title": "Test Page",
-                "section_header": "Intro",
+                "document_title": "Test Page",
+                "section": "Intro",
             },
             distance=0.1,
         ),
@@ -29,8 +29,8 @@ def sample_chunks():
             text="Another chunk of content",
             metadata={
                 "chunk_id": "chunk_456",
-                "page_title": "Another Page",
-                "section_header": "FAQ",
+                "document_title": "Another Page",
+                "section": "FAQ",
             },
             distance=0.2,
         ),

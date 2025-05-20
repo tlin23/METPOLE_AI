@@ -56,6 +56,8 @@ front:
 test:
 	PYTHONPATH=backend ./backend/venv/bin/python -m pytest
 
+test-chatbot:
+	$(PYTHON) backend/tests/test_qa/test_chatbot_with_server.py
 
 # Run linting checks
 lint:

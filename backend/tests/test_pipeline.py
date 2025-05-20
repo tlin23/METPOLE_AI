@@ -15,7 +15,7 @@ def test_run_pipeline_all_steps_called(mock_embed, mock_process, mock_crawl):
     mock_process.return_value = [
         {
             "chunk_id": "chunk_1",
-            "page_id": "page_1",
+            "document_id": "doc_1",
             "content": "Example content",
             "tags": ["tag1"],
         }

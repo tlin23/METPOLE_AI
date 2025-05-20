@@ -3,177 +3,89 @@
 Offline Content Pipeline for Metropole.AI
 
 This script handles the processing of offline documents:
-1. Extract raw text from documents
-2. Process text files to extract structured content
+1. Extract structured docs from files
+2. Extract chunks from structured docs
 3. Add metadata and tags to the content
 4. Store in vector database
 
 Usage:
-    python offline_content_pipeline.py --input-dir /path/to/documents --collection metropole_documents
+    python offline_content_pipeline.py --step all -p
 """
 
 import argparse
-import os
 import time
-from pathlib import Path
-from typing import Optional, Dict, List, Any
-
+import shutil
 from backend.configer.logging_config import get_logger
 from backend.embedder.embed_corpus import embed_corpus
-from backend.configer.config import INDEX_DIR, BATCH_SIZE, OFFLINE_COLLECTION_NAME
+from backend.configer.config import (
+    INDEX_DIR,
+    BATCH_SIZE,
+    OFFLINE_COLLECTION_NAME,
+    OFFLINE_DOCS_DIR,
+    DOC_TEXT_DIR as RAW_DOCS_DIR,
+    OFFLINE_CHUNKS_JSON_PATH,
+    OFFLINE_CORPUS_PATH,
+)
 from .process_documents import (
-    process_documents,
-    extract_chunks,
-    add_tags,
-    PROCESSED_DIR,
+    extract_structured_docs_from_files,
+    extract_chunks_from_raw_docs,
+    add_tags_to_chunks,
 )
 
-# Get logger for this module
 logger = get_logger("offline_pipeline")
 
 
-def extract_documents(input_dir: str) -> Dict[str, str]:
-    """
-    Extract raw text from documents and save to files.
-
-    Args:
-        input_dir: Directory containing the documents to process
-
-    Returns:
-        Dictionary mapping document paths to their extracted text
-    """
-    logger.info(f"Extracting text from documents in {input_dir}")
-    start_time = time.time()
-
-    # Process documents and get structured content
-    structured_docs = process_documents(input_dir)
-
-    elapsed_time = time.time() - start_time
-    logger.info(f"Document extraction complete in {elapsed_time:.2f} seconds")
-
-    return structured_docs
+def extract_offline_docs():
+    logger.info("Step 1: Extracting structured docs from offline files...")
+    extract_structured_docs_from_files(OFFLINE_DOCS_DIR, RAW_DOCS_DIR)
+    logger.info("Step 1 complete.")
 
 
-def process_document_text(
-    structured_docs: List[Dict[str, Any]], production: bool = True
-) -> List[Dict[str, Any]]:
-    """
-    Process extracted text files to create chunks and add metadata.
-
-    Args:
-        structured_docs: List of structured documents to process
-        production: If True, run the full pipeline including tag extraction.
-
-    Returns:
-        List of processed chunks with metadata
-    """
-    logger.info("Processing document text files")
-    start_time = time.time()
-
-    # Step 1: Extract chunks
-    chunks_path = os.path.join(PROCESSED_DIR, "doc_chunks.json")
-    chunks = extract_chunks(structured_docs, chunks_path)
-
-    # Step 2: Add tags to chunks if in production mode
+def process_offline_docs(production: bool):
+    logger.info("Step 2: Extracting chunks from structured docs...")
+    extract_chunks_from_raw_docs(RAW_DOCS_DIR, OFFLINE_CHUNKS_JSON_PATH)
+    logger.info("Step 2A complete.")
     if production:
-        corpus_path = os.path.join(PROCESSED_DIR, "doc_corpus.json")
-        chunks = add_tags(chunks, corpus_path)
+        logger.info("Step 2B: Adding tags to chunks...")
+        add_tags_to_chunks(OFFLINE_CHUNKS_JSON_PATH, OFFLINE_CORPUS_PATH)
+        logger.info("Step 2B complete.")
     else:
-        import shutil
-
-        corpus_path = os.path.join(PROCESSED_DIR, "doc_corpus.json")
-        shutil.copyfile(chunks_path, corpus_path)
-        logger.info("Copied doc_chunks.json to doc_corpus.json without tags")
-
-    elapsed_time = time.time() - start_time
-    logger.info(f"Document processing complete in {elapsed_time:.2f} seconds")
-
-    return chunks
+        shutil.copyfile(OFFLINE_CHUNKS_JSON_PATH, OFFLINE_CORPUS_PATH)
+        logger.info("Copied chunks to corpus file without tags (non-production mode)")
 
 
-def embed_document_chunks(
-    collection_name: str = OFFLINE_COLLECTION_NAME, batch_size: Optional[int] = None
-) -> None:
-    """
-    Embed document chunks and store in vector database.
-
-    Args:
-        collection_name: Name of the Chroma collection to store embeddings
-        batch_size: Optional batch size for embedding process
-    """
-    logger.info("Embedding document chunks")
+def embed_offline_corpus():
+    logger.info("Step 3: Embedding offline corpus...")
     start_time = time.time()
-
-    corpus_path = os.path.join(PROCESSED_DIR, "doc_corpus.json")
     embed_corpus(
-        corpus_path=corpus_path,
+        corpus_path=OFFLINE_CORPUS_PATH,
         chroma_db_path=INDEX_DIR,
-        collection_name=collection_name,
-        batch_size=batch_size or BATCH_SIZE,
+        collection_name=OFFLINE_COLLECTION_NAME,
+        batch_size=BATCH_SIZE,
     )
-
     elapsed_time = time.time() - start_time
     logger.info(f"Embedding complete in {elapsed_time:.2f} seconds")
 
 
-def run_offline_pipeline(
-    input_dir: str,
-    collection_name: str = OFFLINE_COLLECTION_NAME,
-    batch_size: Optional[int] = None,
-    production: bool = True,
-) -> None:
-    """
-    Run the complete offline content processing pipeline.
-
-    Args:
-        input_dir: Directory containing the documents to process
-        collection_name: Name of the Chroma collection to store embeddings
-        batch_size: Optional batch size for embedding process
-        production: If True, run the full pipeline including tag extraction
-    """
+def run_offline_pipeline(production: bool):
     logger.info("Starting offline content pipeline")
     total_start_time = time.time()
-
     try:
-        # Step 1: Extract raw text from documents
-        structured_docs = extract_documents(input_dir)
-
-        # Step 2: Process text files and extract content
-        process_document_text(structured_docs, production)
-
-        # Step 3: Embed the corpus
-        embed_document_chunks(collection_name, batch_size)
-
+        extract_offline_docs()
+        process_offline_docs(production)
+        embed_offline_corpus()
         total_elapsed_time = time.time() - total_start_time
         logger.info(
             f"Offline pipeline complete! Total time: {total_elapsed_time:.2f} seconds"
         )
-
     except Exception:
         logger.exception("Offline pipeline failed due to an unexpected error.")
         raise
 
 
-def main():
+if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Run the offline content processing pipeline."
-    )
-    parser.add_argument(
-        "--input-dir",
-        type=str,
-        default="backend/data/offline_docs",
-        help="Directory containing documents to process",
-    )
-    parser.add_argument(
-        "--collection",
-        type=str,
-        default=OFFLINE_COLLECTION_NAME,
-        help="Chroma collection name for storing embeddings (default: metropole_offline_documents)",
-    )
-    parser.add_argument(
-        "--batch-size",
-        type=int,
-        help="Batch size for embedding process (optional)",
     )
     parser.add_argument(
         "-p",
@@ -188,35 +100,16 @@ def main():
         choices=["all", "extract", "process", "embed"],
         help="Which pipeline step to run",
     )
-
     args = parser.parse_args()
 
-    # Validate input directory
-    input_path = Path(args.input_dir)
-    if not input_path.exists():
-        logger.error(f"Input directory does not exist: {args.input_dir}")
-        exit(1)
-    if not input_path.is_dir():
-        logger.error(f"Input path is not a directory: {args.input_dir}")
-        exit(1)
-
     if args.step == "all":
-        run_offline_pipeline(
-            input_dir=args.input_dir,
-            collection_name=args.collection,
-            batch_size=args.batch_size,
-            production=args.production,
-        )
+        run_offline_pipeline(args.production)
     elif args.step == "extract":
-        extract_documents(args.input_dir)
+        extract_offline_docs()
     elif args.step == "process":
-        process_document_text(args.production)
+        process_offline_docs(args.production)
     elif args.step == "embed":
-        embed_document_chunks(args.collection, args.batch_size)
+        embed_offline_corpus()
     else:
         print("Invalid step. Use 'all', 'extract', 'process', or 'embed'.")
         exit(1)
-
-
-if __name__ == "__main__":
-    main()

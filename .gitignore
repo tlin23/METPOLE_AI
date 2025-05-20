@@ -75,7 +75,7 @@ archive/
 backend/data/html/
 backend/data/processed/
 backend/data/offline_docs/
-backend/data/raw_docs/
+backend/data/doc_text/
 
 tests/temp_html/
 tests/*.json

@@ -1,6 +1,5 @@
 import os
 import json
-import uuid
 from unstructured.partition.html import partition_html
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from keybert import KeyBERT
@@ -33,7 +32,6 @@ def extract_chunks_without_tags(
 
     all_chunks = []
     seen_hashes = set()
-    page_ids = {}
 
     for root, _, files in os.walk(input_dir):
         for file in files:
@@ -49,10 +47,11 @@ def extract_chunks_without_tags(
             chunks = text_splitter.split_text(full_text)
 
             page_name = file.replace(".html", "")
-            page_id = page_ids.setdefault(page_name, f"page_{str(uuid.uuid4())[:8]}")
-            page_title = (
+            document_id = hash_id(page_name)
+            document_title = (
                 f"metropoleballard.com - {page_name.split('_')[-1].capitalize()}"
             )
+            document_name = page_name
 
             for chunk_text in chunks:
                 chunk_text = clean_text(chunk_text)
@@ -63,10 +62,10 @@ def extract_chunks_without_tags(
                 all_chunks.append(
                     {
                         "chunk_id": chunk_id,
-                        "page_id": page_id,
-                        "page_name": page_name,
-                        "page_title": page_title,
-                        "section_header": "Auto",
+                        "document_id": document_id,
+                        "document_title": document_title,
+                        "document_name": document_name,
+                        "section": "Auto",
                         "content": chunk_text,
                     }
                 )

@@ -230,14 +230,18 @@ class Retriever:
                 chunk.metadata if hasattr(chunk, "metadata") and chunk.metadata else {}
             )
             chunk_id = str(metadata.get("chunk_id", f"unknown-{i}"))
-            page_title = str(metadata.get("page_title", "Unknown Page"))
-            section = metadata.get("section_header", "")
+            document_title = str(
+                metadata.get("document_title")
+                or metadata.get("document_name")
+                or "Unknown Page"
+            )
+            section = metadata.get("section", "")
 
             # Format source info using f-strings to avoid None concatenation
             if section and isinstance(section, str):
-                source_info = f"Chunk {chunk_id} ({section}) from {page_title}"
+                source_info = f"Chunk {chunk_id} ({section}) from {document_title}"
             else:
-                source_info = f"Chunk {chunk_id} from {page_title}"
+                source_info = f"Chunk {chunk_id} from {document_title}"
 
             sources.append(source_info)
 
@@ -272,15 +276,19 @@ class Retriever:
             )
 
             # Add source information if available
-            page_title = str(metadata.get("page_title", "Unknown Page"))
-            section = metadata.get("section_header", "")
+            document_title = str(
+                metadata.get("document_title")
+                or metadata.get("document_name")
+                or "Unknown Page"
+            )
+            section = metadata.get("section", "")
 
             # Build source info parts
             source_parts = []
             if section and isinstance(section, str):
                 source_parts.append(f"Section: {section}")
-            if page_title:
-                source_parts.append(f"Page: {page_title}")
+            if document_title:
+                source_parts.append(f"Page: {document_title}")
 
             # Join parts with commas
             source_info = f" ({', '.join(source_parts)})"

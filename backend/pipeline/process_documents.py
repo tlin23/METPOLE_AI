@@ -1,72 +1,93 @@
 import os
 import json
-import time
 from pathlib import Path
-from typing import List, Dict, Any
+from backend.configer.config import (
+    OFFLINE_DOCS_DIR,
+    DOC_TEXT_DIR as RAW_DOCS_DIR,
+    OFFLINE_CHUNKS_JSON_PATH,
+    OFFLINE_CORPUS_PATH,
+    SUPPORTED_EXTENSIONS,
+)
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from keybert import KeyBERT
 from sentence_transformers import SentenceTransformer
 from backend.configer.logging_config import get_logger
-from backend.pipeline.processors import PDFProcessor, MSGProcessor, DOCXProcessor
+from backend.pipeline.processors import PDFProcessor, DOCXProcessor
+import hashlib
 
-# Constants
-DEFAULT_DOCS_ROOT = "backend/data/offline_docs"
-PROCESSED_DIR = "backend/data/processed"
-RAW_TEXT_DIR = "backend/data/raw_docs"
-CHUNK_SIZE = 1000  # Increased chunk size
-CHUNK_OVERLAP = 100  # Increased overlap
-SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".dotx", ".doc", ".msg"}
-
-# Initialize logger
 logger = get_logger("pipeline.process_documents")
+CHUNK_SIZE = 1000
+CHUNK_OVERLAP = 100
 
 
 def get_processor(file_path: Path):
-    """Get the appropriate processor for a file type."""
     extension = file_path.suffix.lower()
     processors = {
         ".pdf": PDFProcessor(),
-        ".msg": MSGProcessor(),
         ".docx": DOCXProcessor(),
-        ".doc": DOCXProcessor(),  # Use DOCX processor for DOC files
-        ".dotx": DOCXProcessor(),  # Use DOCX processor for DOTX files
     }
     return processors.get(extension)
 
 
-def process_single_document(file_path: Path, output_dir: Path) -> Dict[str, Any]:
-    """Process a single document and return its structured content."""
-    # Get appropriate processor
-    processor = get_processor(file_path)
-    if not processor:
-        raise ValueError(f"No processor available for {file_path.suffix}")
+def extract_structured_docs_from_files(
+    input_dir=OFFLINE_DOCS_DIR,
+    output_dir=RAW_DOCS_DIR,
+):
+    """
+    Process all supported files in input_dir and save structured docs to output_dir as JSON.
+    """
+    logger.info(f"Extracting structured docs from files in {input_dir}...")
+    os.makedirs(output_dir, exist_ok=True)
+    docs_root = Path(input_dir)
+    # Find all files to process first
+    files_to_process = [
+        f for f in docs_root.rglob("*") if f.suffix.lower() in SUPPORTED_EXTENSIONS
+    ]
+    total_files = len(files_to_process)
+    logger.info(f"Found {total_files} files to process.")
+    count = 0
+    for idx, file_path in enumerate(files_to_process, 1):
+        processor = get_processor(file_path)
+        if not processor:
+            logger.warning(f"No processor for {file_path.suffix}, skipping {file_path}")
+            continue
+        try:
+            structured_blocks = processor.process(file_path)
+            doc_structure = {
+                "metadata": {
+                    "filename": file_path.name,
+                    "file_type": file_path.suffix.lower(),
+                    "sections": list(
+                        set(block["section"] for block in structured_blocks)
+                    ),
+                },
+                "content": structured_blocks,
+            }
+            output_file = Path(output_dir) / f"{file_path.stem}.json"
+            with open(output_file, "w", encoding="utf-8") as f:
+                json.dump(doc_structure, f, indent=2, ensure_ascii=False)
+            count += 1
+            logger.info(f"[{idx}/{total_files}] Processed and saved: {output_file}")
+        except Exception as e:
+            logger.error(f"Error processing {file_path}: {str(e)}")
+    logger.info(f"Extracted structured docs from {count} files.")
 
-    # Process document
-    structured_blocks = processor.process(file_path)
 
-    # Create document structure
-    doc_structure = {
-        "metadata": {
-            "filename": file_path.name,
-            "file_type": file_path.suffix.lower(),
-            "sections": list(set(block["section"] for block in structured_blocks)),
-        },
-        "content": structured_blocks,
-    }
-
-    # Save to JSON
-    output_file = output_dir / f"{file_path.stem}.json"
-    with open(output_file, "w", encoding="utf-8") as f:
-        json.dump(doc_structure, f, indent=2, ensure_ascii=False)
-
-    return doc_structure
+def hash_id(text: str) -> str:
+    return hashlib.md5(text.encode("utf-8")).hexdigest()
 
 
-def extract_chunks(
-    structured_docs: List[Dict[str, Any]], output_path: str
-) -> List[Dict[str, Any]]:
-    """Extract chunks from structured documents."""
-    logger.info("Extracting chunks...")
+def extract_chunks_from_raw_docs(
+    input_dir=RAW_DOCS_DIR,
+    output_path=OFFLINE_CHUNKS_JSON_PATH,
+):
+    """
+    Extract chunks from all structured JSON docs in input_dir and save to output_path.
+    """
+    logger.info(f"Extracting chunks from JSON files in {input_dir}...")
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    if os.path.isfile(output_path):
+        os.remove(output_path)
 
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=CHUNK_SIZE,
@@ -81,20 +102,25 @@ def extract_chunks(
             ": ",
             " ",
             "",
-        ],  # Added space after punctuation
+        ],
         length_function=len,
         is_separator_regex=False,
     )
 
     all_chunks = []
-    for doc in structured_docs:
-        for block in doc["content"]:
-            # Get the content text from the block
-            content = block.get("content", "")
+    raw_docs_dir = Path(input_dir)
+    json_files = list(raw_docs_dir.glob("*.json"))
+    logger.info(f"Found {len(json_files)} JSON files in {input_dir}")
 
-            # Handle property blocks differently
+    for file_path in json_files:
+        with open(file_path, "r", encoding="utf-8") as f:
+            doc = json.load(f)
+        metadata = doc.get("metadata", {})
+        blocks = doc.get("content", [])
+        logger.info(f"Processing {file_path.name}: {len(blocks)} blocks")
+        for block_idx, block in enumerate(blocks):
+            content = block.get("content", "")
             if block.get("type") == "properties":
-                # Convert properties to a readable string format
                 props = content if isinstance(content, dict) else {}
                 content = "Document Properties:\n"
                 if props.get("title"):
@@ -112,51 +138,68 @@ def extract_chunks(
 
             if not isinstance(content, str):
                 logger.warning(
-                    f"Skipping block with non-string content:\n"
-                    f"Type: {type(content)}\n"
-                    f"Content: {content}\n"
-                    f"Block structure:\n{json.dumps(block, indent=2, ensure_ascii=False)}"
+                    f"Skipping block {block_idx+1}: non-string content (type: {type(content)})"
                 )
                 continue
 
-            # Split block content into chunks
             chunks = text_splitter.split_text(content)
+            logger.info(f"Block {block_idx+1}: split into {len(chunks)} chunks")
 
-            # Create chunk data
             for chunk in chunks:
-                chunk = " ".join(chunk.split()).strip()  # Clean text
-
-                # Skip chunks that are too short or start with punctuation
+                chunk = " ".join(chunk.split()).strip()
                 if len(chunk) < 20 or chunk[0] in ".!?;:":
+                    logger.debug(
+                        f"Skipping short or punctuated chunk: '{chunk[:30]}...'"
+                    )
                     continue
 
+                document_id = hash_id(metadata.get("filename", file_path.name))
+                chunk_id = hash_id(chunk)
+                document_title = metadata.get("filename", file_path.name)
+                document_name = Path(metadata.get("filename", file_path.name)).stem
                 chunk_data = {
-                    "source_file": doc["metadata"]["filename"],
-                    "section": block["section"],
+                    "chunk_id": chunk_id,
+                    "document_id": document_id,
+                    "document_title": document_title,
+                    "document_name": document_name,
+                    "section": block.get("section", "unknown"),
+                    "source_file": metadata.get("filename", file_path.name),
                     "content": chunk,
                     "source_type": "document",
                 }
                 all_chunks.append(chunk_data)
+        logger.info(f"{file_path.name}: total chunks so far: {len(all_chunks)}")
 
-    # Save chunks
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(all_chunks, f, indent=2, ensure_ascii=False)
 
     logger.info(
-        f"Extracted {len(all_chunks)} chunks from {len(structured_docs)} documents"
+        f"Extracted {len(all_chunks)} chunks from {len(json_files)} documents to {output_path}"
     )
     return all_chunks
 
 
-def add_tags(chunks: List[Dict[str, Any]], output_path: str) -> List[Dict[str, Any]]:
-    """Add tags to chunks using KeyBERT."""
-    logger.info("Adding tags to chunks...")
+def add_tags_to_chunks(
+    input_path=OFFLINE_CHUNKS_JSON_PATH,
+    output_path=OFFLINE_CORPUS_PATH,
+):
+    """
+    Add tags to chunks using KeyBERT and save to output_path.
+    """
+    logger.info(f"Adding tags to chunks in {input_path}...")
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    if os.path.isfile(output_path):
+        os.remove(output_path)
 
-    # Initialize KeyBERT
     model = KeyBERT(model=SentenceTransformer("all-MiniLM-L6-v2"))
 
-    # Add tags to each chunk
-    for chunk in chunks:
+    with open(input_path, "r", encoding="utf-8") as f:
+        chunks = json.load(f)
+
+    for idx, chunk in enumerate(chunks):
+        logger.debug(
+            f"Processing chunk {idx+1}/{len(chunks)}: {chunk.get('content', '')[:50]}..."
+        )
         keywords = model.extract_keywords(
             chunk["content"],
             keyphrase_ngram_range=(1, 2),
@@ -164,49 +207,10 @@ def add_tags(chunks: List[Dict[str, Any]], output_path: str) -> List[Dict[str, A
             top_n=5,
         )
         chunk["tags"] = [keyword[0] for keyword in keywords]
+        logger.info(f"Chunk {idx+1}: tags={chunk['tags']}")
 
-    # Save tagged chunks
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(chunks, f, indent=2, ensure_ascii=False)
 
+    logger.info(f"Tagging complete. Tagged chunks saved to {output_path}")
     return chunks
-
-
-def process_documents(input_dir: str = DEFAULT_DOCS_ROOT) -> List[Dict[str, Any]]:
-    """Process all supported documents in the specified directory."""
-    start_time = time.time()
-    logger.info("Starting document processing...")
-
-    # Setup directories
-    docs_root = Path(input_dir)
-    raw_text_dir = Path(RAW_TEXT_DIR)
-    raw_text_dir.mkdir(parents=True, exist_ok=True)
-
-    # Clear existing files
-    for file in raw_text_dir.glob("*"):
-        file.unlink()
-
-    # Process each supported file
-    structured_docs = []
-    for file_path in docs_root.rglob("*"):
-        if file_path.suffix.lower() in SUPPORTED_EXTENSIONS:
-            try:
-                doc = process_single_document(file_path, raw_text_dir)
-                structured_docs.append(doc)
-            except Exception as e:
-                logger.error(f"Error processing {file_path}: {str(e)}")
-
-    # Extract chunks
-    chunks_path = os.path.join(PROCESSED_DIR, "doc_chunks.json")
-    chunks = extract_chunks(structured_docs, chunks_path)
-
-    # Add tags
-    corpus_path = os.path.join(PROCESSED_DIR, "doc_corpus.json")
-    tagged_chunks = add_tags(chunks, corpus_path)
-
-    logger.info(f"Processing complete in {time.time() - start_time:.2f}s")
-    return tagged_chunks
-
-
-if __name__ == "__main__":
-    process_documents()

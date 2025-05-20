@@ -170,10 +170,10 @@ def embed_corpus(
         metadatas = []
         for chunk in batch:
             metadata = {
-                "page_id": chunk["page_id"],
-                "page_title": chunk["page_title"],
-                "page_name": chunk["page_name"],
-                "section_header": chunk["section_header"],
+                "document_id": chunk["document_id"],
+                "document_title": chunk["document_title"],
+                "document_name": chunk["document_name"],
+                "section": chunk["section"],
             }
             if "tags" in chunk and isinstance(chunk["tags"], list):
                 metadata["tags"] = ",".join(chunk["tags"])
