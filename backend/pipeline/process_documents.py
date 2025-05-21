@@ -34,7 +34,12 @@ def extract_structured_docs_from_files(
     output_dir=RAW_DOCS_DIR,
 ):
     """
-    Process all supported files in input_dir and save structured docs to output_dir as JSON.
+    Process all supported files in input_dir and save structured docs to output_dir as JSON,
+    maintaining the directory structure from input_dir.
+
+    The directory structure from input_dir is preserved in output_dir, and the relative
+    directory path is also stored in the metadata of each document for reference by
+    downstream processing.
     """
     logger.info(f"Extracting structured docs from files in {input_dir}...")
     os.makedirs(output_dir, exist_ok=True)
@@ -53,17 +58,28 @@ def extract_structured_docs_from_files(
             continue
         try:
             structured_blocks = processor.process(file_path)
+            # Calculate relative path from input_dir for metadata
+            rel_path = file_path.relative_to(docs_root)
+            rel_dir = str(rel_path.parent) if rel_path.parent != Path(".") else ""
+
             doc_structure = {
                 "metadata": {
                     "filename": file_path.name,
                     "file_type": file_path.suffix.lower(),
+                    "relative_dir": rel_dir,  # Store the relative directory path
                     "sections": list(
                         set(block["section"] for block in structured_blocks)
                     ),
                 },
                 "content": structured_blocks,
             }
-            output_file = Path(output_dir) / f"{file_path.stem}.json"
+
+            # Create the output directory structure if it doesn't exist
+            output_subdir = Path(output_dir) / rel_path.parent
+            os.makedirs(output_subdir, exist_ok=True)
+            # Save the file with the same relative path but with .json extension
+            output_file = output_subdir / f"{rel_path.stem}.json"
+
             with open(output_file, "w", encoding="utf-8") as f:
                 json.dump(doc_structure, f, indent=2, ensure_ascii=False)
             count += 1
@@ -82,7 +98,13 @@ def extract_chunks_from_raw_docs(
     output_path=OFFLINE_CHUNKS_JSON_PATH,
 ):
     """
-    Extract chunks from all structured JSON docs in input_dir and save to output_path.
+    Extract chunks from all structured JSON docs in input_dir (including subdirectories)
+    and save to output_path.
+
+    This function recursively searches for JSON files in the input_dir and its subdirectories,
+    processes them into chunks, and preserves the directory structure information in the
+    chunk metadata via the 'source_dir' field. This ensures that the original file organization
+    is maintained throughout the processing pipeline.
     """
     logger.info(f"Extracting chunks from JSON files in {input_dir}...")
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
@@ -110,8 +132,10 @@ def extract_chunks_from_raw_docs(
     all_chunks = []
     seen_hashes = set()
     raw_docs_dir = Path(input_dir)
-    json_files = list(raw_docs_dir.glob("*.json"))
-    logger.info(f"Found {len(json_files)} JSON files in {input_dir}")
+    json_files = list(raw_docs_dir.rglob("*.json"))
+    logger.info(
+        f"Found {len(json_files)} JSON files in {input_dir} (including subdirectories)"
+    )
 
     for file_path in json_files:
         with open(file_path, "r", encoding="utf-8") as f:
@@ -148,7 +172,7 @@ def extract_chunks_from_raw_docs(
 
             for chunk in chunks:
                 chunk = " ".join(chunk.split()).strip()
-                if len(chunk) < 20 or chunk[0] in ".!?;:":
+                if len(chunk) <= 20 or len(chunk.split()) <= 5:
                     logger.debug(
                         f"Skipping short or punctuated chunk: '{chunk[:30]}...'"
                     )
@@ -158,6 +182,17 @@ def extract_chunks_from_raw_docs(
                 if chunk_id in seen_hashes:
                     continue
                 seen_hashes.add(chunk_id)
+                # Get directory path information
+                # First try to get it from metadata if available (from the structured doc)
+                rel_dir = metadata.get("relative_dir", "")
+
+                # If not available in metadata, calculate it from the file path
+                if not rel_dir:
+                    rel_path = file_path.relative_to(raw_docs_dir)
+                    rel_dir = (
+                        str(rel_path.parent) if rel_path.parent != Path(".") else ""
+                    )
+
                 document_id = hash_id(metadata.get("filename", file_path.name))
                 document_title = metadata.get("filename", file_path.name)
                 document_name = Path(metadata.get("filename", file_path.name)).stem
@@ -168,6 +203,7 @@ def extract_chunks_from_raw_docs(
                     "document_name": document_name,
                     "section": block.get("section", "unknown"),
                     "source_file": metadata.get("filename", file_path.name),
+                    "source_dir": rel_dir,  # Store the relative directory path
                     "content": chunk,
                     "source_type": "document",
                 }

@@ -54,7 +54,7 @@ test:
 	PYTHONPATH=backend ./backend/venv/bin/python -m pytest
 
 test-qa:
-	python3 backend/scripts/test_qa/test_qa.py
+	python3 backend/scripts/test_qa/ask_sample_questions.py
 
 # Run linting checks
 lint:
