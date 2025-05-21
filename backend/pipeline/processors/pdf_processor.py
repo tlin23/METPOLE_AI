@@ -1,7 +1,7 @@
 import time
 from pathlib import Path
 from typing import List, Dict, Any
-from pypdf import PdfReader
+import fitz  # PyMuPDF
 from backend.configer.logging_config import get_logger
 
 logger = get_logger("pipeline.processors.pdf")
@@ -41,12 +41,10 @@ class PDFProcessor:
         start_time = time.time()
 
         try:
-            # Load document
+            # Load document using PyMuPDF
             logger.debug(f"Loading document: {file_path}")
-            reader = PdfReader(file_path)
-            logger.info(
-                f"Document loaded successfully. Found {len(reader.pages)} pages"
-            )
+            doc = fitz.open(file_path)
+            logger.info(f"Document loaded successfully. Found {len(doc)} pages")
 
             # Extract content
             structured_blocks = []
@@ -55,7 +53,7 @@ class PDFProcessor:
 
             # Add document properties
             logger.debug("Extracting document properties")
-            properties = self._extract_document_properties(reader)
+            properties = self._extract_document_properties(doc)
             if properties:
                 logger.info("Document properties extracted successfully")
                 structured_blocks.append(
@@ -71,12 +69,12 @@ class PDFProcessor:
             element_count = {"pages": 0, "paragraphs": 0}
 
             # Process each page
-            for page_num, page in enumerate(reader.pages, 1):
+            for page_num, page in enumerate(doc, 1):
                 element_count["pages"] += 1
                 logger.debug(f"Processing page {page_num}")
 
-                # Extract text from page
-                text = page.extract_text()
+                # Extract text from page using PyMuPDF
+                text = page.get_text()
                 if not text:
                     logger.debug(f"No text found on page {page_num}")
                     continue
@@ -110,6 +108,9 @@ class PDFProcessor:
             logger.info(f"- Total paragraphs found: {element_count['paragraphs']}")
             logger.info(f"- Total content blocks created: {len(structured_blocks)}")
             logger.info(f"Processing took {time.time() - start_time:.2f} seconds")
+
+            # Close the document
+            doc.close()
 
             return structured_blocks
 
@@ -149,31 +150,31 @@ class PDFProcessor:
         text_lower = text.lower()
         return any(text_lower.startswith(pattern) for pattern in heading_patterns)
 
-    def _extract_document_properties(self, reader: PdfReader) -> Dict[str, Any]:
-        """Extract basic document properties."""
+    def _extract_document_properties(self, doc: fitz.Document) -> Dict[str, Any]:
+        """Extract basic document properties using PyMuPDF."""
         logger.debug("Starting document properties extraction")
         properties = {}
 
         # Get document metadata
-        metadata = reader.metadata
+        metadata = doc.metadata
         if metadata:
-            if metadata.title:
-                properties["title"] = metadata.title
-                logger.debug(f"Found title: {metadata.title}")
-            if metadata.author:
-                properties["author"] = metadata.author
-                logger.debug(f"Found author: {metadata.author}")
-            if metadata.creation_date:
-                properties["created"] = metadata.creation_date.isoformat()
-                logger.debug(f"Found creation date: {metadata.creation_date}")
-            if metadata.modification_date:
-                properties["modified"] = metadata.modification_date.isoformat()
-                logger.debug(f"Found modification date: {metadata.modification_date}")
+            if metadata.get("title"):
+                properties["title"] = metadata.get("title")
+                logger.debug(f"Found title: {metadata.get('title')}")
+            if metadata.get("author"):
+                properties["author"] = metadata.get("author")
+                logger.debug(f"Found author: {metadata.get('author')}")
+            if metadata.get("creationDate"):
+                properties["created"] = metadata.get("creationDate")
+                logger.debug(f"Found creation date: {metadata.get('creationDate')}")
+            if metadata.get("modDate"):
+                properties["modified"] = metadata.get("modDate")
+                logger.debug(f"Found modification date: {metadata.get('modDate')}")
 
         # Document statistics
         properties["statistics"] = {
-            "pages": len(reader.pages),
-            "encrypted": reader.is_encrypted,
+            "pages": len(doc),
+            "encrypted": doc.is_encrypted,
         }
         logger.debug(f"Document statistics: {properties['statistics']}")
 
