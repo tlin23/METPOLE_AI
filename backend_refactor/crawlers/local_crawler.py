@@ -1,13 +1,13 @@
 import shutil
 from pathlib import Path
 from typing import List, Set
-from .base import BaseExtractor
+from .base_crawler import BaseCrawler
 
 
-class LocalExtractor(BaseExtractor):
+class LocalCrawler(BaseCrawler):
     def __init__(self, allowed_extensions: List[str] = None):
         """
-        Initialize the LocalExtractor.
+        Initialize the LocalCrawler.
 
         Args:
             allowed_extensions: List of file extensions to process (e.g., ['.txt', '.pdf']).
@@ -46,10 +46,10 @@ class LocalExtractor(BaseExtractor):
             List of Path objects pointing to the copied files
         """
         if not input_path.exists():
-            raise ValueError(f"Input path does not exist: {input_path}")
+            raise FileNotFoundError(f"Input path does not exist: {input_path}")
 
         if not input_path.is_dir():
-            raise ValueError(f"Input path must be a directory: {input_path}")
+            raise NotADirectoryError(f"Input path must be a directory: {input_path}")
 
         saved_files = []
 

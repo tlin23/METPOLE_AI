@@ -1,8 +1,8 @@
 import json
 from pathlib import Path
 from typing import List, Dict, Type
-from ..extractors.web_extractor import WebExtractor
-from ..extractors.local_extractor import LocalExtractor
+from ..crawlers.web_crawler import WebCrawler
+from ..crawlers.local_crawler import LocalCrawler
 from ..parsers.html_parser import HTMLParser
 from ..parsers.pdf_parser import PDFParser
 from ..parsers.docx_parser import DOCXParser
@@ -49,6 +49,24 @@ def _process_files(file_paths: List[Path], output_dir: Path) -> List[ContentChun
     return all_chunks
 
 
+def process_web_input(
+    url: str, html_dir: Path, allowed_domains: List[str] = None
+) -> List[Path]:
+    """Process web input by crawling the URL and saving HTML files."""
+    crawler = WebCrawler(allowed_domains=allowed_domains)
+    html_files = crawler.extract(Path(url), html_dir)
+    return html_files
+
+
+def process_local_input(
+    input_dir: Path, extracted_dir: Path, allowed_extensions: List[str] = None
+) -> List[Path]:
+    """Process local input by copying files to the extracted directory."""
+    crawler = LocalCrawler(allowed_extensions=allowed_extensions)
+    extracted_files = crawler.extract(input_dir, extracted_dir)
+    return extracted_files
+
+
 def run_web_pipeline(
     url: str,
     output_dir: Path,
@@ -78,8 +96,7 @@ def run_web_pipeline(
         parsed_dir.mkdir(parents=True, exist_ok=True)
 
         # Extract HTML files
-        extractor = WebExtractor(allowed_domains=allowed_domains)
-        html_files = extractor.extract(Path(url), html_dir)
+        html_files = process_web_input(url, html_dir, allowed_domains)
 
         # Parse HTML files
         chunks = _process_files(html_files, parsed_dir)
@@ -131,8 +148,9 @@ def run_local_pipeline(
         parsed_dir.mkdir(parents=True, exist_ok=True)
 
         # Extract and organize files
-        extractor = LocalExtractor(allowed_extensions=allowed_extensions)
-        extracted_files = extractor.extract(input_dir, extracted_dir)
+        extracted_files = process_local_input(
+            input_dir, extracted_dir, allowed_extensions
+        )
 
         # Parse files
         chunks = _process_files(extracted_files, parsed_dir)

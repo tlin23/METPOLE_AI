@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import patch, Mock
 from bs4 import BeautifulSoup
 from requests import RequestException
-from backend_refactor.extractors.web_extractor import WebExtractor
+from backend_refactor.crawlers.web_crawler import WebCrawler
 
 
 @pytest.fixture
@@ -28,39 +28,39 @@ def mock_response():
     return mock
 
 
-def test_web_extractor_initialization():
-    """Test WebExtractor initialization with and without allowed domains."""
+def test_web_crawler_initialization():
+    """Test WebCrawler initialization with and without allowed domains."""
     # Test without allowed domains
-    extractor = WebExtractor()
-    assert extractor.allowed_domains is None
-    assert extractor.visited_urls == set()
-    assert extractor.max_pages is None
-    assert extractor.page_count == 0
-    assert extractor.page_content == {}
+    crawler = WebCrawler()
+    assert crawler.allowed_domains is None
+    assert crawler.visited_urls == set()
+    assert crawler.max_pages is None
+    assert crawler.page_count == 0
+    assert crawler.page_content == {}
 
     # Test with allowed domains and max pages
     domains = ["example.com", "test.com"]
-    extractor = WebExtractor(allowed_domains=domains, max_pages=10)
-    assert extractor.allowed_domains == domains
-    assert extractor.max_pages == 10
+    crawler = WebCrawler(allowed_domains=domains, max_pages=10)
+    assert crawler.allowed_domains == domains
+    assert crawler.max_pages == 10
 
 
 def test_is_allowed_domain():
     """Test domain filtering functionality."""
-    extractor = WebExtractor(allowed_domains=["example.com"])
+    crawler = WebCrawler(allowed_domains=["example.com"])
 
-    assert extractor._is_allowed_domain("https://example.com/page1")
-    assert extractor._is_allowed_domain("https://sub.example.com/page2")
-    assert not extractor._is_allowed_domain("https://other.com/page3")
+    assert crawler._is_allowed_domain("https://example.com/page1")
+    assert crawler._is_allowed_domain("https://sub.example.com/page2")
+    assert not crawler._is_allowed_domain("https://other.com/page3")
 
     # Test with no allowed domains
-    extractor = WebExtractor()
-    assert extractor._is_allowed_domain("https://any.com/page")
+    crawler = WebCrawler()
+    assert crawler._is_allowed_domain("https://any.com/page")
 
 
 def test_get_links():
     """Test link extraction from HTML content."""
-    extractor = WebExtractor(allowed_domains=["example.com"])
+    crawler = WebCrawler(allowed_domains=["example.com"])
     html = """
     <html>
         <body>
@@ -76,7 +76,7 @@ def test_get_links():
     soup = BeautifulSoup(html, "html.parser")
     base_url = "https://example.com"
 
-    links = extractor._get_links(base_url, soup)
+    links = crawler._get_links(base_url, soup)
     assert len(links) == 2
     assert "https://example.com/page1" in links
     assert "https://example.com/page2" in links
@@ -85,11 +85,11 @@ def test_get_links():
 
 def test_save_html(temp_dir):
     """Test HTML file saving functionality."""
-    extractor = WebExtractor()
+    crawler = WebCrawler()
     url = "https://example.com/test/page"
     content = "<html><body>Test content</body></html>"
 
-    output_path = extractor._save_html(url, content, temp_dir)
+    output_path = crawler._save_html(url, content, temp_dir)
 
     assert output_path.exists()
     assert output_path.name == "example.com_test_page.html"
@@ -97,7 +97,7 @@ def test_save_html(temp_dir):
 
     # Test root URL
     url = "https://example.com/"
-    output_path = extractor._save_html(url, content, temp_dir)
+    output_path = crawler._save_html(url, content, temp_dir)
     assert output_path.name == "example.com_index.html"
 
 
@@ -106,20 +106,20 @@ def test_extract_single_page(mock_get, temp_dir, mock_response):
     """Test extraction of a single page with no links."""
     mock_get.return_value = mock_response
 
-    extractor = WebExtractor(allowed_domains=["example.com"])
+    crawler = WebCrawler(allowed_domains=["example.com"])
     input_path = "https://example.com/"
     output_dir = temp_dir / "output"
 
     # Clear links in mock_response so it won't crawl further
     mock_response.text = "<html><body>No links</body></html>"
 
-    saved_files = extractor.extract(input_path, output_dir)
+    saved_files = crawler.extract(input_path, output_dir)
 
     assert len(saved_files) == 1
     assert saved_files[0].exists()
-    assert len(extractor.visited_urls) == 1
-    assert extractor.page_count == 1
-    assert len(extractor.page_content) == 1
+    assert len(crawler.visited_urls) == 1
+    assert crawler.page_count == 1
+    assert len(crawler.page_content) == 1
 
 
 @patch("requests.get")
@@ -127,25 +127,25 @@ def test_extract_with_max_pages(mock_get, temp_dir, mock_response):
     """Test extraction with max pages limit."""
     mock_get.return_value = mock_response
 
-    extractor = WebExtractor(allowed_domains=["example.com"], max_pages=2)
+    crawler = WebCrawler(allowed_domains=["example.com"], max_pages=2)
     input_path = "https://example.com/"
     output_dir = temp_dir / "output"
 
-    saved_files = extractor.extract(input_path, output_dir)
+    saved_files = crawler.extract(input_path, output_dir)
 
     assert len(saved_files) == 2  # Initial page + one link
-    assert extractor.page_count == 2
-    assert len(extractor.page_content) == 2
+    assert crawler.page_count == 2
+    assert len(crawler.page_content) == 2
 
 
 @patch("requests.get")
 def test_extract_with_invalid_url(mock_get, temp_dir):
     """Test extraction with an invalid URL."""
-    extractor = WebExtractor()
+    crawler = WebCrawler()
     input_path = "not-a-url"
 
     with pytest.raises(ValueError):
-        extractor.extract(input_path, temp_dir)
+        crawler.extract(input_path, temp_dir)
 
 
 @patch("requests.get")
@@ -153,14 +153,14 @@ def test_extract_with_network_error(mock_get, temp_dir):
     """Test extraction handling of network errors."""
     mock_get.side_effect = RequestException("Network error")
 
-    extractor = WebExtractor()
+    crawler = WebCrawler()
     input_path = "https://example.com"
 
-    saved_files = extractor.extract(input_path, temp_dir)
+    saved_files = crawler.extract(input_path, temp_dir)
     assert len(saved_files) == 0
-    assert len(extractor.visited_urls) == 0
-    assert extractor.page_count == 0
-    assert len(extractor.page_content) == 0
+    assert len(crawler.visited_urls) == 0
+    assert crawler.page_count == 0
+    assert len(crawler.page_content) == 0
 
 
 def test_extract_cleanup_output_dir(temp_dir):
@@ -169,10 +169,10 @@ def test_extract_cleanup_output_dir(temp_dir):
     output_dir.mkdir()
     (output_dir / "existing_file.txt").touch()
 
-    extractor = WebExtractor()
+    crawler = WebCrawler()
     with patch("requests.get") as mock_get:
         mock_get.side_effect = RequestException("Network error")
-        extractor.extract("https://example.com", output_dir)
+        crawler.extract("https://example.com", output_dir)
 
     # Directory should exist but be empty
     assert output_dir.exists()
@@ -208,16 +208,16 @@ def test_extract_multiple_pages(mock_get, temp_dir):
 
     mock_get.side_effect = mock_get_side_effect
 
-    extractor = WebExtractor(allowed_domains=["example.com"])
+    crawler = WebCrawler(allowed_domains=["example.com"])
     input_path = "https://example.com/"
     output_dir = temp_dir / "output"
 
-    saved_files = extractor.extract(input_path, output_dir)
+    saved_files = crawler.extract(input_path, output_dir)
 
     # Verify number of files
     assert len(saved_files) == 3
-    assert extractor.page_count == 3
-    assert len(extractor.page_content) == 3
+    assert crawler.page_count == 3
+    assert len(crawler.page_content) == 3
 
     # Verify file names and content
     file_names = {f.name for f in saved_files}
@@ -237,7 +237,7 @@ def test_extract_multiple_pages(mock_get, temp_dir):
             assert "Page 2 Content" in content
 
     # Verify visited URLs
-    assert len(extractor.visited_urls) == 3
-    assert "https://example.com/" in extractor.visited_urls
-    assert "https://example.com/page1" in extractor.visited_urls
-    assert "https://example.com/page2" in extractor.visited_urls
+    assert len(crawler.visited_urls) == 3
+    assert "https://example.com/" in crawler.visited_urls
+    assert "https://example.com/page1" in crawler.visited_urls
+    assert "https://example.com/page2" in crawler.visited_urls

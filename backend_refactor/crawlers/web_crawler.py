@@ -5,15 +5,15 @@ from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
 import logging
 import shutil
-from .base import BaseExtractor
+from .base_crawler import BaseCrawler
 
 
-class WebExtractor(BaseExtractor):
+class WebCrawler(BaseCrawler):
     def __init__(
         self, allowed_domains: List[str] = None, max_pages: Optional[int] = None
     ):
         """
-        Initialize the WebExtractor.
+        Initialize the WebCrawler.
 
         Args:
             allowed_domains: List of domains that are allowed to be crawled.
