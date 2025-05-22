@@ -46,7 +46,7 @@ Create `backend/extractors/web_extractor.py`. Implement a class `WebExtractor(Ba
 Write test cases in `tests/extractors/test_web_extractor.py` using `unittest.mock` and `tempfile`.
 ```
 
-### 4. Implement `LocalExtractor`
+### 4. Implement `LocalExtractor` ✅
 
 ```text
 Create `backend/extractors/local_extractor.py`. Implement `LocalExtractor(BaseExtractor)`:
