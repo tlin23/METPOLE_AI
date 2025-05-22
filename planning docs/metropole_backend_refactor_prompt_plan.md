@@ -116,10 +116,10 @@ Write tests in `tests/embedder/test_embedding_utils.py`, mocking the embedding a
 
 ---
 
-### 10. Implement `pipeline_runner.py` ✅
+### 10. Implement `pipeline_orchestration.py` ✅
 
 ```text
-In `backend/pipeline/pipeline_runner.py`, implement functions:
+In `backend/pipeline/pipeline_orchestration.py`, implement functions:
 
 - `run_web_pipeline(...)`
 - `run_local_pipeline(...)`
@@ -133,16 +133,16 @@ Each should:
 Write integration tests for these flows using temp dirs and mocks.
 ```
 
-### 11. Build CLI in `main_pipeline.py` ✅
+### 11. Build CLI in `pipeline_cli.py` ✅
 
 ```text
-In `backend/pipeline/main_pipeline.py`, implement a CLI using `argparse`:
+In `backend/pipeline/pipeline_cli.py`, implement a CLI using `argparse`:
 
 - Accept `--mode [web|local|all]`
 - Accept `--production` flag
 - Dispatch to corresponding pipeline runner functions
 
-Add tests in `tests/pipeline/test_main_pipeline.py`.
+Add tests in `tests/pipeline/test_pipeline_cli.py`.
 ```
 
 ---
