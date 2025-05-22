@@ -5,7 +5,7 @@ from typing import List
 
 class BaseExtractor(ABC):
     @abstractmethod
-    def extract(self, input_path: Path, output_dir: Path) -> List[Path]:
+    def extract(self, input_path: str, output_dir: Path) -> List[Path]:
         """
         Extract content from the input path and save it to the output directory.
 

@@ -32,9 +32,9 @@ def extract(self, input_path: Path, output_dir: Path) -> List[Path]:
 
 It should raise `NotImplementedError`. This will be the contract used by both extractors. Include test scaffolding in `tests/extractors/test_base.py`.
 
-````
+`````
 
-### 3. Implement `WebExtractor`
+### 3. Implement `WebExtractor` ✅
 
 ```text
 Create `backend/extractors/web_extractor.py`. Implement a class `WebExtractor(BaseExtractor)`.
@@ -44,7 +44,7 @@ Create `backend/extractors/web_extractor.py`. Implement a class `WebExtractor(Ba
 - Returns list of saved file paths.
 
 Write test cases in `tests/extractors/test_web_extractor.py` using `unittest.mock` and `tempfile`.
-````
+```
 
 ### 4. Implement `LocalExtractor`
 
@@ -67,7 +67,7 @@ In `backend/parsers/base.py`, define a `BaseParser` with:
 
 ```python
 def parse(self, file_path: Path) -> List[ContentChunk]:
-````
+`````
 
 Stub with `NotImplementedError`. Add test scaffold in `tests/parsers/test_base.py`.
 
