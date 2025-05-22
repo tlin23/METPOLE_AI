@@ -99,7 +99,7 @@ Add stub test in `tests/parsers/test_docx_parser.py`.
 
 ---
 
-### 9. Build `embed_chunks` function
+### 9. Build `embed_chunks` function ✅
 
 ````text
 In `backend/embedder/embedding_utils.py`, write:
