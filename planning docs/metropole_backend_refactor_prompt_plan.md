@@ -60,7 +60,7 @@ Write tests for correct file detection and output structure.
 
 ---
 
-### 5. Define `BaseParser` protocol
+### 5. Define `BaseParser` protocol ✅
 
 ````text
 In `backend/parsers/base.py`, define a `BaseParser` with:
@@ -71,7 +71,7 @@ def parse(self, file_path: Path) -> List[ContentChunk]:
 
 Stub with `NotImplementedError`. Add test scaffold in `tests/parsers/test_base.py`.
 
-````
+`````
 
 ### 6. Implement `HTMLParser` (stub)
 
@@ -79,7 +79,7 @@ Stub with `NotImplementedError`. Add test scaffold in `tests/parsers/test_base.p
 Create `backend/parsers/html_parser.py`. Implement `HTMLParser(BaseParser)` that raises `NotImplementedError`.
 
 Add a placeholder test in `tests/parsers/test_html_parser.py`.
-````
+```
 
 ### 7. Implement `PDFParser` (stub)
 
@@ -106,7 +106,7 @@ In `backend/embedder/embedding_utils.py`, write:
 
 ```python
 def embed_chunks(chunks: List[ContentChunk], collection_name: str, db_path: str) -> None:
-````
+`````
 
 This should convert chunks to text embeddings and store them in ChromaDB.
 
@@ -131,7 +131,7 @@ Each should:
 4. Embed using `embed_chunks(...)`
 
 Write integration tests for these flows using temp dirs and mocks.
-````
+```
 
 ### 11. Build CLI in `main_pipeline.py`
 
@@ -167,3 +167,4 @@ Write an integration test in `tests/test_pipeline_e2e.py` that mocks all subcomp
 
 Use temporary directories and fixture files for test inputs.
 ```
+````
