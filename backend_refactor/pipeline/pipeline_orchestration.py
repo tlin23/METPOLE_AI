@@ -1,6 +1,8 @@
 import json
+import logging
 from pathlib import Path
-from typing import List, Dict, Type
+from typing import List, Dict, Type, Optional
+from urllib.parse import urlparse
 from ..crawlers.web_crawler import WebCrawler
 from ..crawlers.local_crawler import LocalCrawler
 from ..parsers.html_parser import HTMLParser
@@ -8,6 +10,10 @@ from ..parsers.pdf_parser import PDFParser
 from ..parsers.docx_parser import DOCXParser
 from ..models.content_chunk import ContentChunk
 from ..embedder.embedding_utils import embed_chunks
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Map file extensions to their corresponding parsers
 PARSER_MAP: Dict[str, Type] = {
@@ -17,10 +23,9 @@ PARSER_MAP: Dict[str, Type] = {
 }
 
 
-def _save_chunks_to_json(chunks: List[ContentChunk], output_dir: Path) -> Path:
-    """Save chunks to a JSON file and return the path."""
-    output_dir.mkdir(parents=True, exist_ok=True)
-    output_path = output_dir / "parsed_chunks.json"
+def _save_chunks_to_json(chunks: List[ContentChunk], output_path: Path) -> None:
+    """Save chunks to a JSON file at the specified path."""
+    output_path.parent.mkdir(parents=True, exist_ok=True)
 
     # Convert chunks to dict format for JSON serialization
     chunks_data = [chunk.model_dump() for chunk in chunks]
@@ -28,45 +33,123 @@ def _save_chunks_to_json(chunks: List[ContentChunk], output_dir: Path) -> Path:
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(chunks_data, f, indent=2)
 
-    return output_path
+
+def _save_error_to_json(error_message: str, output_path: Path) -> None:
+    """Save error message to a JSON file at the specified path."""
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    error_data = {"error": error_message}
+
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(error_data, f, indent=2)
 
 
-def _process_files(file_paths: List[Path], output_dir: Path) -> List[ContentChunk]:
-    """Process a list of files using appropriate parsers."""
-    all_chunks = []
+def _process_single_file(file_path: Path, output_dir: Path) -> Optional[Path]:
+    """Process a single file using the appropriate parser and save results.
 
-    for file_path in file_paths:
-        parser_class = PARSER_MAP.get(file_path.suffix.lower())
-        if parser_class:
-            try:
-                parser = parser_class()
-                chunks = parser.parse(file_path)
-                all_chunks.extend(chunks)
-            except Exception as e:
-                print(f"Error processing {file_path}: {str(e)}")
-                continue
+    Returns:
+        Path to the output JSON file if successful, None if processing failed
+    """
+    # Create output path mirroring input structure
+    rel_path = file_path.relative_to(file_path.parent.parent)
+    output_path = output_dir / rel_path.with_suffix(".json")
 
-    return all_chunks
+    parser_class = PARSER_MAP.get(file_path.suffix.lower())
+    if not parser_class:
+        error_msg = f"No parser available for file extension: {file_path.suffix}"
+        logger.warning(error_msg)
+        _save_error_to_json(error_msg, output_path)
+        return None
+
+    try:
+        parser = parser_class()
+        chunks = parser.parse(file_path)
+
+        if chunks:
+            _save_chunks_to_json(chunks, output_path)
+            return output_path
+        else:
+            error_msg = f"No content chunks extracted from {file_path}"
+            logger.warning(error_msg)
+            _save_error_to_json(error_msg, output_path)
+            return None
+
+    except Exception as e:
+        error_msg = f"Error processing {file_path}: {str(e)}"
+        logger.error(error_msg)
+        _save_error_to_json(error_msg, output_path)
+        return None
 
 
-def process_web_input(
-    url: str, html_dir: Path, allowed_domains: List[str] = None
-) -> List[Path]:
-    """Process web input by crawling the URL and saving HTML files."""
-    crawler = WebCrawler(allowed_domains=allowed_domains)
-    html_files = crawler.extract(Path(url), html_dir)
-    return html_files
+def _is_valid_url(url: str) -> bool:
+    """Check if a string is a valid URL."""
+    result = urlparse(url)
+    return all([result.scheme, result.netloc])
 
 
-def process_local_input(
-    input_dir: Path, extracted_dir: Path, allowed_extensions: List[str] = None
-) -> List[Path]:
-    """Process local input by copying files to the extracted directory."""
-    crawler = LocalCrawler(allowed_extensions=allowed_extensions)
-    extracted_files = crawler.extract(input_dir, extracted_dir)
-    return extracted_files
+def run_pipeline(
+    input_source: str,
+    output_dir: Path,
+    db_path: str,
+    collection_name: str,
+    allowed_domains: Optional[List[str]] = None,
+    allowed_extensions: Optional[List[str]] = None,
+) -> Dict[str, Path]:
+    """
+    Run the content processing pipeline for either web or local input.
+
+    Args:
+        input_source: URL (for web processing) or path (for local processing)
+        output_dir: Directory for output files
+        db_path: Path to ChromaDB database
+        collection_name: Name of ChromaDB collection
+        allowed_domains: List of allowed domains for web crawling
+        allowed_extensions: List of allowed file extensions for local processing
+
+    Returns:
+        Dict containing paths to output files
+
+    Raises:
+        ValueError: If input_source is neither a valid URL nor a valid local path
+    """
+    # Create output directory
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    try:
+        # Determine input type and process accordingly
+        if _is_valid_url(input_source):
+            # Web processing
+            crawler = WebCrawler(allowed_domains=allowed_domains)
+            extracted_files = crawler.extract(Path(input_source), output_dir)
+        else:
+            # Local processing
+            input_path = Path(input_source)
+            if not input_path.exists():
+                raise ValueError(f"Input path does not exist: {input_path}")
+            crawler = LocalCrawler(allowed_extensions=allowed_extensions)
+            extracted_files = crawler.extract(input_path, output_dir)
+
+        # Process each file individually
+        output_paths = []
+        for file_path in extracted_files:
+            output_path = _process_single_file(file_path, output_dir)
+            if output_path:
+                output_paths.append(output_path)
+
+        if not output_paths:
+            raise ValueError("No files were successfully processed")
+
+        # Embed chunks from all output files
+        embed_chunks(output_paths, collection_name, db_path)
+
+        return {"output_dir": output_dir}
+
+    except Exception as e:
+        logger.error(f"Pipeline failed: {str(e)}")
+        raise e
 
 
+# Backward compatibility functions
 def run_web_pipeline(
     url: str,
     output_dir: Path,
@@ -75,7 +158,7 @@ def run_web_pipeline(
     allowed_domains: List[str] = None,
 ) -> Dict[str, Path]:
     """
-    Run the web processing pipeline.
+    Run the web processing pipeline (legacy function).
 
     Args:
         url: Root URL to crawl
@@ -87,36 +170,13 @@ def run_web_pipeline(
     Returns:
         Dict containing paths to output files
     """
-    # Create subdirectories
-    html_dir = output_dir / "html"
-    parsed_dir = output_dir / "parsed"
-
-    try:
-        html_dir.mkdir(parents=True, exist_ok=True)
-        parsed_dir.mkdir(parents=True, exist_ok=True)
-
-        # Extract HTML files
-        html_files = process_web_input(url, html_dir, allowed_domains)
-
-        # Parse HTML files
-        chunks = _process_files(html_files, parsed_dir)
-        if not chunks:
-            raise ValueError("No chunks provided for embedding")
-
-        # Save chunks to JSON
-        json_path = _save_chunks_to_json(chunks, parsed_dir)
-
-        # Embed chunks
-        embed_chunks(chunks, collection_name, db_path)
-
-        return {"html_files": html_dir, "parsed_json": json_path}
-    except Exception as e:
-        # Clean up directories on error
-        if html_dir.exists():
-            html_dir.rmdir()
-        if parsed_dir.exists():
-            parsed_dir.rmdir()
-        raise e
+    return run_pipeline(
+        input_source=url,
+        output_dir=output_dir,
+        db_path=db_path,
+        collection_name=collection_name,
+        allowed_domains=allowed_domains,
+    )
 
 
 def run_local_pipeline(
@@ -127,7 +187,7 @@ def run_local_pipeline(
     allowed_extensions: List[str] = None,
 ) -> Dict[str, Path]:
     """
-    Run the local file processing pipeline.
+    Run the local file processing pipeline (legacy function).
 
     Args:
         input_dir: Directory containing input files
@@ -139,35 +199,10 @@ def run_local_pipeline(
     Returns:
         Dict containing paths to output files
     """
-    # Create subdirectories
-    extracted_dir = output_dir / "extracted"
-    parsed_dir = output_dir / "parsed"
-
-    try:
-        extracted_dir.mkdir(parents=True, exist_ok=True)
-        parsed_dir.mkdir(parents=True, exist_ok=True)
-
-        # Extract and organize files
-        extracted_files = process_local_input(
-            input_dir, extracted_dir, allowed_extensions
-        )
-
-        # Parse files
-        chunks = _process_files(extracted_files, parsed_dir)
-        if not chunks:
-            raise ValueError("No chunks provided for embedding")
-
-        # Save chunks to JSON
-        json_path = _save_chunks_to_json(chunks, parsed_dir)
-
-        # Embed chunks
-        embed_chunks(chunks, collection_name, db_path)
-
-        return {"extracted_files": extracted_dir, "parsed_json": json_path}
-    except Exception as e:
-        # Clean up directories on error
-        if extracted_dir.exists():
-            extracted_dir.rmdir()
-        if parsed_dir.exists():
-            parsed_dir.rmdir()
-        raise e
+    return run_pipeline(
+        input_source=input_dir,
+        output_dir=output_dir,
+        db_path=db_path,
+        collection_name=collection_name,
+        allowed_extensions=allowed_extensions,
+    )
