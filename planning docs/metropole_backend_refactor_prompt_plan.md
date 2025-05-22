@@ -73,7 +73,7 @@ Stub with `NotImplementedError`. Add test scaffold in `tests/parsers/test_base.p
 
 `````
 
-### 6. Implement `HTMLParser` (stub)
+### 6. Implement `HTMLParser` (stub) ✅
 
 ```text
 Create `backend/parsers/html_parser.py`. Implement `HTMLParser(BaseParser)` that raises `NotImplementedError`.
@@ -81,7 +81,7 @@ Create `backend/parsers/html_parser.py`. Implement `HTMLParser(BaseParser)` that
 Add a placeholder test in `tests/parsers/test_html_parser.py`.
 ```
 
-### 7. Implement `PDFParser` (stub)
+### 7. Implement `PDFParser` (stub) ✅
 
 ```text
 Create `backend/parsers/pdf_parser.py`. Implement `PDFParser(BaseParser)` that raises `NotImplementedError`.
@@ -89,7 +89,7 @@ Create `backend/parsers/pdf_parser.py`. Implement `PDFParser(BaseParser)` that r
 Include stub test in `tests/parsers/test_pdf_parser.py`.
 ```
 
-### 8. Implement `DOCXParser` (stub)
+### 8. Implement `DOCXParser` (stub) ✅
 
 ```text
 Create `backend/parsers/docx_parser.py`. Implement `DOCXParser(BaseParser)` that raises `NotImplementedError`.
