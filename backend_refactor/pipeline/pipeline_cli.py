@@ -2,7 +2,7 @@ import argparse
 import sys
 from pathlib import Path
 from typing import List, Optional
-from .pipeline_runner import run_web_pipeline, run_local_pipeline
+from .pipeline_orchestration import run_web_pipeline, run_local_pipeline
 
 
 def parse_args(args: Optional[List[str]] = None) -> argparse.Namespace:
