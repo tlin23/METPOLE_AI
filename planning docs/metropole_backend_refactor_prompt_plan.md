@@ -133,7 +133,7 @@ Each should:
 Write integration tests for these flows using temp dirs and mocks.
 ```
 
-### 11. Build CLI in `main_pipeline.py`
+### 11. Build CLI in `main_pipeline.py` ✅
 
 ```text
 In `backend/pipeline/main_pipeline.py`, implement a CLI using `argparse`:
