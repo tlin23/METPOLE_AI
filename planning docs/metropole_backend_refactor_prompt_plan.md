@@ -157,7 +157,7 @@ Do not split the module. Write regression tests in `tests/retriever/test_ask.py`
 
 ---
 
-### 13. End-to-end test with mocks
+### 13. End-to-end test with mocks ✅
 
 ```text
 Write an integration test in `tests/test_pipeline_e2e.py` that mocks all subcomponents and verifies a full run:

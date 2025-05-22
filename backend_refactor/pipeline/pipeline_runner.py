@@ -23,7 +23,7 @@ def _save_chunks_to_json(chunks: List[ContentChunk], output_dir: Path) -> Path:
     output_path = output_dir / "parsed_chunks.json"
 
     # Convert chunks to dict format for JSON serialization
-    chunks_data = [chunk.dict() for chunk in chunks]
+    chunks_data = [chunk.model_dump() for chunk in chunks]
 
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(chunks_data, f, indent=2)
@@ -71,25 +71,35 @@ def run_web_pipeline(
     """
     # Create subdirectories
     html_dir = output_dir / "html"
-    html_dir.mkdir(parents=True, exist_ok=True)
-
     parsed_dir = output_dir / "parsed"
-    parsed_dir.mkdir(parents=True, exist_ok=True)
 
-    # Extract HTML files
-    extractor = WebExtractor(allowed_domains=allowed_domains)
-    html_files = extractor.extract(Path(url), html_dir)
+    try:
+        html_dir.mkdir(parents=True, exist_ok=True)
+        parsed_dir.mkdir(parents=True, exist_ok=True)
 
-    # Parse HTML files
-    chunks = _process_files(html_files, parsed_dir)
+        # Extract HTML files
+        extractor = WebExtractor(allowed_domains=allowed_domains)
+        html_files = extractor.extract(Path(url), html_dir)
 
-    # Save chunks to JSON
-    json_path = _save_chunks_to_json(chunks, parsed_dir)
+        # Parse HTML files
+        chunks = _process_files(html_files, parsed_dir)
+        if not chunks:
+            raise ValueError("No chunks provided for embedding")
 
-    # Embed chunks
-    embed_chunks(chunks, collection_name, db_path)
+        # Save chunks to JSON
+        json_path = _save_chunks_to_json(chunks, parsed_dir)
 
-    return {"html_files": html_dir, "parsed_json": json_path}
+        # Embed chunks
+        embed_chunks(chunks, collection_name, db_path)
+
+        return {"html_files": html_dir, "parsed_json": json_path}
+    except Exception as e:
+        # Clean up directories on error
+        if html_dir.exists():
+            html_dir.rmdir()
+        if parsed_dir.exists():
+            parsed_dir.rmdir()
+        raise e
 
 
 def run_local_pipeline(
@@ -114,22 +124,32 @@ def run_local_pipeline(
     """
     # Create subdirectories
     extracted_dir = output_dir / "extracted"
-    extracted_dir.mkdir(parents=True, exist_ok=True)
-
     parsed_dir = output_dir / "parsed"
-    parsed_dir.mkdir(parents=True, exist_ok=True)
 
-    # Extract and organize files
-    extractor = LocalExtractor(allowed_extensions=allowed_extensions)
-    extracted_files = extractor.extract(input_dir, extracted_dir)
+    try:
+        extracted_dir.mkdir(parents=True, exist_ok=True)
+        parsed_dir.mkdir(parents=True, exist_ok=True)
 
-    # Parse files
-    chunks = _process_files(extracted_files, parsed_dir)
+        # Extract and organize files
+        extractor = LocalExtractor(allowed_extensions=allowed_extensions)
+        extracted_files = extractor.extract(input_dir, extracted_dir)
 
-    # Save chunks to JSON
-    json_path = _save_chunks_to_json(chunks, parsed_dir)
+        # Parse files
+        chunks = _process_files(extracted_files, parsed_dir)
+        if not chunks:
+            raise ValueError("No chunks provided for embedding")
 
-    # Embed chunks
-    embed_chunks(chunks, collection_name, db_path)
+        # Save chunks to JSON
+        json_path = _save_chunks_to_json(chunks, parsed_dir)
 
-    return {"extracted_files": extracted_dir, "parsed_json": json_path}
+        # Embed chunks
+        embed_chunks(chunks, collection_name, db_path)
+
+        return {"extracted_files": extracted_dir, "parsed_json": json_path}
+    except Exception as e:
+        # Clean up directories on error
+        if extracted_dir.exists():
+            extracted_dir.rmdir()
+        if parsed_dir.exists():
+            parsed_dir.rmdir()
+        raise e
