@@ -21,7 +21,7 @@ Also write corresponding unit tests in `tests/models/test_content_chunk.py` that
 
 ---
 
-### 2. Define `BaseExtractor` protocol
+### 2. Define `BaseExtractor` protocol ✅
 
 ````text
 Create `backend/extractors/base.py` and define a `BaseExtractor` interface with a method:

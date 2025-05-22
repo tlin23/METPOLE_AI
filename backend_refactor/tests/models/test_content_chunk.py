@@ -1,5 +1,5 @@
 import pytest
-from models.content_chunk import ContentChunk
+from backend_refactor.models.content_chunk import ContentChunk
 
 
 def test_content_chunk_initialization():
