@@ -116,7 +116,7 @@ Write tests in `tests/embedder/test_embedding_utils.py`, mocking the embedding a
 
 ---
 
-### 10. Implement `pipeline_runner.py`
+### 10. Implement `pipeline_runner.py` ✅
 
 ```text
 In `backend/pipeline/pipeline_runner.py`, implement functions:
