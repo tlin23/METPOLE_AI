@@ -34,11 +34,15 @@ def test_web_extractor_initialization():
     extractor = WebExtractor()
     assert extractor.allowed_domains is None
     assert extractor.visited_urls == set()
+    assert extractor.max_pages is None
+    assert extractor.page_count == 0
+    assert extractor.page_content == {}
 
-    # Test with allowed domains
+    # Test with allowed domains and max pages
     domains = ["example.com", "test.com"]
-    extractor = WebExtractor(allowed_domains=domains)
+    extractor = WebExtractor(allowed_domains=domains, max_pages=10)
     assert extractor.allowed_domains == domains
+    assert extractor.max_pages == 10
 
 
 def test_is_allowed_domain():
@@ -63,6 +67,9 @@ def test_get_links():
             <a href="https://example.com/page1">Link 1</a>
             <a href="/page2">Link 2</a>
             <a href="https://other.com/page3">Link 3</a>
+            <a href="#">Fragment</a>
+            <a href="">Empty</a>
+            <a>No href</a>
         </body>
     </html>
     """
@@ -85,8 +92,13 @@ def test_save_html(temp_dir):
     output_path = extractor._save_html(url, content, temp_dir)
 
     assert output_path.exists()
-    assert output_path.name == "test_page.html"
+    assert output_path.name == "example.com_test_page.html"
     assert output_path.read_text() == content
+
+    # Test root URL
+    url = "https://example.com/"
+    output_path = extractor._save_html(url, content, temp_dir)
+    assert output_path.name == "example.com_index.html"
 
 
 @patch("requests.get")
@@ -106,6 +118,24 @@ def test_extract_single_page(mock_get, temp_dir, mock_response):
     assert len(saved_files) == 1
     assert saved_files[0].exists()
     assert len(extractor.visited_urls) == 1
+    assert extractor.page_count == 1
+    assert len(extractor.page_content) == 1
+
+
+@patch("requests.get")
+def test_extract_with_max_pages(mock_get, temp_dir, mock_response):
+    """Test extraction with max pages limit."""
+    mock_get.return_value = mock_response
+
+    extractor = WebExtractor(allowed_domains=["example.com"], max_pages=2)
+    input_path = "https://example.com/"
+    output_dir = temp_dir / "output"
+
+    saved_files = extractor.extract(input_path, output_dir)
+
+    assert len(saved_files) == 2  # Initial page + one link
+    assert extractor.page_count == 2
+    assert len(extractor.page_content) == 2
 
 
 @patch("requests.get")
@@ -129,3 +159,85 @@ def test_extract_with_network_error(mock_get, temp_dir):
     saved_files = extractor.extract(input_path, temp_dir)
     assert len(saved_files) == 0
     assert len(extractor.visited_urls) == 0
+    assert extractor.page_count == 0
+    assert len(extractor.page_content) == 0
+
+
+def test_extract_cleanup_output_dir(temp_dir):
+    """Test that output directory is cleaned up before extraction."""
+    output_dir = temp_dir / "output"
+    output_dir.mkdir()
+    (output_dir / "existing_file.txt").touch()
+
+    extractor = WebExtractor()
+    with patch("requests.get") as mock_get:
+        mock_get.side_effect = RequestException("Network error")
+        extractor.extract("https://example.com", output_dir)
+
+    # Directory should exist but be empty
+    assert output_dir.exists()
+    assert len(list(output_dir.iterdir())) == 0
+
+
+@patch("requests.get")
+def test_extract_multiple_pages(mock_get, temp_dir):
+    """Test extraction of multiple pages with different content."""
+    # Create mock responses for different pages
+    mock_responses = {
+        "https://example.com/": Mock(
+            text="""
+            <html>
+                <body>
+                    <a href="https://example.com/page1">Link 1</a>
+                    <a href="https://example.com/page2">Link 2</a>
+                </body>
+            </html>
+            """,
+            raise_for_status=Mock(),
+        ),
+        "https://example.com/page1": Mock(
+            text="<html><body>Page 1 Content</body></html>", raise_for_status=Mock()
+        ),
+        "https://example.com/page2": Mock(
+            text="<html><body>Page 2 Content</body></html>", raise_for_status=Mock()
+        ),
+    }
+
+    def mock_get_side_effect(url, *args, **kwargs):
+        return mock_responses[url]
+
+    mock_get.side_effect = mock_get_side_effect
+
+    extractor = WebExtractor(allowed_domains=["example.com"])
+    input_path = "https://example.com/"
+    output_dir = temp_dir / "output"
+
+    saved_files = extractor.extract(input_path, output_dir)
+
+    # Verify number of files
+    assert len(saved_files) == 3
+    assert extractor.page_count == 3
+    assert len(extractor.page_content) == 3
+
+    # Verify file names and content
+    file_names = {f.name for f in saved_files}
+    assert "example.com_index.html" in file_names
+    assert "example.com_page1.html" in file_names
+    assert "example.com_page2.html" in file_names
+
+    # Verify content was saved correctly
+    for file_path in saved_files:
+        content = file_path.read_text()
+        if "index.html" in file_path.name:
+            assert "Link 1" in content
+            assert "Link 2" in content
+        elif "page1.html" in file_path.name:
+            assert "Page 1 Content" in content
+        elif "page2.html" in file_path.name:
+            assert "Page 2 Content" in content
+
+    # Verify visited URLs
+    assert len(extractor.visited_urls) == 3
+    assert "https://example.com/" in extractor.visited_urls
+    assert "https://example.com/page1" in extractor.visited_urls
+    assert "https://example.com/page2" in extractor.visited_urls
