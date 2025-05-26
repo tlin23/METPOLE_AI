@@ -7,12 +7,12 @@ from backend_refactor.pipeline.pipeline_orchestration import (
     parse_files,
     embed_chunks_from_dir,
     run_pipeline,
-    _get_output_subdir,
     _save_chunks_to_json,
     _save_error_to_json,
     _process_single_file,
     _is_valid_url,
 )
+from backend_refactor.pipeline.directory_utils import get_step_dir
 from backend_refactor.models.content_chunk import ContentChunk
 
 
@@ -87,11 +87,11 @@ def test_get_output_subdir():
     base_dir = Path("/test/output")
 
     # Test dev mode
-    dev_dir = _get_output_subdir(base_dir, "crawled", False)
+    dev_dir = get_step_dir(base_dir, "crawled", False)
     assert dev_dir == Path("/test/output/dev/crawled")
 
     # Test prod mode
-    prod_dir = _get_output_subdir(base_dir, "parsed", True)
+    prod_dir = get_step_dir(base_dir, "parsed", True)
     assert prod_dir == Path("/test/output/prod/parsed")
 
 

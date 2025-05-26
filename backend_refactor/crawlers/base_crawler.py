@@ -1,9 +1,49 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import List
+from typing import List, Set, Optional
+import logging
+import shutil
 
 
 class BaseCrawler(ABC):
+    def __init__(self, allowed_patterns: Optional[List[str]] = None):
+        """
+        Initialize the BaseCrawler.
+
+        Args:
+            allowed_patterns: List of patterns to filter content (e.g., file extensions or domains)
+        """
+        self.allowed_patterns = allowed_patterns
+        self.processed_items: Set[str] = set()
+
+        # Setup logging
+        logging.basicConfig(level=logging.INFO)
+        self.logger = logging.getLogger(self.__class__.__name__)
+
+    def _is_allowed(self, item: str) -> bool:
+        """Check if the item matches allowed patterns."""
+        if not self.allowed_patterns:
+            return True
+        return any(item.endswith(pattern) for pattern in self.allowed_patterns)
+
+    def _organize_by_type(
+        self, item_path: Path, output_dir: Path, type_dir: str
+    ) -> Path:
+        """Organize content into type-specific subdirectory."""
+        type_dir = output_dir / type_dir
+        type_dir.mkdir(parents=True, exist_ok=True)
+
+        dest_path = type_dir / item_path.name
+        if isinstance(item_path, Path) and item_path.exists():
+            shutil.copy2(item_path, dest_path)
+        return dest_path
+
+    def _clean_output_dir(self, output_dir: Path) -> None:
+        """Clean the output directory if it exists."""
+        if output_dir.exists():
+            shutil.rmtree(output_dir)
+        output_dir.mkdir(parents=True)
+
     @abstractmethod
     def extract(self, input_path: Path, output_dir: Path) -> List[Path]:
         """

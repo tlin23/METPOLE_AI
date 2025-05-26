@@ -9,10 +9,10 @@
 # Default URL for crawling
 START_URL := https://www.metropoleballard.com/home
 MAX_PAGES := 50
-OUTPUT_DIR := ./output
+OUTPUT_DIR := ./backend_refactor/data/output
 DB_PATH := ./db
 COLLECTION := metropole
-LOCAL_INPUT_DIR := ./data/documents
+LOCAL_INPUT_DIR := ./backend_refactor/data/local_input_source
 
 # Load environment variables from .env
 include .env

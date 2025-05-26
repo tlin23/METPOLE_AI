@@ -1,10 +1,9 @@
 from pathlib import Path
-from typing import List, Set, Optional, Dict
+from typing import List, Optional, Dict
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
 import logging
-import shutil
 from .base_crawler import BaseCrawler
 
 
@@ -20,8 +19,7 @@ class WebCrawler(BaseCrawler):
                            If None, only the domain of the initial URL will be allowed.
             max_pages: Maximum number of pages to crawl. None for unlimited.
         """
-        self.allowed_domains = allowed_domains
-        self.visited_urls: Set[str] = set()
+        super().__init__(allowed_domains)
         self.max_pages = max_pages
         self.page_count = 0
         self.page_content: Dict[str, str] = {}
@@ -32,10 +30,8 @@ class WebCrawler(BaseCrawler):
 
     def _is_allowed_domain(self, url: str) -> bool:
         """Check if the URL's domain is in the allowed domains list."""
-        if not self.allowed_domains:
-            return True
         domain = urlparse(url).netloc
-        return any(domain.endswith(d) for d in self.allowed_domains)
+        return self._is_allowed(domain)
 
     def _get_links(self, url: str, soup: BeautifulSoup) -> List[str]:
         """Extract all links from the page that are within allowed domains."""
@@ -70,7 +66,7 @@ class WebCrawler(BaseCrawler):
         return links
 
     def _save_html(self, url: str, content: str, output_dir: Path) -> Path:
-        """Save HTML content to a file and return the path."""
+        """Save HTML content to a file in the html subdirectory and return the path."""
         # Create a filename from the URL
         parsed_url = urlparse(url)
         path = parsed_url.path
@@ -84,11 +80,8 @@ class WebCrawler(BaseCrawler):
         if not filename.endswith(".html"):
             filename += ".html"
 
-        # Ensure the output directory exists
-        output_dir.mkdir(parents=True, exist_ok=True)
-
-        # Save the file
-        output_path = output_dir / filename
+        # Save the file in the html subdirectory
+        output_path = self._organize_by_type(Path(filename), output_dir, "html")
         output_path.write_text(content, encoding="utf-8")
         return output_path
 
@@ -108,18 +101,16 @@ class WebCrawler(BaseCrawler):
             raise ValueError("Input path must be a valid HTTP(S) URL")
 
         # Initialize allowed domains if not set
-        if not self.allowed_domains:
-            self.allowed_domains = [urlparse(url).netloc]
+        if not self.allowed_patterns:
+            self.allowed_patterns = [urlparse(url).netloc]
 
         # Reset state
-        self.visited_urls.clear()
+        self.processed_items.clear()
         self.page_count = 0
         self.page_content.clear()
 
-        # Clean output directory if it exists
-        if output_dir.exists():
-            shutil.rmtree(output_dir)
-        output_dir.mkdir(parents=True)
+        # Clean output directory
+        self._clean_output_dir(output_dir)
 
         saved_files = []
         urls_to_visit = [url]
@@ -129,7 +120,7 @@ class WebCrawler(BaseCrawler):
         ):
             current_url = urls_to_visit.pop(0)
 
-            if current_url in self.visited_urls:
+            if current_url in self.processed_items:
                 continue
 
             self.logger.info(f"Crawling: {current_url}")
@@ -151,10 +142,10 @@ class WebCrawler(BaseCrawler):
 
                 # Add new links to the queue
                 urls_to_visit.extend(
-                    link for link in new_links if link not in self.visited_urls
+                    link for link in new_links if link not in self.processed_items
                 )
 
-                self.visited_urls.add(current_url)
+                self.processed_items.add(current_url)
                 self.page_count += 1
 
             except (requests.RequestException, IOError) as e:

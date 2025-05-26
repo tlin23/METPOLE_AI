@@ -1,5 +1,6 @@
 import json
 import logging
+import traceback
 from pathlib import Path
 from typing import List, Dict, Type, Optional, Tuple
 from urllib.parse import urlparse
@@ -27,12 +28,6 @@ PARSER_MAP: Dict[str, Type] = {
     ".pdf": PDFParser,
     ".docx": DOCXParser,
 }
-
-
-def _get_output_subdir(output_dir: Path, step: str, production: bool = False) -> Path:
-    """Get the output subdirectory for a specific pipeline step."""
-    env = "prod" if production else "dev"
-    return output_dir / env / step
 
 
 def _save_chunks_to_json(chunks: List[ContentChunk], output_path: Path) -> None:
@@ -87,7 +82,7 @@ def _process_single_file(file_path: Path, output_dir: Path) -> Optional[Path]:
             return None
 
     except Exception as e:
-        error_msg = f"Error processing {file_path}: {str(e)}"
+        error_msg = f"Error processing {file_path}: {str(e)}\n{traceback.format_exc()}"
         logger.error(error_msg)
         _save_error_to_json(error_msg, output_path)
         return None
@@ -136,17 +131,17 @@ def crawl_content(
     try:
         if _is_valid_url(input_source):
             crawler = WebCrawler(allowed_domains=allowed_domains)
+            extracted_files = crawler.extract(input_source, output_subdir)
         else:
             input_path = Path(input_source)
             if not input_path.exists():
                 raise ValueError(f"Input path does not exist: {input_path}")
             crawler = LocalCrawler(allowed_extensions=allowed_extensions)
-
-        extracted_files = crawler.extract(Path(input_source), output_subdir)
+            extracted_files = crawler.extract(input_path, output_subdir)
         return extracted_files, errors
 
     except Exception as e:
-        error_msg = f"Crawl failed: {str(e)}"
+        error_msg = f"Crawl failed: {str(e)}\n{traceback.format_exc()}"
         logger.error(error_msg)
         errors.append(error_msg)
         return [], errors
@@ -193,7 +188,9 @@ def parse_files(
             if output_path:
                 output_paths.append(output_path)
         except Exception as e:
-            error_msg = f"Error processing {file_path}: {str(e)}"
+            error_msg = (
+                f"Error processing {file_path}: {str(e)}\n{traceback.format_exc()}"
+            )
             logger.error(error_msg)
             errors.append(error_msg)
 
@@ -230,7 +227,7 @@ def embed_chunks_from_dir(
         embed_chunks(json_files, collection_name, db_path)
         return len(json_files), errors
     except Exception as e:
-        error_msg = f"Embedding failed: {str(e)}"
+        error_msg = f"Embedding failed: {str(e)}\n{traceback.format_exc()}"
         logger.error(error_msg)
         errors.append(error_msg)
         return 0, errors
@@ -260,55 +257,60 @@ def run_pipeline(
     Returns:
         Dict containing paths to output files and processing statistics
     """
-    # Validate database path
-    validate_db_path(db_path, output_dir)
+    try:
+        # Validate database path
+        validate_db_path(db_path, output_dir)
 
-    # Clean and ensure directory structure
-    clean_environment(output_dir, production)
-    ensure_directory_structure(output_dir, production)
+        # Clean and ensure directory structure
+        clean_environment(output_dir, production)
+        ensure_directory_structure(output_dir, production)
 
-    # Step 1: Crawl content
-    crawled_files, crawl_errors = crawl_content(
-        input_source, output_dir, allowed_domains, allowed_extensions, production
-    )
-    if crawl_errors:
-        logger.warning(f"Crawl completed with {len(crawl_errors)} errors")
+        # Step 1: Crawl content
+        crawled_files, crawl_errors = crawl_content(
+            input_source, output_dir, allowed_domains, allowed_extensions, production
+        )
+        if crawl_errors:
+            logger.warning(f"Crawl completed with {len(crawl_errors)} errors")
 
-    # Step 2: Parse all crawled files
-    crawled_dir = get_step_dir(output_dir, "crawled", production)
-    parsed_files, parse_errors = parse_files(
-        crawled_dir,
-        output_dir,
-        allowed_extensions,
-        production=production,
-    )
-    if parse_errors:
-        logger.warning(f"Parse completed with {len(parse_errors)} errors")
+        # Step 2: Parse all crawled files
+        crawled_dir = get_step_dir(output_dir, "crawled", production)
+        parsed_files, parse_errors = parse_files(
+            crawled_dir,
+            output_dir,
+            allowed_extensions,
+            production=production,
+        )
+        if parse_errors:
+            logger.warning(f"Parse completed with {len(parse_errors)} errors")
 
-    # Step 3: Embed chunks
-    n_embedded, embed_errors = embed_chunks_from_dir(
-        get_step_dir(output_dir, "parsed", production),
-        db_path,
-        collection_name,
-        production=production,
-    )
-    if embed_errors:
-        logger.warning(f"Embed completed with {len(embed_errors)} errors")
+        # Step 3: Embed chunks
+        n_embedded, embed_errors = embed_chunks_from_dir(
+            get_step_dir(output_dir, "parsed", production),
+            db_path,
+            collection_name,
+            production=production,
+        )
+        if embed_errors:
+            logger.warning(f"Embed completed with {len(embed_errors)} errors")
 
-    # Determine if input was web or local
-    is_web = _is_valid_url(input_source)
-    web_crawled_files = len(crawled_files) if is_web else 0
-    local_crawled_files = len(crawled_files) if not is_web else 0
+        # Determine if input was web or local
+        is_web = _is_valid_url(input_source)
+        web_crawled_files = len(crawled_files) if is_web else 0
+        local_crawled_files = len(crawled_files) if not is_web else 0
 
-    return {
-        "output_dir": output_dir,
-        "crawled_dir": crawled_dir,
-        "parsed_dir": get_step_dir(output_dir, "parsed", production),
-        "web_crawled_files": web_crawled_files,
-        "local_crawled_files": local_crawled_files,
-        "parsed_files": len(parsed_files),
-        "embedded_files": n_embedded,
-    }
+        return {
+            "output_dir": output_dir,
+            "crawled_dir": crawled_dir,
+            "parsed_dir": get_step_dir(output_dir, "parsed", production),
+            "web_crawled_files": web_crawled_files,
+            "local_crawled_files": local_crawled_files,
+            "parsed_files": len(parsed_files),
+            "embedded_files": n_embedded,
+        }
+    except Exception as e:
+        error_msg = f"Pipeline failed: {str(e)}\n{traceback.format_exc()}"
+        logger.error(error_msg)
+        raise RuntimeError(error_msg)
 
 
 # Backward compatibility functions

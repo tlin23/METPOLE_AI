@@ -9,8 +9,8 @@ def test_web_crawler_initialization():
     """Test WebCrawler initialization with and without allowed domains."""
     # Test without allowed domains
     crawler = WebCrawler()
-    assert crawler.allowed_domains is None
-    assert crawler.visited_urls == set()
+    assert crawler.allowed_patterns is None
+    assert crawler.processed_items == set()
     assert crawler.max_pages is None
     assert crawler.page_count == 0
     assert crawler.page_content == {}
@@ -18,7 +18,7 @@ def test_web_crawler_initialization():
     # Test with allowed domains and max pages
     domains = ["example.com", "test.com"]
     crawler = WebCrawler(allowed_domains=domains, max_pages=10)
-    assert crawler.allowed_domains == domains
+    assert crawler.allowed_patterns == domains
     assert crawler.max_pages == 10
 
 
@@ -94,7 +94,7 @@ def test_extract_single_page(mock_get, temp_dir, mock_response):
 
     assert len(saved_files) == 1
     assert saved_files[0].exists()
-    assert len(crawler.visited_urls) == 1
+    assert len(crawler.processed_items) == 1
     assert crawler.page_count == 1
     assert len(crawler.page_content) == 1
 
@@ -135,7 +135,7 @@ def test_extract_with_network_error(mock_get, temp_dir):
 
     saved_files = crawler.extract(input_path, temp_dir)
     assert len(saved_files) == 0
-    assert len(crawler.visited_urls) == 0
+    assert len(crawler.processed_items) == 0
     assert crawler.page_count == 0
     assert len(crawler.page_content) == 0
 
@@ -214,7 +214,7 @@ def test_extract_multiple_pages(mock_get, temp_dir):
             assert "Page 2 Content" in content
 
     # Verify visited URLs
-    assert len(crawler.visited_urls) == 3
-    assert "https://example.com/" in crawler.visited_urls
-    assert "https://example.com/page1" in crawler.visited_urls
-    assert "https://example.com/page2" in crawler.visited_urls
+    assert len(crawler.processed_items) == 3
+    assert "https://example.com/" in crawler.processed_items
+    assert "https://example.com/page1" in crawler.processed_items
+    assert "https://example.com/page2" in crawler.processed_items

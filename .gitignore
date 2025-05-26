@@ -83,3 +83,5 @@ backend/tests/**/test_answers.txt
 backend/scripts/
 
 repomix-output.xml
+
+backend_refactor/data/

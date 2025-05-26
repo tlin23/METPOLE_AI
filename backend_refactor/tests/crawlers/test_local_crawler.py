@@ -7,13 +7,13 @@ def test_local_crawler_initialization():
     """Test LocalCrawler initialization with and without allowed extensions."""
     # Test without allowed extensions
     crawler = LocalCrawler()
-    assert crawler.allowed_extensions is None
+    assert crawler.allowed_patterns is None
     assert crawler.processed_files == set()
 
     # Test with allowed extensions
     extensions = [".txt", ".pdf"]
     crawler = LocalCrawler(allowed_extensions=extensions)
-    assert crawler.allowed_extensions == extensions
+    assert crawler.allowed_patterns == extensions
 
 
 def test_is_allowed_extension():

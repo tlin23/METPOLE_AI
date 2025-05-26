@@ -13,14 +13,12 @@ class LocalCrawler(BaseCrawler):
             allowed_extensions: List of file extensions to process (e.g., ['.txt', '.pdf']).
                               If None, all files will be processed.
         """
-        self.allowed_extensions = allowed_extensions
+        super().__init__(allowed_extensions)
         self.processed_files: Set[Path] = set()
 
     def _is_allowed_extension(self, file_path: Path) -> bool:
         """Check if the file extension is in the allowed extensions list."""
-        if not self.allowed_extensions:
-            return True
-        return file_path.suffix.lower() in self.allowed_extensions
+        return self._is_allowed(file_path.suffix.lower())
 
     def _organize_by_extension(self, file_path: Path, output_dir: Path) -> Path:
         """Copy file to output directory, organized by extension."""
@@ -61,7 +59,7 @@ class LocalCrawler(BaseCrawler):
                     saved_files.append(dest_path)
                     self.processed_files.add(file_path)
                 except (IOError, OSError) as e:
-                    print(f"Error processing {file_path}: {str(e)}")
+                    self.logger.error(f"Error processing {file_path}: {str(e)}")
                     continue
 
         return saved_files
