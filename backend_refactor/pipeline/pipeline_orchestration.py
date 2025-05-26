@@ -15,6 +15,7 @@ from .directory_utils import (
     get_step_dir,
     clean_environment,
     ensure_directory_structure,
+    PIPELINE_STEPS,
 )
 
 # Set up logging
@@ -108,6 +109,7 @@ def crawl_content(
     allowed_domains: Optional[List[str]] = None,
     allowed_extensions: Optional[List[str]] = None,
     production: bool = False,
+    skip_cleaning: bool = False,
 ) -> Tuple[List[Path], List[str]]:
     """
     Crawl web or local content and save raw files.
@@ -118,12 +120,14 @@ def crawl_content(
         allowed_domains: List of allowed domains for web crawling
         allowed_extensions: List of allowed file extensions for local processing
         production: Whether to run in production mode
+        skip_cleaning: Whether to skip cleaning (used when called from run_pipeline)
 
     Returns:
         Tuple of (list of extracted file paths, list of error messages)
     """
     # Clean and ensure directory structure
-    clean_environment(output_dir, ["crawled"], production)
+    if not skip_cleaning:
+        clean_environment(output_dir, "crawled", production)
     output_subdir = get_step_dir(output_dir, "crawled", production)
 
     errors = []
@@ -152,6 +156,7 @@ def parse_files(
     allowed_extensions: Optional[List[str]] = None,
     n_limit: Optional[int] = None,
     production: bool = False,
+    skip_cleaning: bool = False,
 ) -> Tuple[List[Path], List[str]]:
     """
     Parse files into ContentChunk JSONs.
@@ -162,12 +167,14 @@ def parse_files(
         allowed_extensions: List of allowed file extensions
         n_limit: Maximum number of files to process
         production: Whether to run in production mode
+        skip_cleaning: Whether to skip cleaning (used when called from run_pipeline)
 
     Returns:
         Tuple of (list of output JSON paths, list of error messages)
     """
     # Clean and ensure directory structure
-    clean_environment(output_dir, ["parsed"], production)
+    if not skip_cleaning:
+        clean_environment(output_dir, "parsed", production)
     output_subdir = get_step_dir(output_dir, "parsed", production)
 
     errors = []
@@ -202,6 +209,7 @@ def embed_chunks_from_dir(
     collection_name: str,
     n_limit: Optional[int] = None,
     production: bool = False,
+    skip_cleaning: bool = False,
 ) -> Tuple[int, List[str]]:
     """
     Embed all ContentChunk JSONs in a directory.
@@ -212,12 +220,14 @@ def embed_chunks_from_dir(
         collection_name: Name of ChromaDB collection
         n_limit: Maximum number of files to embed
         production: Whether to run in production mode
+        skip_cleaning: Whether to skip cleaning (used when called from run_pipeline)
 
     Returns:
         Tuple of (number of files embedded, list of error messages)
     """
     # Clean and ensure directory structure
-    clean_environment(output_dir, ["embedded"], production)
+    if not skip_cleaning:
+        clean_environment(output_dir, "embedded", production, collection_name)
     output_subdir = get_step_dir(output_dir, "embedded", production)
 
     errors = []
@@ -260,12 +270,17 @@ def run_pipeline(
     """
     try:
         # Clean and ensure directory structure for all steps
-        clean_environment(output_dir, ["crawled", "parsed", "embedded"], production)
+        clean_environment(output_dir, PIPELINE_STEPS[0], production, collection_name)
         ensure_directory_structure(output_dir, production)
 
         # Step 1: Crawl content
         crawled_files, crawl_errors = crawl_content(
-            input_source, output_dir, allowed_domains, allowed_extensions, production
+            input_source,
+            output_dir,
+            allowed_domains,
+            allowed_extensions,
+            production,
+            skip_cleaning=True,
         )
         if crawl_errors:
             logger.warning(f"Crawl completed with {len(crawl_errors)} errors")
@@ -277,6 +292,7 @@ def run_pipeline(
             output_dir,
             allowed_extensions,
             production=production,
+            skip_cleaning=True,
         )
         if parse_errors:
             logger.warning(f"Parse completed with {len(parse_errors)} errors")
@@ -287,6 +303,7 @@ def run_pipeline(
             output_dir,
             collection_name,
             production=production,
+            skip_cleaning=True,
         )
         if embed_errors:
             logger.warning(f"Embed completed with {len(embed_errors)} errors")

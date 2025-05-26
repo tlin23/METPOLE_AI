@@ -226,7 +226,9 @@ def test_embed_chunks_from_dir(mock_clean_environment, mock_embed_chunks, temp_d
     assert len(errors) == 0
     mock_embed_chunks.assert_called_once()
     # Verify that only the embedded step was cleaned
-    mock_clean_environment.assert_called_once_with(temp_dir, ["embedded"], False)
+    mock_clean_environment.assert_called_once_with(
+        temp_dir, "embedded", False, "test_collection"
+    )
 
 
 @patch("backend_refactor.pipeline.pipeline_orchestration.crawl_content")
@@ -263,7 +265,7 @@ def test_run_pipeline(
 
     # Verify that all steps were cleaned in the correct order
     mock_clean_environment.assert_called_once_with(
-        temp_dir, ["crawled", "parsed", "embedded"], False
+        temp_dir, "crawled", False, "test_collection"
     )
 
 

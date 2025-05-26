@@ -3,7 +3,6 @@ import logging
 import chromadb
 from pathlib import Path
 from typing import List
-from chromadb.config import Settings
 from ..models.content_chunk import ContentChunk
 
 logger = logging.getLogger(__name__)
@@ -69,61 +68,3 @@ def embed_chunks(json_paths: List[Path], collection_name: str, db_path: str) -> 
 
     except Exception as e:
         raise RuntimeError(f"Failed to embed chunks: {str(e)}")
-
-
-def combine_collections(
-    source_collections: List[str],
-    target_collection: str,
-    output_dir: Path,
-    production: bool = False,
-) -> int:
-    """
-    Combine multiple collections into a single target collection.
-
-    Args:
-        source_collections: List of source collection names to combine
-        target_collection: Name of the target collection to create
-        output_dir: Base directory for the ChromaDB database
-        production: Whether to use production environment
-
-    Returns:
-        Number of collections combined
-    """
-    # Initialize ChromaDB client
-    db_path = output_dir / ("prod" if production else "dev") / "chroma"
-    client = chromadb.PersistentClient(
-        path=str(db_path),
-        settings=Settings(
-            anonymized_telemetry=False,
-            allow_reset=True,
-        ),
-    )
-
-    # Create target collection
-    target_coll = client.get_or_create_collection(name=target_collection)
-
-    # Combine each source collection
-    for source_coll_name in source_collections:
-        try:
-            source_coll = client.get_collection(name=source_coll_name)
-
-            # Get all documents from source collection
-            results = source_coll.get()
-
-            if results and results["ids"]:
-                # Add documents to target collection
-                target_coll.add(
-                    ids=results["ids"],
-                    documents=results["documents"],
-                    metadatas=results["metadatas"],
-                    embeddings=results["embeddings"],
-                )
-                logger.info(
-                    f"Added {len(results['ids'])} documents from {source_coll_name}"
-                )
-
-        except Exception as e:
-            logger.error(f"Error combining collection {source_coll_name}: {str(e)}")
-            continue
-
-    return len(source_collections)
