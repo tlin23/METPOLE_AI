@@ -3,27 +3,6 @@ from pathlib import Path
 from backend_refactor.crawlers.local_crawler import LocalCrawler
 
 
-@pytest.fixture
-def temp_dir(tmp_path):
-    """Create a temporary directory for test output."""
-    return tmp_path
-
-
-@pytest.fixture
-def sample_files(temp_dir):
-    """Create sample files for testing."""
-    input_dir = temp_dir / "input"
-    input_dir.mkdir()
-
-    # Create files with different extensions
-    (input_dir / "test1.txt").write_text("Content 1")
-    (input_dir / "test2.txt").write_text("Content 2")
-    (input_dir / "test3.pdf").write_text("Content 3")
-    (input_dir / "test4.doc").write_text("Content 4")
-
-    return input_dir
-
-
 def test_local_crawler_initialization():
     """Test LocalCrawler initialization with and without allowed extensions."""
     # Test without allowed extensions
@@ -102,3 +81,33 @@ def test_extract_single_file(temp_dir):
 
     with pytest.raises(NotADirectoryError):
         crawler.extract(input_file, temp_dir / "output")
+
+
+def test_extract_complex_directory_structure(test_directory_structure, temp_dir):
+    """Test extraction from a complex directory structure with various file types."""
+    crawler = LocalCrawler(allowed_extensions=[".html", ".pdf", ".docx", ".txt"])
+    output_dir = temp_dir / "output"
+
+    saved_files = crawler.extract(test_directory_structure, output_dir)
+
+    # Should find all files with allowed extensions
+    assert len(saved_files) == 4  # index.html, config.txt, manual.pdf, guide.docx
+    assert len(crawler.processed_files) == 4
+
+    # Verify file types
+    extensions = {f.suffix.lower() for f in saved_files}
+    assert extensions == {".html", ".txt", ".pdf", ".docx"}
+
+    # Verify content preservation
+    for saved_file in saved_files:
+        # Find the original file by walking through the test directory structure
+        original_file = None
+        for path in test_directory_structure.rglob(saved_file.name):
+            if path.is_file():
+                original_file = path
+                break
+
+        assert (
+            original_file is not None
+        ), f"Could not find original file for {saved_file.name}"
+        assert saved_file.read_bytes() == original_file.read_bytes()

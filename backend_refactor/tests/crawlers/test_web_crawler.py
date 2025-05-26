@@ -5,29 +5,6 @@ from requests import RequestException
 from backend_refactor.crawlers.web_crawler import WebCrawler
 
 
-@pytest.fixture
-def temp_dir(tmp_path):
-    """Create a temporary directory for test output."""
-    return tmp_path
-
-
-@pytest.fixture
-def mock_response():
-    """Create a mock response object."""
-    mock = Mock()
-    mock.text = """
-    <html>
-        <body>
-            <a href="https://example.com/page1">Link 1</a>
-            <a href="https://example.com/page2">Link 2</a>
-            <a href="https://other.com/page3">Link 3</a>
-        </body>
-    </html>
-    """
-    mock.raise_for_status = Mock()
-    return mock
-
-
 def test_web_crawler_initialization():
     """Test WebCrawler initialization with and without allowed domains."""
     # Test without allowed domains

@@ -1,5 +1,4 @@
 import pytest
-from pathlib import Path
 from backend_refactor.parsers.docx_parser import DOCXParser
 
 
@@ -9,8 +8,8 @@ def test_docx_parser_initialization():
     assert parser is not None
 
 
-def test_docx_parser_parse_not_implemented():
+def test_docx_parser_parse_not_implemented(test_docx_file):
     """Test that parse method raises NotImplementedError."""
     parser = DOCXParser()
     with pytest.raises(NotImplementedError):
-        parser.parse(Path("test.docx"))
+        parser.parse(test_docx_file)
