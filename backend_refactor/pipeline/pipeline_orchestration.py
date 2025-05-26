@@ -124,7 +124,7 @@ def crawl_content(
         Tuple of (list of extracted file paths, list of error messages)
     """
     # Clean and ensure directory structure
-    clean_environment(output_dir, production)
+    clean_environment(output_dir, ["crawled"], production)
     output_subdir = get_step_dir(output_dir, "crawled", production)
 
     errors = []
@@ -168,7 +168,7 @@ def parse_files(
         Tuple of (list of output JSON paths, list of error messages)
     """
     # Clean and ensure directory structure
-    clean_environment(output_dir, production)
+    clean_environment(output_dir, ["parsed"], production)
     output_subdir = get_step_dir(output_dir, "parsed", production)
 
     errors = []
@@ -217,6 +217,11 @@ def embed_chunks_from_dir(
     Returns:
         Tuple of (number of files embedded, list of error messages)
     """
+    # Clean and ensure directory structure
+    clean_environment(input_dir.parent, ["embedded"], production)
+    get_step_dir(input_dir.parent, "embedded", production)
+    ensure_directory_structure(input_dir.parent, production)
+
     errors = []
     json_files = list(input_dir.rglob("*.json"))
 
@@ -243,26 +248,26 @@ def run_pipeline(
     production: bool = False,
 ) -> Dict[str, Path]:
     """
-    Run the full content processing pipeline.
+    Run the complete pipeline: crawl, parse, and embed content.
 
     Args:
         input_source: URL (for web processing) or path (for local processing)
         output_dir: Base directory for output files
-        db_path: Path to ChromaDB database
-        collection_name: Name of ChromaDB collection
+        db_path: Path to the database file
+        collection_name: Name of the collection to store embeddings
         allowed_domains: List of allowed domains for web crawling
         allowed_extensions: List of allowed file extensions for local processing
         production: Whether to run in production mode
 
     Returns:
-        Dict containing paths to output files and processing statistics
+        Dictionary mapping step names to their output directories
     """
     try:
         # Validate database path
         validate_db_path(db_path, output_dir)
 
-        # Clean and ensure directory structure
-        clean_environment(output_dir, production)
+        # Clean and ensure directory structure for all steps
+        clean_environment(output_dir, ["crawled", "parsed", "embedded"], production)
         ensure_directory_structure(output_dir, production)
 
         # Step 1: Crawl content
