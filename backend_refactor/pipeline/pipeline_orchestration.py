@@ -15,7 +15,6 @@ from .directory_utils import (
     get_step_dir,
     clean_environment,
     ensure_directory_structure,
-    validate_db_path,
 )
 
 # Set up logging
@@ -199,7 +198,7 @@ def parse_files(
 
 def embed_chunks_from_dir(
     input_dir: Path,
-    db_path: str,
+    output_dir: Path,
     collection_name: str,
     n_limit: Optional[int] = None,
     production: bool = False,
@@ -209,7 +208,7 @@ def embed_chunks_from_dir(
 
     Args:
         input_dir: Directory containing ContentChunk JSONs
-        db_path: Path to ChromaDB database
+        output_dir: Path to ChromaDB database
         collection_name: Name of ChromaDB collection
         n_limit: Maximum number of files to embed
         production: Whether to run in production mode
@@ -218,9 +217,8 @@ def embed_chunks_from_dir(
         Tuple of (number of files embedded, list of error messages)
     """
     # Clean and ensure directory structure
-    clean_environment(input_dir.parent, ["embedded"], production)
-    get_step_dir(input_dir.parent, "embedded", production)
-    ensure_directory_structure(input_dir.parent, production)
+    clean_environment(output_dir, ["embedded"], production)
+    output_subdir = get_step_dir(output_dir, "embedded", production)
 
     errors = []
     json_files = list(input_dir.rglob("*.json"))
@@ -229,7 +227,7 @@ def embed_chunks_from_dir(
         json_files = json_files[:n_limit]
 
     try:
-        embed_chunks(json_files, collection_name, db_path)
+        embed_chunks(json_files, collection_name, output_subdir)
         return len(json_files), errors
     except Exception as e:
         error_msg = f"Embedding failed: {str(e)}\n{traceback.format_exc()}"
@@ -241,7 +239,6 @@ def embed_chunks_from_dir(
 def run_pipeline(
     input_source: str,
     output_dir: Path,
-    db_path: str,
     collection_name: str,
     allowed_domains: Optional[List[str]] = None,
     allowed_extensions: Optional[List[str]] = None,
@@ -253,7 +250,6 @@ def run_pipeline(
     Args:
         input_source: URL (for web processing) or path (for local processing)
         output_dir: Base directory for output files
-        db_path: Path to the database file
         collection_name: Name of the collection to store embeddings
         allowed_domains: List of allowed domains for web crawling
         allowed_extensions: List of allowed file extensions for local processing
@@ -263,9 +259,6 @@ def run_pipeline(
         Dictionary mapping step names to their output directories
     """
     try:
-        # Validate database path
-        validate_db_path(db_path, output_dir)
-
         # Clean and ensure directory structure for all steps
         clean_environment(output_dir, ["crawled", "parsed", "embedded"], production)
         ensure_directory_structure(output_dir, production)
@@ -291,7 +284,7 @@ def run_pipeline(
         # Step 3: Embed chunks
         n_embedded, embed_errors = embed_chunks_from_dir(
             get_step_dir(output_dir, "parsed", production),
-            db_path,
+            output_dir,
             collection_name,
             production=production,
         )
@@ -322,7 +315,6 @@ def run_pipeline(
 def run_web_pipeline(
     url: str,
     output_dir: Path,
-    db_path: str,
     collection_name: str,
     allowed_domains: List[str] = None,
 ) -> Dict[str, Path]:
@@ -330,7 +322,6 @@ def run_web_pipeline(
     return run_pipeline(
         input_source=url,
         output_dir=output_dir,
-        db_path=db_path,
         collection_name=collection_name,
         allowed_domains=allowed_domains,
     )
@@ -339,7 +330,6 @@ def run_web_pipeline(
 def run_local_pipeline(
     input_dir: Path,
     output_dir: Path,
-    db_path: str,
     collection_name: str,
     allowed_extensions: List[str] = None,
 ) -> Dict[str, Path]:
@@ -347,7 +337,6 @@ def run_local_pipeline(
     return run_pipeline(
         input_source=input_dir,
         output_dir=output_dir,
-        db_path=db_path,
         collection_name=collection_name,
         allowed_extensions=allowed_extensions,
     )

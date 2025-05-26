@@ -71,16 +71,3 @@ def ensure_directory_structure(output_dir: Path, production: bool = False) -> No
     for step in PIPELINE_STEPS:
         step_dir = env_dir / step
         step_dir.mkdir(parents=True, exist_ok=True)
-
-
-def validate_db_path(db_path: str, output_dir: Path) -> None:
-    """
-    Validate that the database path is not inside the output directory.
-    Raises ValueError if the path is invalid.
-    """
-    db_path_obj = Path(db_path)
-    if db_path_obj.is_relative_to(output_dir):
-        raise ValueError(
-            f"Database path ({db_path}) cannot be inside the output directory ({output_dir}). "
-            "Please specify a path outside the output directory."
-        )

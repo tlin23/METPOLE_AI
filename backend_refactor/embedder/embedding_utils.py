@@ -23,7 +23,7 @@ def embed_chunks(json_paths: List[Path], collection_name: str, db_path: str) -> 
 
     try:
         # Initialize ChromaDB client
-        client = chromadb.PersistentClient(path=db_path)
+        client = chromadb.PersistentClient(path=str(db_path))
 
         # Create or get collection
         collection = client.get_or_create_collection(name=collection_name)

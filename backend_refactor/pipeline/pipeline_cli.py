@@ -8,7 +8,7 @@ from .pipeline_orchestration import (
     parse_files,
     embed_chunks_from_dir,
 )
-from .directory_utils import validate_db_path, ensure_directory_structure
+from .directory_utils import ensure_directory_structure
 
 
 def parse_args(args: Optional[List[str]] = None) -> argparse.Namespace:
@@ -45,9 +45,6 @@ def parse_args(args: Optional[List[str]] = None) -> argparse.Namespace:
 
     # Database settings
     parser.add_argument(
-        "--db-path", type=str, required=True, help="Path to ChromaDB database"
-    )
-    parser.add_argument(
         "--collection", type=str, required=True, help="ChromaDB collection name"
     )
 
@@ -80,9 +77,6 @@ def main(args: Optional[List[str]] = None) -> int:
     try:
         parsed_args = parse_args(args)
         output_dir = Path(parsed_args.output)
-
-        # Validate database path is not inside output directory
-        validate_db_path(parsed_args.db_path, output_dir)
 
         # Ensure directory structure exists
         ensure_directory_structure(output_dir, parsed_args.production)
@@ -119,7 +113,7 @@ def main(args: Optional[List[str]] = None) -> int:
         elif parsed_args.step == "embed":
             n_embedded, errors = embed_chunks_from_dir(
                 input_dir=Path(parsed_args.input),
-                db_path=parsed_args.db_path,
+                output_dir=output_dir,
                 collection_name=collection_name,
                 n_limit=parsed_args.n_limit,
                 production=parsed_args.production,
@@ -159,7 +153,6 @@ def main(args: Optional[List[str]] = None) -> int:
             result = run_pipeline(
                 input_source=parsed_args.input,
                 output_dir=output_dir,
-                db_path=parsed_args.db_path,
                 collection_name=collection_name,
                 allowed_domains=parsed_args.allowed_domains,
                 allowed_extensions=parsed_args.allowed_extensions,

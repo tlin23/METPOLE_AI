@@ -10,7 +10,6 @@
 START_URL := https://www.metropoleballard.com/home
 MAX_PAGES := 50
 OUTPUT_DIR := ./backend_refactor/data/output
-DB_PATH := ./db
 COLLECTION := metropole
 LOCAL_INPUT_DIR := ./backend_refactor/data/local_input_source
 
@@ -92,7 +91,6 @@ web-crawl:
 		--step crawl \
 		--input $(START_URL) \
 		--output $(OUTPUT_DIR) \
-		--db-path $(DB_PATH) \
 		--collection $(COLLECTION) \
 		--allowed-domains metropoleballard.com
 
@@ -102,7 +100,6 @@ local-crawl:
 		--step crawl \
 		--input $(LOCAL_INPUT_DIR) \
 		--output $(OUTPUT_DIR) \
-		--db-path $(DB_PATH) \
 		--collection $(COLLECTION) \
 		--allowed-extensions .html .pdf .docx
 
@@ -114,7 +111,6 @@ parse:
 		--step parse \
 		--input $(OUTPUT_DIR)/dev/crawled \
 		--output $(OUTPUT_DIR) \
-		--db-path $(DB_PATH) \
 		--collection $(COLLECTION) \
 		--allowed-extensions .html .pdf .docx
 
@@ -124,7 +120,6 @@ embed:
 		--step embed \
 		--input $(OUTPUT_DIR)/dev/parsed \
 		--output $(OUTPUT_DIR) \
-		--db-path $(DB_PATH) \
 		--collection $(COLLECTION)
 
 # Combined Pipeline Commands
@@ -135,7 +130,6 @@ web-crawl-and-parse:
 		--step crawl_and_parse \
 		--input $(START_URL) \
 		--output $(OUTPUT_DIR) \
-		--db-path $(DB_PATH) \
 		--collection $(COLLECTION) \
 		--allowed-domains metropoleballard.com \
 		--allowed-extensions .html .pdf .docx
@@ -146,7 +140,6 @@ local-crawl-and-parse:
 		--step crawl_and_parse \
 		--input $(LOCAL_INPUT_DIR) \
 		--output $(OUTPUT_DIR) \
-		--db-path $(DB_PATH) \
 		--collection $(COLLECTION) \
 		--allowed-extensions .html .pdf .docx
 
@@ -156,7 +149,6 @@ web-pipeline:
 		--step all \
 		--input $(START_URL) \
 		--output $(OUTPUT_DIR) \
-		--db-path $(DB_PATH) \
 		--collection $(COLLECTION) \
 		--allowed-domains metropoleballard.com \
 		--allowed-extensions .html .pdf .docx
@@ -167,7 +159,6 @@ web-pipeline-prod:
 		--step all \
 		--input $(START_URL) \
 		--output $(OUTPUT_DIR) \
-		--db-path $(DB_PATH) \
 		--collection $(COLLECTION) \
 		--allowed-domains metropoleballard.com \
 		--allowed-extensions .html .pdf .docx \
@@ -179,7 +170,6 @@ local-pipeline:
 		--step all \
 		--input $(LOCAL_INPUT_DIR) \
 		--output $(OUTPUT_DIR) \
-		--db-path $(DB_PATH) \
 		--collection $(COLLECTION) \
 		--allowed-extensions .html .pdf .docx
 
@@ -189,7 +179,6 @@ local-pipeline-prod:
 		--step all \
 		--input $(LOCAL_INPUT_DIR) \
 		--output $(OUTPUT_DIR) \
-		--db-path $(DB_PATH) \
 		--collection $(COLLECTION) \
 		--allowed-extensions .html .pdf .docx \
 		--production
@@ -200,7 +189,6 @@ all-pipeline:
 		--step all \
 		--input $(LOCAL_INPUT_DIR) \
 		--output $(OUTPUT_DIR) \
-		--db-path $(DB_PATH) \
 		--collection $(COLLECTION) \
 		--allowed-extensions .html .pdf .docx
 
@@ -210,7 +198,6 @@ all-pipeline-prod:
 		--step all \
 		--input $(LOCAL_INPUT_DIR) \
 		--output $(OUTPUT_DIR) \
-		--db-path $(DB_PATH) \
 		--collection $(COLLECTION) \
 		--allowed-extensions .html .pdf .docx \
 		--production

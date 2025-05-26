@@ -202,7 +202,8 @@ def test_parse_files(temp_dir, parser_map_patch):
 
 
 @patch("backend_refactor.pipeline.pipeline_orchestration.embed_chunks")
-def test_embed_chunks_from_dir(mock_embed_chunks, temp_dir):
+@patch("backend_refactor.pipeline.pipeline_orchestration.clean_environment")
+def test_embed_chunks_from_dir(mock_clean_environment, mock_embed_chunks, temp_dir):
     """Test chunk embedding."""
     # Create test JSON files
     input_dir = temp_dir / "input"
@@ -216,7 +217,7 @@ def test_embed_chunks_from_dir(mock_embed_chunks, temp_dir):
 
     n_embedded, errors = embed_chunks_from_dir(
         input_dir=input_dir,
-        db_path="test_db",
+        output_dir=temp_dir,
         collection_name="test_collection",
         n_limit=1,
     )
@@ -224,12 +225,17 @@ def test_embed_chunks_from_dir(mock_embed_chunks, temp_dir):
     assert n_embedded == 1
     assert len(errors) == 0
     mock_embed_chunks.assert_called_once()
+    # Verify that only the embedded step was cleaned
+    mock_clean_environment.assert_called_once_with(temp_dir, ["embedded"], False)
 
 
 @patch("backend_refactor.pipeline.pipeline_orchestration.crawl_content")
 @patch("backend_refactor.pipeline.pipeline_orchestration.parse_files")
 @patch("backend_refactor.pipeline.pipeline_orchestration.embed_chunks_from_dir")
-def test_run_pipeline(mock_embed, mock_parse, mock_crawl, temp_dir):
+@patch("backend_refactor.pipeline.pipeline_orchestration.clean_environment")
+def test_run_pipeline(
+    mock_clean_environment, mock_embed, mock_parse, mock_crawl, temp_dir
+):
     """Test full pipeline execution."""
     # Mock crawl output
     mock_crawl.return_value = ([temp_dir / "test.html"], [])
@@ -243,7 +249,6 @@ def test_run_pipeline(mock_embed, mock_parse, mock_crawl, temp_dir):
     result = run_pipeline(
         input_source="https://example.com",
         output_dir=temp_dir,
-        db_path="test_db",
         collection_name="test_collection",
         allowed_domains=["example.com"],
         allowed_extensions=[".html"],
@@ -255,6 +260,11 @@ def test_run_pipeline(mock_embed, mock_parse, mock_crawl, temp_dir):
     mock_crawl.assert_called_once()
     mock_parse.assert_called_once()
     mock_embed.assert_called_once()
+
+    # Verify that all steps were cleaned in the correct order
+    mock_clean_environment.assert_called_once_with(
+        temp_dir, ["crawled", "parsed", "embedded"], False
+    )
 
 
 def test_crawl_content_invalid_input(temp_dir):
@@ -287,7 +297,7 @@ def test_embed_chunks_from_dir_invalid_input(mock_embed_chunks, temp_dir):
 
     n_embedded, errors = embed_chunks_from_dir(
         input_dir=temp_dir / "nonexistent",
-        db_path="test_db",
+        output_dir=temp_dir,
         collection_name="test_collection",
     )
 
