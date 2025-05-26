@@ -2,6 +2,7 @@ import json
 import pytest
 from backend_refactor.models.content_chunk import ContentChunk
 from unittest.mock import patch, Mock
+from docx import Document
 
 
 # ===== Basic Test Infrastructure =====
@@ -175,26 +176,167 @@ def duplicate_html_file(temp_dir):
 
 
 @pytest.fixture
-def test_pdf_file(temp_dir):
-    """Create a test PDF file.
+def test_docx_file(temp_dir):
+    """Create a test DOCX file with basic content.
 
     Returns:
-        Path: Path to a test PDF file with basic PDF structure.
+        Path: Path to a test DOCX file with basic structure.
     """
-    file_path = temp_dir / "test.pdf"
-    file_path.write_bytes(b"%PDF-1.4\n%Test PDF content")
+    doc = Document()
+    doc.core_properties.title = "Test Document"
+
+    # Add heading
+    doc.add_heading("Main Heading", level=1)
+
+    # Add paragraph
+    doc.add_paragraph("This is a test paragraph.")
+
+    # Add table
+    table = doc.add_table(rows=2, cols=2)
+    table.cell(0, 0).text = "Cell 1"
+    table.cell(0, 1).text = "Cell 2"
+    table.cell(1, 0).text = "Cell 3"
+    table.cell(1, 1).text = "Cell 4"
+
+    file_path = temp_dir / "test.docx"
+    doc.save(file_path)
     return file_path
 
 
 @pytest.fixture
-def test_docx_file(temp_dir):
-    """Create a test DOCX file.
+def complex_docx_file(temp_dir):
+    """Create a test DOCX file with complex content.
 
     Returns:
-        Path: Path to a test DOCX file with DOCX file signature.
+        Path: Path to a test DOCX file with complex structure and content.
     """
-    file_path = temp_dir / "test.docx"
-    file_path.write_bytes(b"PK\x03\x04\x14\x00\x00\x00\x08\x00")  # DOCX file signature
+    doc = Document()
+    doc.core_properties.title = "Complex Test Document"
+
+    # Add main heading
+    doc.add_heading("Document Title", level=1)
+
+    # Add paragraphs
+    doc.add_paragraph("First paragraph of the document.")
+    doc.add_paragraph("Second paragraph with more content.")
+    doc.add_paragraph("Third paragraph with additional information.")
+
+    # Add subsection
+    doc.add_heading("Another Section", level=2)
+    doc.add_paragraph("Content in another section.")
+
+    # Add table
+    table = doc.add_table(rows=2, cols=2)
+    table.cell(0, 0).text = "Table Cell 1"
+    table.cell(0, 1).text = "Table Cell 2"
+    table.cell(1, 0).text = "Table Cell 3"
+    table.cell(1, 1).text = "Table Cell 4"
+
+    file_path = temp_dir / "complex.docx"
+    doc.save(file_path)
+    return file_path
+
+
+@pytest.fixture
+def duplicate_docx_file(temp_dir):
+    """Create a test DOCX file with duplicate content.
+
+    Returns:
+        Path: Path to a test DOCX file with duplicate paragraphs.
+    """
+    doc = Document()
+    doc.core_properties.title = "Duplicate Test Document"
+
+    # Add duplicate paragraphs
+    doc.add_paragraph("This is a duplicate paragraph.")
+    doc.add_paragraph("This is a duplicate paragraph.")  # Duplicate
+    doc.add_paragraph("This is a different paragraph.")
+    doc.add_paragraph("This is a duplicate paragraph.")  # Duplicate
+    doc.add_paragraph("This is a unique paragraph.")
+
+    file_path = temp_dir / "duplicate.docx"
+    doc.save(file_path)
+    return file_path
+
+
+@pytest.fixture
+def test_pdf_file(temp_dir):
+    """Create a test PDF file with basic content.
+
+    Returns:
+        Path: Path to a test PDF file with basic structure.
+    """
+    from reportlab.pdfgen import canvas
+    from reportlab.lib.pagesizes import letter
+
+    file_path = temp_dir / "test.pdf"
+    c = canvas.Canvas(str(file_path), pagesize=letter)
+
+    # Set title
+    c.setTitle("Test PDF")
+
+    # Add content
+    c.drawString(100, 750, "First paragraph of the test document.")
+    c.drawString(100, 730, "Second paragraph with more content.")
+
+    c.save()
+    return file_path
+
+
+@pytest.fixture
+def complex_pdf_file(temp_dir):
+    """Create a test PDF file with complex content.
+
+    Returns:
+        Path: Path to a test PDF file with complex structure and content.
+    """
+    from reportlab.pdfgen import canvas
+    from reportlab.lib.pagesizes import letter
+
+    file_path = temp_dir / "complex.pdf"
+    c = canvas.Canvas(str(file_path), pagesize=letter)
+
+    # Set title
+    c.setTitle("Complex Test PDF")
+
+    # First page content
+    c.drawString(100, 750, "First paragraph of the document.")
+    c.drawString(100, 730, "Second paragraph with more content.")
+    c.drawString(100, 710, "Third paragraph with additional information.")
+
+    # Add second page
+    c.showPage()
+    c.drawString(100, 750, "Content on the second page.")
+    c.drawString(100, 730, "Final paragraph of the document.")
+
+    c.save()
+    return file_path
+
+
+@pytest.fixture
+def duplicate_pdf_file(temp_dir):
+    """Create a test PDF file with duplicate content.
+
+    Returns:
+        Path: Path to a test PDF file with duplicate paragraphs.
+    """
+    from reportlab.pdfgen import canvas
+    from reportlab.lib.pagesizes import letter
+
+    file_path = temp_dir / "duplicate.pdf"
+    c = canvas.Canvas(str(file_path), pagesize=letter)
+
+    # Set title
+    c.setTitle("Duplicate Test PDF")
+
+    # Add content with duplicates
+    c.drawString(100, 750, "This is a duplicate paragraph.")
+    c.drawString(100, 730, "This is a duplicate paragraph.")  # Duplicate
+    c.drawString(100, 710, "This is a different paragraph.")
+    c.drawString(100, 690, "This is a duplicate paragraph.")  # Duplicate
+    c.drawString(100, 670, "This is a unique paragraph.")
+
+    c.save()
     return file_path
 
 

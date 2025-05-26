@@ -185,21 +185,55 @@ local-pipeline-prod:
 
 # Run full pipeline on both web and local content (development mode)
 all-pipeline:
+	@echo "Running web pipeline..."
+	python3 -m backend_refactor.pipeline.pipeline_cli \
+		--step all \
+		--input $(START_URL) \
+		--output $(OUTPUT_DIR) \
+		--collection $(COLLECTION)_web \
+		--allowed-domains metropoleballard.com \
+		--allowed-extensions .html .pdf .docx
+	@echo "Running local pipeline..."
 	python3 -m backend_refactor.pipeline.pipeline_cli \
 		--step all \
 		--input $(LOCAL_INPUT_DIR) \
 		--output $(OUTPUT_DIR) \
-		--collection $(COLLECTION) \
+		--collection $(COLLECTION)_local \
 		--allowed-extensions .html .pdf .docx
+	@echo "Combining collections..."
+	python3 -m backend_refactor.pipeline.pipeline_cli \
+		--step combine \
+		--input $(OUTPUT_DIR) \
+		--output $(OUTPUT_DIR) \
+		--collection $(COLLECTION) \
+		--source-collections $(COLLECTION)_web $(COLLECTION)_local
 
 # Run full pipeline on both web and local content (production mode)
 all-pipeline-prod:
+	@echo "Running web pipeline..."
+	python3 -m backend_refactor.pipeline.pipeline_cli \
+		--step all \
+		--input $(START_URL) \
+		--output $(OUTPUT_DIR) \
+		--collection $(COLLECTION)_web \
+		--allowed-domains metropoleballard.com \
+		--allowed-extensions .html .pdf .docx \
+		--production
+	@echo "Running local pipeline..."
 	python3 -m backend_refactor.pipeline.pipeline_cli \
 		--step all \
 		--input $(LOCAL_INPUT_DIR) \
 		--output $(OUTPUT_DIR) \
-		--collection $(COLLECTION) \
+		--collection $(COLLECTION)_local \
 		--allowed-extensions .html .pdf .docx \
+		--production
+	@echo "Combining collections..."
+	python3 -m backend_refactor.pipeline.pipeline_cli \
+		--step combine \
+		--input $(OUTPUT_DIR) \
+		--output $(OUTPUT_DIR) \
+		--collection $(COLLECTION) \
+		--source-collections $(COLLECTION)_web $(COLLECTION)_local \
 		--production
 
 # Clean up cache and temporary files
