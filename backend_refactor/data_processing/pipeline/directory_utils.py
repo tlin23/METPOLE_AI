@@ -56,24 +56,6 @@ def get_step_dir(data_dir: Path, step: str, production: bool = False) -> Path:
     return base_dir / PIPELINE_STEPS[step]
 
 
-def _ensure_directory_exists(directory: Path, clean: bool = False) -> None:
-    """Ensure a directory exists, optionally cleaning it first.
-
-    Args:
-        directory: Directory to ensure exists
-        clean: Whether to clean the directory if it exists
-    """
-    if clean and directory.exists():
-        logger.info(f"Cleaning directory: {directory}")
-        shutil.rmtree(directory)
-
-    if not directory.exists():
-        logger.info(f"Creating directory: {directory}")
-        directory.mkdir(parents=True)
-    elif not clean:
-        logger.debug(f"Directory already exists: {directory}")
-
-
 def clean_step(data_dir: Path, step: str, production: bool = False) -> None:
     """Clean up files for a specific pipeline step.
 

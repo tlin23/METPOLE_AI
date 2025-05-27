@@ -58,7 +58,7 @@ class Retriever:
 
         # Initialize the persistent client
         self.chroma_client = chromadb.PersistentClient(
-            path=self.chroma_db_path, settings=Settings(anonymized_telemetry=False)
+            path=str(self.chroma_db_path), settings=Settings(anonymized_telemetry=False)
         )
 
         # Get the collection

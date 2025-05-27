@@ -14,7 +14,7 @@ from ..data_processing.pipeline.directory_utils import (
 
 # Base directories
 BASE_DIR = Path(__file__).parent.parent
-DATA_DIR = BASE_DIR / "data_processing" / "data"
+DATA_DIR = BASE_DIR / "data"
 
 # Environment-specific directories
 DEV_DIR = DATA_DIR / "dev"

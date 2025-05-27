@@ -84,5 +84,5 @@ backend/scripts/
 
 repomix-output.xml
 
-backend_refactor/data_processing/data/
+backend_refactor/data/
 backend_refactor/data_processing/logger/logs

@@ -11,7 +11,7 @@ START_URL := https://www.metropoleballard.com/home
 MAX_PAGES := 50
 
 # Pipeline configuration
-OUTPUT_DIR := ./backend_refactor/data_processing/data
+OUTPUT_DIR := ./backend_refactor/data
 DEV_OUTPUT := $(OUTPUT_DIR)
 PROD_OUTPUT := $(OUTPUT_DIR)
 COLLECTION := metropole
