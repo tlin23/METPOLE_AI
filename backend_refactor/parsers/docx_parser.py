@@ -6,6 +6,9 @@ from docx import Document
 from ftfy import fix_text
 from .base import BaseParser
 from ..models.content_chunk import ContentChunk
+from ..configer.logging_config import get_logger
+
+logger = get_logger("parsers.docx")
 
 
 def clean_text(text: str) -> str:
@@ -68,22 +71,32 @@ class DOCXParser(BaseParser):
             ValueError: If the file is not a valid DOCX file
             IOError: If the file cannot be read
         """
+        logger.info(f"Starting to parse DOCX file: {file_path}")
+
         if not file_path.exists():
-            raise IOError(f"File not found: {file_path}")
+            error_msg = f"File not found: {file_path}"
+            logger.error(error_msg)
+            raise IOError(error_msg)
 
         if file_path.suffix.lower() != ".docx":
-            raise ValueError(f"Not a DOCX file: {file_path}")
+            error_msg = f"Not a DOCX file: {file_path}"
+            logger.error(error_msg)
+            raise ValueError(error_msg)
 
         try:
             doc = Document(file_path)
             chunks = []
             seen_chunk_ids: Set[str] = set()
             current_heading = None
+            paragraph_count = 0
+            table_count = 0
 
             # Extract document title from properties
             document_title = doc.core_properties.title or file_path.stem
+            logger.debug(f"Extracted document title: {document_title}")
 
             # Process paragraphs and headings
+            logger.debug("Processing paragraphs and headings")
             for para in doc.paragraphs:
                 text = clean_text(para.text)
                 if not text:
@@ -92,10 +105,12 @@ class DOCXParser(BaseParser):
                 # Check if paragraph is a heading
                 if para.style.name.startswith("Heading"):
                     current_heading = text
+                    logger.debug(f"Found heading: {current_heading}")
                     continue
 
                 # Skip very short chunks
                 if len(text) < 20:
+                    logger.debug(f"Skipping short paragraph: {text[:50]}...")
                     continue
 
                 # Combine heading with content if available
@@ -106,6 +121,7 @@ class DOCXParser(BaseParser):
                 # Generate chunk ID and check for duplicates
                 chunk_id = hash_id(file_path.stem + text)
                 if chunk_id in seen_chunk_ids:
+                    logger.debug(f"Skipping duplicate paragraph chunk: {chunk_id}")
                     continue
                 seen_chunk_ids.add(chunk_id)
 
@@ -119,8 +135,10 @@ class DOCXParser(BaseParser):
                     document_title=document_title,
                 )
                 chunks.append(chunk)
+                paragraph_count += 1
 
             # Process tables
+            logger.debug("Processing tables")
             for table_idx, table in enumerate(doc.tables, 1):
                 table_text = []
                 for row in table.rows:
@@ -129,11 +147,13 @@ class DOCXParser(BaseParser):
 
                 table_content = "\n".join(table_text)
                 if not table_content.strip():
+                    logger.debug(f"Skipping empty table {table_idx}")
                     continue
 
                 # Generate chunk ID and check for duplicates
                 chunk_id = hash_id(file_path.stem + table_content)
                 if chunk_id in seen_chunk_ids:
+                    logger.debug(f"Skipping duplicate table chunk: {chunk_id}")
                     continue
                 seen_chunk_ids.add(chunk_id)
 
@@ -147,8 +167,14 @@ class DOCXParser(BaseParser):
                     document_title=document_title,
                 )
                 chunks.append(chunk)
+                table_count += 1
 
+            logger.info(
+                f"Successfully parsed {paragraph_count} paragraphs and {table_count} tables from {file_path}"
+            )
             return chunks
 
         except Exception as e:
-            raise ValueError(f"Failed to parse DOCX file: {str(e)}")
+            error_msg = f"Failed to parse DOCX file: {str(e)}"
+            logger.error(error_msg)
+            raise ValueError(error_msg)

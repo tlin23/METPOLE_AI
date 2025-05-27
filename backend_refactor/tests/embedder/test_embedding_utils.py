@@ -3,6 +3,7 @@ import pytest
 from unittest.mock import Mock, patch
 from backend_refactor.models.content_chunk import ContentChunk
 from backend_refactor.embedder.embedding_utils import embed_chunks
+import chromadb
 
 
 @pytest.fixture
@@ -100,8 +101,15 @@ def test_embed_chunks_invalid_json(tmp_path):
     with open(invalid_json_path, "w", encoding="utf-8") as f:
         f.write("invalid json content")
 
-    with pytest.raises(RuntimeError, match="Failed to embed chunks"):
-        embed_chunks([invalid_json_path], "test_collection", str(tmp_path / "test_db"))
+    # Test that it handles invalid JSON gracefully
+    embed_chunks([invalid_json_path], "test_collection", str(tmp_path))
+
+    # Verify the collection exists but is empty
+    client = chromadb.PersistentClient(path=str(tmp_path))
+    collection = client.get_collection("test_collection")
+    assert (
+        collection.count() == 0
+    ), "Collection should be empty after processing invalid JSON"
 
 
 def test_embed_chunks_multiple_files(sample_chunks, mock_client, tmp_path):

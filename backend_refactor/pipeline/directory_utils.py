@@ -1,11 +1,11 @@
 """Directory utilities for the pipeline."""
 
 import shutil
-import logging
 from pathlib import Path
 from typing import List
+from ..configer.logging_config import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger("pipeline.directory_utils")
 
 # Pipeline steps in order with their directory names
 PIPELINE_STEPS = {
@@ -68,8 +68,10 @@ def clean_step(data_dir: Path, step: str, production: bool = False) -> None:
 
     if step_dir.exists():
         # For all steps, just remove the directory and recreate it
+        logger.info(f"Cleaning directory: {step_dir}")
         shutil.rmtree(step_dir)
         step_dir.mkdir(parents=True)
+        logger.info(f"Created clean directory: {step_dir}")
 
 
 def get_downstream_steps(start_step: str) -> List[str]:
@@ -103,6 +105,7 @@ def clean_pipeline(data_dir: Path, start_step: str, production: bool = False) ->
         production: Whether to clean production environment
     """
     steps_to_clean = get_downstream_steps(start_step)
+    logger.info(f"Cleaning pipeline steps: {', '.join(steps_to_clean)}")
 
     for step in steps_to_clean:
         logger.info(f"Cleaning step: {step}")

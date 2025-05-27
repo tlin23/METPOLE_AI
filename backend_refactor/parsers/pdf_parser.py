@@ -6,6 +6,9 @@ from pypdf import PdfReader
 from ftfy import fix_text
 from .base import BaseParser
 from ..models.content_chunk import ContentChunk
+from ..configer.logging_config import get_logger
+
+logger = get_logger("parsers.pdf")
 
 
 def clean_text(text: str) -> str:
@@ -67,29 +70,43 @@ class PDFParser(BaseParser):
             ValueError: If the file is not a valid PDF file
             IOError: If the file cannot be read
         """
+        logger.info(f"Starting to parse PDF file: {file_path}")
+
         if not file_path.exists():
-            raise IOError(f"File not found: {file_path}")
+            error_msg = f"File not found: {file_path}"
+            logger.error(error_msg)
+            raise IOError(error_msg)
 
         if file_path.suffix.lower() != ".pdf":
-            raise ValueError(f"Not a PDF file: {file_path}")
+            error_msg = f"Not a PDF file: {file_path}"
+            logger.error(error_msg)
+            raise ValueError(error_msg)
 
         try:
             chunks = []
             seen_chunk_ids: Set[str] = set()
+            total_pages = 0
+            processed_pages = 0
+            chunk_count = 0
 
             with open(file_path, "rb") as file:
                 # Create PDF reader with strict=False to handle some PDF errors
                 pdf_reader = PdfReader(file, strict=False)
+                total_pages = len(pdf_reader.pages)
+                logger.info(f"PDF has {total_pages} pages")
 
                 # Extract document title from metadata
                 info = pdf_reader.metadata
                 document_title = info.get("/Title", "") or file_path.stem
+                logger.debug(f"Extracted document title: {document_title}")
 
                 # Process each page
                 for page_num, page in enumerate(pdf_reader.pages, 1):
                     try:
+                        logger.debug(f"Processing page {page_num}/{total_pages}")
                         text = page.extract_text()
                         if not text:
+                            logger.debug(f"No text content found on page {page_num}")
                             continue
 
                         # Split text into lines and treat each line as a potential paragraph
@@ -104,6 +121,9 @@ class PDFParser(BaseParser):
                             ]
                             if paragraphs:
                                 lines = paragraphs
+                                logger.debug(
+                                    f"Found {len(paragraphs)} paragraphs on page {page_num}"
+                                )
 
                         for line in lines:
                             # Clean the line text
@@ -111,11 +131,17 @@ class PDFParser(BaseParser):
 
                             # Skip very short chunks
                             if len(cleaned_line) < 20:
+                                logger.debug(
+                                    f"Skipping short chunk on page {page_num}: {cleaned_line[:50]}..."
+                                )
                                 continue
 
                             # Generate chunk ID and check for duplicates
                             chunk_id = hash_id(file_path.stem + cleaned_line)
                             if chunk_id in seen_chunk_ids:
+                                logger.debug(
+                                    f"Skipping duplicate chunk on page {page_num}: {chunk_id}"
+                                )
                                 continue
                             seen_chunk_ids.add(chunk_id)
 
@@ -129,18 +155,26 @@ class PDFParser(BaseParser):
                                 document_title=document_title,
                             )
                             chunks.append(chunk)
+                            chunk_count += 1
+
+                        processed_pages += 1
+
                     except Exception as e:
-                        # Log the error but continue processing other pages
-                        print(
-                            f"Warning: Failed to process page {page_num} in {file_path}: {str(e)}"
-                        )
+                        error_msg = f"Failed to process page {page_num} in {file_path}: {str(e)}"
+                        logger.error(error_msg)
                         continue
 
             if not chunks:
-                print(f"Warning: No content extracted from {file_path}")
+                warning_msg = f"No content extracted from {file_path}"
+                logger.warning(warning_msg)
                 return []
 
+            logger.info(
+                f"Successfully parsed {chunk_count} chunks from {processed_pages}/{total_pages} pages in {file_path}"
+            )
             return chunks
 
         except Exception as e:
-            raise ValueError(f"Failed to parse PDF file: {str(e)}")
+            error_msg = f"Failed to parse PDF file: {str(e)}"
+            logger.error(error_msg)
+            raise ValueError(error_msg)

@@ -1,5 +1,4 @@
 import json
-import logging
 import traceback
 from pathlib import Path
 from typing import List, Dict, Type, Optional, Tuple
@@ -11,6 +10,7 @@ from ..parsers.pdf_parser import PDFParser
 from ..parsers.docx_parser import DOCXParser
 from ..models.content_chunk import ContentChunk
 from ..embedder.embedding_utils import embed_chunks
+from ..configer.logging_config import get_logger
 from .directory_utils import (
     get_step_dir,
     clean_pipeline,
@@ -18,8 +18,7 @@ from .directory_utils import (
 )
 
 # Set up logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = get_logger("pipeline.orchestration")
 
 # Map file extensions to their corresponding parsers
 PARSER_MAP: Dict[str, Type] = {
@@ -68,10 +67,12 @@ def _process_single_file(file_path: Path, output_dir: Path) -> Optional[Path]:
         return None
 
     try:
+        logger.info(f"Processing file: {file_path}")
         parser = parser_class()
         chunks = parser.parse(file_path)
 
         if chunks:
+            logger.info(f"Extracted {len(chunks)} chunks from {file_path}")
             _save_chunks_to_json(chunks, output_path)
             return output_path
         else:
@@ -121,8 +122,10 @@ def crawl_content(
         if not _is_valid_url(input_source):
             raise ValueError(f"Invalid URL: {input_source}")
 
+        logger.info(f"Starting web crawl from {input_source}")
         crawler = WebCrawler(allowed_domains=allowed_domains)
         extracted_files = crawler.extract(input_source, output_subdir)
+        logger.info(f"Crawl completed. Extracted {len(extracted_files)} files")
         return extracted_files, errors
 
     except Exception as e:
@@ -140,15 +143,6 @@ def sort_files(
 ) -> Tuple[List[Path], List[str]]:
     """
     Sort files from local_input_source to sorted_input_source by extension.
-
-    Args:
-        input_dir: Path to the input directory
-        output_dir: Path to the output directory
-        production: Whether to use production environment
-        skip_cleaning: Whether to skip cleaning the output directory
-
-    Returns:
-        Tuple of (list of sorted file paths, list of error messages)
     """
     if not skip_cleaning:
         clean_pipeline(output_dir, "sort", production)
@@ -157,8 +151,10 @@ def sort_files(
     errors = []
     sorted_files = []
     try:
+        logger.info(f"Starting file sort from {input_dir}")
         crawler = LocalCrawler(allowed_extensions=ALLOWED_EXTENSIONS)
         sorted_files = crawler.extract(input_dir, output_subdir)
+        logger.info(f"Sort completed. Sorted {len(sorted_files)} files")
         return sorted_files, errors
 
     except Exception as e:
@@ -177,16 +173,6 @@ def parse_files(
 ) -> Tuple[List[Path], List[str]]:
     """
     Parse files from sorted_input_source and output content chunks to parsed.
-
-    Args:
-        input_dir: Path to the input directory
-        output_dir: Path to the output directory
-        n_limit: Optional limit on number of files to process
-        production: Whether to use production environment
-        skip_cleaning: Whether to skip cleaning the output directory
-
-    Returns:
-        Tuple of (list of parsed file paths, list of error messages)
     """
     if not skip_cleaning:
         clean_pipeline(output_dir, "parse", production)
@@ -202,6 +188,11 @@ def parse_files(
 
     if n_limit:
         files_to_process = files_to_process[:n_limit]
+        logger.info(
+            f"Found {n_limit} files to process (limited from {len(files_to_process)})"
+        )
+    else:
+        logger.info(f"Found {len(files_to_process)} files to process")
 
     for file_path in files_to_process:
         try:
@@ -215,6 +206,9 @@ def parse_files(
             logger.error(error_msg)
             errors.append(error_msg)
 
+    logger.info(
+        f"Parse completed. Successfully processed {len(output_paths)} out of {len(files_to_process)} files"
+    )
     return output_paths, errors
 
 
@@ -228,17 +222,6 @@ def embed_chunks_from_dir(
 ) -> Tuple[int, List[str]]:
     """
     Embed content chunks from parsed and store in chroma_db.
-
-    Args:
-        input_dir: Path to the input directory
-        output_dir: Path to the output directory
-        collection_name: Name of the ChromaDB collection
-        n_limit: Optional limit on number of files to process
-        production: Whether to use production environment
-        skip_cleaning: Whether to skip cleaning the output directory
-
-    Returns:
-        Tuple of (number of embedded files, list of error messages)
     """
     if not skip_cleaning:
         clean_pipeline(output_dir, "embed", production)
@@ -249,9 +232,14 @@ def embed_chunks_from_dir(
 
     if n_limit:
         json_files = json_files[:n_limit]
+        logger.info(f"Embedding {n_limit} files (limited from {len(json_files)})")
+    else:
+        logger.info(f"Embedding {len(json_files)} files")
 
     try:
+        logger.info(f"Starting embedding into collection: {collection_name}")
         embed_chunks(json_files, collection_name, output_subdir)
+        logger.info(f"Embedding completed. Processed {len(json_files)} files")
         return len(json_files), errors
     except Exception as e:
         error_msg = f"Embedding failed: {str(e)}\n{traceback.format_exc()}"
@@ -270,10 +258,12 @@ def run_pipeline(
     """
     Run the complete pipeline from crawl to embed.
     """
+    logger.info("Starting pipeline execution")
     # Clean all outputs before starting
     clean_pipeline(output_dir, "crawl", production)
 
     # Step 1: Crawl
+    logger.info("Step 1: Starting crawl")
     crawled_files, crawl_errors = crawl_content(
         input_source=input_source,
         output_dir=output_dir,
@@ -285,6 +275,7 @@ def run_pipeline(
         logger.warning(f"Crawl completed with {len(crawl_errors)} errors")
 
     # Step 2: Sort
+    logger.info("Step 2: Starting sort")
     sorted_files, sort_errors = sort_files(
         input_dir=get_step_dir(output_dir, "crawl", production),
         output_dir=output_dir,
@@ -295,6 +286,7 @@ def run_pipeline(
         logger.warning(f"Sort completed with {len(sort_errors)} errors")
 
     # Step 3: Parse
+    logger.info("Step 3: Starting parse")
     parsed_files, parse_errors = parse_files(
         input_dir=get_step_dir(output_dir, "sort", production),
         output_dir=output_dir,
@@ -305,6 +297,7 @@ def run_pipeline(
         logger.warning(f"Parse completed with {len(parse_errors)} errors")
 
     # Step 4: Embed
+    logger.info("Step 4: Starting embed")
     n_embedded, embed_errors = embed_chunks_from_dir(
         input_dir=get_step_dir(output_dir, "parse", production),
         output_dir=output_dir,
@@ -315,6 +308,7 @@ def run_pipeline(
     if embed_errors:
         logger.warning(f"Embed completed with {len(embed_errors)} errors")
 
+    logger.info("Pipeline execution completed")
     return {
         "output_dir": output_dir,
         "crawled_files": len(crawled_files),

@@ -1,8 +1,10 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import List, Set, Optional
-import logging
 import shutil
+from ..configer.logging_config import get_logger
+
+logger = get_logger("crawlers.base")
 
 
 class BaseCrawler(ABC):
@@ -15,10 +17,10 @@ class BaseCrawler(ABC):
         """
         self.allowed_patterns = allowed_patterns
         self.processed_items: Set[str] = set()
-
-        # Setup logging
-        logging.basicConfig(level=logging.INFO)
-        self.logger = logging.getLogger(self.__class__.__name__)
+        if allowed_patterns:
+            logger.info(f"Initialized with allowed patterns: {allowed_patterns}")
+        else:
+            logger.info("Initialized with no pattern restrictions")
 
     def _is_allowed(self, item: str) -> bool:
         """Check if the item matches allowed patterns."""
@@ -36,13 +38,16 @@ class BaseCrawler(ABC):
         dest_path = type_dir / item_path.name
         if isinstance(item_path, Path) and item_path.exists():
             shutil.copy2(item_path, dest_path)
+            logger.debug(f"Copied {item_path} to {dest_path}")
         return dest_path
 
     def _clean_output_dir(self, output_dir: Path) -> None:
         """Clean the output directory if it exists."""
         if output_dir.exists():
+            logger.info(f"Cleaning output directory: {output_dir}")
             shutil.rmtree(output_dir)
         output_dir.mkdir(parents=True)
+        logger.debug(f"Created output directory: {output_dir}")
 
     @abstractmethod
     def extract(self, input_path: Path, output_dir: Path) -> List[Path]:

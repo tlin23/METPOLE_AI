@@ -6,6 +6,9 @@ from bs4 import BeautifulSoup
 from ftfy import fix_text
 from .base import BaseParser
 from ..models.content_chunk import ContentChunk
+from ..configer.logging_config import get_logger
+
+logger = get_logger("parsers.html")
 
 
 def clean_text(text: str) -> str:
@@ -68,21 +71,34 @@ class HTMLParser(BaseParser):
             ValueError: If the file is not a valid HTML file
             IOError: If the file cannot be read
         """
+        logger.info(f"Starting to parse HTML file: {file_path}")
+
         if not file_path.exists():
-            raise IOError(f"File not found: {file_path}")
+            error_msg = f"File not found: {file_path}"
+            logger.error(error_msg)
+            raise IOError(error_msg)
 
         if file_path.suffix.lower() != ".html":
-            raise ValueError(f"Not an HTML file: {file_path}")
+            error_msg = f"Not an HTML file: {file_path}"
+            logger.error(error_msg)
+            raise ValueError(error_msg)
 
         # Read and parse HTML
-        with open(file_path, "r", encoding="utf-8") as f:
-            html_content = f.read()
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                html_content = f.read()
+        except Exception as e:
+            error_msg = f"Error reading file {file_path}: {str(e)}"
+            logger.error(error_msg)
+            raise IOError(error_msg)
 
         soup = BeautifulSoup(html_content, "html.parser")
 
         # Extract document title
         title_tag = soup.find("title")
         document_title = clean_text(title_tag.text) if title_tag else None
+        if document_title:
+            logger.debug(f"Extracted document title: {document_title}")
 
         # Remove non-content elements
         for element in soup.find_all(["script", "style", "nav", "footer", "header"]):
@@ -92,6 +108,7 @@ class HTMLParser(BaseParser):
         chunks = []
         seen_chunk_ids: Set[str] = set()
         current_heading = None
+        chunk_count = 0
 
         # Process main content elements
         for element in soup.find_all(
@@ -100,6 +117,7 @@ class HTMLParser(BaseParser):
             # Update current heading if we find one
             if element.name.startswith("h"):
                 current_heading = clean_text(element.text)
+                logger.debug(f"Found heading: {current_heading}")
                 continue
 
             # Skip empty elements
@@ -109,6 +127,7 @@ class HTMLParser(BaseParser):
             # Clean and process text
             text = clean_text(element.text)
             if len(text) < 20:  # Skip very short chunks
+                logger.debug(f"Skipping short chunk: {text[:50]}...")
                 continue
 
             # Combine heading with content if available
@@ -119,6 +138,7 @@ class HTMLParser(BaseParser):
             # Generate chunk ID and check for duplicates
             chunk_id = hash_id(file_path.stem + text)
             if chunk_id in seen_chunk_ids:
+                logger.debug(f"Skipping duplicate chunk: {chunk_id}")
                 continue
             seen_chunk_ids.add(chunk_id)
 
@@ -133,5 +153,7 @@ class HTMLParser(BaseParser):
             )
 
             chunks.append(chunk)
+            chunk_count += 1
 
+        logger.info(f"Successfully parsed {chunk_count} chunks from {file_path}")
         return chunks
