@@ -3,7 +3,7 @@
 import shutil
 from pathlib import Path
 from typing import List
-from ..logger.logging_config import get_logger
+from ...logger.logging_config import get_logger
 
 logger = get_logger("pipeline.directory_utils")
 

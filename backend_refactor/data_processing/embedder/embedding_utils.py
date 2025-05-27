@@ -4,7 +4,7 @@ import time
 from pathlib import Path
 from typing import List, Dict, Any, Tuple
 from ..models.content_chunk import ContentChunk
-from ..logger.logging_config import get_logger
+from ...logger.logging_config import get_logger
 
 # Get the logger for this module
 logger = get_logger("embedder")

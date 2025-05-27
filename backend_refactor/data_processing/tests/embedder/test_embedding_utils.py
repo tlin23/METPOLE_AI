@@ -8,7 +8,7 @@ from backend_refactor.data_processing.embedder.embedding_utils import (
     embed_chunks,
     _load_json_file,
 )
-from backend_refactor.data_processing.logger.logging_config import configure_logging
+from backend_refactor.logger.logging_config import configure_logging
 
 
 @pytest.fixture(autouse=True)

@@ -6,7 +6,7 @@ from pypdf import PdfReader
 from ftfy import fix_text
 from .base import BaseParser
 from ..models.content_chunk import ContentChunk
-from ..logger.logging_config import get_logger
+from ...logger.logging_config import get_logger
 
 logger = get_logger("parsers.pdf")
 

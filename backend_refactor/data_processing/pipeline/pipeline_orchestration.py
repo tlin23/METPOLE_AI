@@ -10,7 +10,7 @@ from ..parsers.pdf_parser import PDFParser
 from ..parsers.docx_parser import DOCXParser
 from ..models.content_chunk import ContentChunk
 from ..embedder.embedding_utils import embed_chunks
-from ..logger.logging_config import get_logger
+from ...logger.logging_config import get_logger
 from .directory_utils import (
     get_step_dir,
     clean_pipeline,

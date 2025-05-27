@@ -6,7 +6,7 @@ import os
 import logging
 import shutil
 from pathlib import Path
-from backend_refactor.data_processing.logger.logging_config import (
+from backend_refactor.logger.logging_config import (
     configure_logging,
     get_logger,
     LOGS_DIR,

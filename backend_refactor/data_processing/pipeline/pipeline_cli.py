@@ -9,7 +9,7 @@ from .pipeline_orchestration import (
     embed_chunks_from_dir,
 )
 from .directory_utils import get_step_dir
-from ..logger.logging_config import get_logger
+from ...logger.logging_config import get_logger
 
 # Set up logging
 logger = get_logger("pipeline.cli")

@@ -13,7 +13,7 @@ from logging.handlers import RotatingFileHandler
 
 
 # Feedback logging settings
-LOGS_DIR = "backend_refactor/data_processing/logger/logs"
+LOGS_DIR = "backend_refactor/logger/logs"
 
 # Create logs directory if it doesn't exist
 Path(LOGS_DIR).mkdir(parents=True, exist_ok=True)

@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import List, Set, Optional
 import shutil
-from ..logger.logging_config import get_logger
+from ...logger.logging_config import get_logger
 
 logger = get_logger("crawlers.base")
 

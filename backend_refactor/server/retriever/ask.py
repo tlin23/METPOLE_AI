@@ -15,7 +15,7 @@ from ..config import (
 )
 
 ### TODO: Build server-specific logger
-from ...data_processing.logger.logging_config import get_logger
+from ...logger.logging_config import get_logger
 
 # Get logger for this module
 logger = get_logger("retriever.ask")

@@ -2,7 +2,7 @@ import shutil
 from pathlib import Path
 from typing import List, Set
 from .base_crawler import BaseCrawler
-from ..logger.logging_config import get_logger
+from ...logger.logging_config import get_logger
 
 logger = get_logger("crawlers.local")
 
