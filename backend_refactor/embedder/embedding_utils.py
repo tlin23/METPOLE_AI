@@ -6,7 +6,8 @@ from typing import List, Dict, Any, Tuple
 from ..models.content_chunk import ContentChunk
 from ..configer.logging_config import get_logger
 
-logger = get_logger("embedder.utils")
+# Get the logger for this module
+logger = get_logger("embedder")
 
 
 def _load_json_file(json_path: Path) -> Tuple[List[ContentChunk], int]:
@@ -64,62 +65,80 @@ def embed_chunks(json_paths: List[Path], collection_name: str, db_path: str) -> 
         raise ValueError(error_msg)
 
     start_time = time.time()
-    logger.info(
-        f"Starting embedding process for {len(json_paths)} files into collection: {collection_name}"
-    )
-
-    stats = {
-        "total_files": len(json_paths),
-        "processed_files": 0,
-        "failed_files": 0,
-        "total_chunks": 0,
-        "invalid_chunks": 0,
-        "failed_chunks": 0,
-    }
+    total_files = len(json_paths)
+    failed_items = []
+    total_chunks = 0
+    error_count = 0
 
     try:
         client = chromadb.PersistentClient(path=str(db_path))
         collection = client.get_or_create_collection(name=collection_name)
         logger.info(f"Using collection: {collection_name}")
 
-        for json_path in json_paths:
+        for file_idx, json_path in enumerate(json_paths, 1):
             file_start_time = time.time()
-            logger.info(f"Processing file: {json_path}")
+            file_name = json_path.name
+            logger.info(f"Processing file {file_idx} of {total_files}: {file_name}")
 
             try:
                 chunks, invalid_chunks = _load_json_file(json_path)
-                stats["invalid_chunks"] += invalid_chunks
+                total_chunks += len(chunks)
+                error_count += invalid_chunks
 
                 if not chunks:
-                    logger.warning(f"No valid chunks found in {json_path}")
-                    stats["failed_files"] += 1
+                    error_msg = f"No valid chunks found in {file_name}"
+                    logger.warning(error_msg)
+                    failed_items.append((file_name, None, error_msg))
                     continue
 
-                ids, documents, metadatas = _prepare_chunk_data(chunks)
-                collection.add(ids=ids, documents=documents, metadatas=metadatas)
+                # Process all chunks from the file at once
+                try:
+                    ids, documents, metadatas = _prepare_chunk_data(chunks)
+                    collection.add(ids=ids, documents=documents, metadatas=metadatas)
 
-                stats["processed_files"] += 1
-                stats["total_chunks"] += len(chunks)
+                    # Log individual chunk processing for tracking
+                    for chunk_idx, chunk in enumerate(chunks, 1):
+                        logger.info(
+                            f"Processed chunk {chunk_idx} of {len(chunks)} (chunk_id={chunk.chunk_id}) in file {file_name}"
+                        )
+                except Exception as e:
+                    error_msg = str(e)
+                    error_count += len(chunks)
+                    for chunk in chunks:
+                        failed_items.append((file_name, chunk.chunk_id, error_msg))
+                    logger.error(
+                        f"Error processing chunks in file {file_name}: {error_msg}"
+                    )
 
                 file_duration = time.time() - file_start_time
                 logger.info(
-                    f"Successfully embedded {len(chunks)} chunks from {json_path} in {file_duration:.2f}s"
+                    f"Finished processing file {file_idx} of {total_files}: {file_name} in {file_duration:.2f}s"
                 )
 
             except Exception as e:
-                stats["failed_files"] += 1
-                logger.error(f"Error processing {json_path}: {str(e)}")
+                error_msg = str(e)
+                error_count += 1
+                failed_items.append((file_name, None, error_msg))
+                logger.error(
+                    f"Error processing file {file_idx} of {total_files}: {file_name}: {error_msg} after {time.time() - file_start_time:.2f}s"
+                )
 
         total_duration = time.time() - start_time
-        logger.info("Embedding process completed with the following statistics:")
-        logger.info(f"Total duration: {total_duration:.2f}s")
-        logger.info(
-            f"Files processed: {stats['processed_files']}/{stats['total_files']}"
-        )
-        logger.info(f"Failed files: {stats['failed_files']}")
-        logger.info(f"Total chunks processed: {stats['total_chunks']}")
-        logger.info(f"Invalid chunks: {stats['invalid_chunks']}")
-        logger.info(f"Failed chunks: {stats['failed_chunks']}")
+
+        # Log final summary
+        summary = f"""
+###
+All files processed: {total_files} total, {total_chunks} chunks, {error_count} errors, total time: {total_duration:.2f}s
+Failed items:
+"""
+        for file_name, chunk_id, error_reason in failed_items:
+            if chunk_id:
+                summary += f"  - {file_name}/(chunk_id={chunk_id}): {error_reason}\n"
+            else:
+                summary += f"  - {file_name}: {error_reason}\n"
+        summary += "###"
+
+        logger.info(summary)
 
     except Exception as e:
         error_msg = f"Failed to embed chunks: {str(e)}"
