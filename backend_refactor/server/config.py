@@ -8,15 +8,13 @@ import os
 from pathlib import Path
 from typing import Optional
 from ..data_processing.pipeline.directory_utils import (
-    PIPELINE_STEPS,
     ALLOWED_EXTENSIONS,
-    get_base_dir,
-    initialize_directories,
+    get_step_dir,
 )
 
 # Base directories
 BASE_DIR = Path(__file__).parent.parent
-DATA_DIR = BASE_DIR / "data"
+DATA_DIR = BASE_DIR / "data_processing" / "data"
 
 # Environment-specific directories
 DEV_DIR = DATA_DIR / "dev"
@@ -31,15 +29,6 @@ COLLECTION_NAME = "metropole"
 # Supported file extensions for the pipeline
 SUPPORTED_EXTENSIONS = ALLOWED_EXTENSIONS
 
-
-# Pipeline paths helper
-def get_pipeline_paths(env: str = "dev") -> dict:
-    """Get pipeline paths for the specified environment ('dev' or 'prod')."""
-    base_dir = get_base_dir(DATA_DIR, env == "prod")
-    return {
-        step_name: base_dir / dir_name for step_name, dir_name in PIPELINE_STEPS.items()
-    }
-
-
-# Initialize pipeline directories
-initialize_directories(DATA_DIR)
+# ChromaDB paths
+CHROMA_DEV_PATH = get_step_dir(DATA_DIR, "embed", production=False)
+CHROMA_PROD_PATH = get_step_dir(DATA_DIR, "embed", production=True)

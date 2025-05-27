@@ -10,11 +10,12 @@ from typing import Dict, List, Any
 from ..api.models import ChunkResult
 from ..config import (
     OPENAI_API_KEY,
-    WEB_COLLECTION_NAME,
-    OFFLINE_COLLECTION_NAME,
-    INDEX_DIR,
+    CHROMA_DEV_PATH,
+    CHROMA_PROD_PATH,
 )
-from ..config import get_logger
+
+### TODO: Build server-specific logger
+from ...data_processing.logger.logging_config import get_logger
 
 # Get logger for this module
 logger = get_logger("retriever.ask")
@@ -37,14 +38,21 @@ class Retriever:
     and generate answers to user questions using OpenAI's language models.
     """
 
-    def __init__(self, chroma_path: str = INDEX_DIR) -> None:
+    def __init__(self, chroma_path: str = None, production: bool = False) -> None:
         """Initialize the retriever with ChromaDB connection.
 
         Sets up connection to the ChromaDB vector database and initializes
-        both web and offline document collections. Allows overriding path for testing.
+        the document collection. Allows overriding path for testing.
+
+        Args:
+            chroma_path: Optional override for ChromaDB path
+            production: Whether to use production environment. Defaults to False.
         """
-        # Allow override from parameter or fallback to env
-        self.chroma_db_path = chroma_path
+        # Use provided path or default to environment-specific path
+        self.chroma_db_path = chroma_path or (
+            CHROMA_PROD_PATH if production else CHROMA_DEV_PATH
+        )
+
         # Create the directory if it doesn't exist
         Path(self.chroma_db_path).mkdir(parents=True, exist_ok=True)
 
@@ -53,95 +61,29 @@ class Retriever:
             path=self.chroma_db_path, settings=Settings(anonymized_telemetry=False)
         )
 
-        # Get both collections
-        self.web_collection = self.chroma_client.get_or_create_collection(
-            WEB_COLLECTION_NAME
-        )
-        self.offline_collection = self.chroma_client.get_or_create_collection(
-            OFFLINE_COLLECTION_NAME
-        )
+        # Get the collection
+        self.collection = self.chroma_client.get_or_create_collection("metropole")
 
-        logger.info(
-            f"Collections loaded: {self.web_collection.count()} web documents, "
-            f"{self.offline_collection.count()} offline documents found"
-        )
+        logger.info(f"Collection loaded: {self.collection.count()} documents found")
 
     def query(self, query_text: str, n_results: int) -> chromadb.QueryResult:
-        """Query both web and offline collections for relevant documents.
+        """Query the collection for relevant documents.
 
         Args:
             query_text: The query text to search for.
-            n_results: Number of results to return per collection. Defaults to 5.
+            n_results: Number of results to return. Defaults to 5.
 
         Returns:
-            Dictionary containing combined query results with documents, metadatas, and distances.
+            Dictionary containing query results with documents, metadatas, and distances.
         """
-        # Query both collections
-        web_results = self.web_collection.query(
-            query_texts=[query_text],
-            n_results=n_results,
-            include=["documents", "metadatas", "distances"],
-        )
-        offline_results = self.offline_collection.query(
+        # Query the collection
+        results = self.collection.query(
             query_texts=[query_text],
             n_results=n_results,
             include=["documents", "metadatas", "distances"],
         )
 
-        # Combine results, prioritizing by distance
-        combined_results = self._combine_results(
-            web_results, offline_results, n_results
-        )
-
-        return combined_results
-
-    def _combine_results(
-        self,
-        web_results: chromadb.QueryResult,
-        offline_results: chromadb.QueryResult,
-        n_results: int,
-    ) -> chromadb.QueryResult:
-        """Combine and sort results from both collections based on distance.
-
-        Args:
-            web_results: Results from web collection
-            offline_results: Results from offline collection
-            n_results: Number of results to return
-
-        Returns:
-            Combined and sorted results
-        """
-        # Extract results from both collections
-        web_docs = web_results["documents"][0]
-        web_metadatas = web_results["metadatas"][0]
-        web_distances = web_results["distances"][0]
-
-        offline_docs = offline_results["documents"][0]
-        offline_metadatas = offline_results["metadatas"][0]
-        offline_distances = offline_results["distances"][0]
-
-        # Combine all results with their distances
-        all_results = []
-        for i in range(len(web_docs)):
-            all_results.append((web_docs[i], web_metadatas[i], web_distances[i], "web"))
-        for i in range(len(offline_docs)):
-            all_results.append(
-                (offline_docs[i], offline_metadatas[i], offline_distances[i], "offline")
-            )
-
-        # Sort by distance
-        all_results.sort(key=lambda x: x[2])
-
-        # Take top n_results
-        top_results = all_results[:n_results]
-
-        # Reconstruct the result format
-        return {
-            "documents": [[r[0] for r in top_results]],
-            "metadatas": [[r[1] for r in top_results]],
-            "distances": [[r[2] for r in top_results]],
-            "source_types": [[r[3] for r in top_results]],
-        }
+        return results
 
     def generate_answer(
         self, question: str, chunks: List[ChunkResult], model: str = "gpt-3.5-turbo"

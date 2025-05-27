@@ -83,7 +83,13 @@ def clean_step(data_dir: Path, step: str, production: bool = False) -> None:
         production: Whether to clean production environment
     """
     step_dir = get_step_dir(data_dir, step, production)
-    _ensure_directory_exists(step_dir, clean=True)
+
+    if step_dir.exists():
+        # For all steps, just remove the directory and recreate it
+        logger.info(f"Cleaning directory: {step_dir}")
+        shutil.rmtree(step_dir)
+        step_dir.mkdir(parents=True)
+        logger.info(f"Created clean directory: {step_dir}")
 
 
 def get_downstream_steps(start_step: str) -> List[str]:
@@ -122,23 +128,3 @@ def clean_pipeline(data_dir: Path, start_step: str, production: bool = False) ->
     for step in steps_to_clean:
         logger.info(f"Cleaning step: {step}")
         clean_step(data_dir, step, production)
-
-
-def initialize_directories(data_dir: Path) -> None:
-    """Initialize all pipeline directories for both dev and prod environments.
-
-    This function ensures all necessary directories exist without cleaning existing content.
-    It should be called during application startup.
-
-    Args:
-        data_dir: Root data directory
-    """
-    logger.info("Initializing pipeline directories")
-    for production in [False, True]:
-        base_dir = get_base_dir(data_dir, production)
-        env = "prod" if production else "dev"
-        logger.info(f"Creating directories for {env} environment")
-
-        for step, dir_name in PIPELINE_STEPS.items():
-            step_dir = base_dir / dir_name
-            _ensure_directory_exists(step_dir, clean=False)

@@ -6,14 +6,13 @@ from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
 from .models import AskRequest, ChunkResult, AskResponse
-from ..config import INDEX_DIR
 from ..retriever.ask import Retriever
 
 # Create router
 router = APIRouter()
 
 # Initialize components
-retriever = Retriever(INDEX_DIR)
+retriever = Retriever(production=False)  # Use development environment by default
 
 
 @router.get("/health")

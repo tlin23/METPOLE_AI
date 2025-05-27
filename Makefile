@@ -53,7 +53,7 @@ help:
 
 # Run the FastAPI server with hot reload
 serve:
-	uvicorn backend.server:service --reload --host 127.0.0.1 --port 8000
+	uvicorn backend_refactor.server:service --reload --host 127.0.0.1 --port 8000
 
 # Run the FastAPI server without hot reload (for production-like environment)
 serve-prod:
