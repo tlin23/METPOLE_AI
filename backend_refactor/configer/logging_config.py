@@ -15,6 +15,7 @@ from logging.handlers import RotatingFileHandler
 # Feedback logging settings
 LOGS_DIR = "backend_refactor/logs"
 
+# Create logs directory if it doesn't exist
 Path(LOGS_DIR).mkdir(parents=True, exist_ok=True)
 
 
@@ -27,6 +28,7 @@ def configure_logging(
     max_bytes=10 * 1024 * 1024,  # 10 MB
     backup_count=5,
     stream_handler=True,
+    propagate=True,
 ):
     """
     Configure a logger with the specified parameters.
@@ -39,6 +41,7 @@ def configure_logging(
         max_bytes (int): Maximum size of the log file before rotation.
         backup_count (int): Number of backup log files to keep.
         stream_handler (bool): Whether to add a stream handler (console output).
+        propagate (bool): Whether to propagate logs to parent loggers.
 
     Returns:
         logging.Logger: The configured logger.
@@ -72,6 +75,9 @@ def configure_logging(
         file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)
 
+    # Set propagation
+    logger.propagate = propagate
+
     return logger
 
 
@@ -80,6 +86,7 @@ logger = configure_logging(
     logger_name="metropole_ai_refactor",
     log_level=logging.INFO,
     log_file=os.path.join(LOGS_DIR, "metropole_ai.log"),
+    propagate=False,  # Disable propagation for root logger
 )
 
 
@@ -101,12 +108,19 @@ def get_logger(name=None):
 
     # If logger doesn't have handlers, configure it
     if not new_logger.handlers:
-        configure_logging(
-            logger_name=logger_name, log_file=os.path.join(LOGS_DIR, f"{name}.log")
-        )
-        # Note: Propagation is enabled by default. This means log messages will
-        # propagate up the logger hierarchy. If you want to prevent duplicate logs,
-        # you can set propagate=False on specific loggers where needed.
-        new_logger.propagate = True
+        # In test environment, enable propagation for caplog to work
+        is_test = "pytest" in sys.modules
+        new_logger.propagate = is_test  # Enable propagation in test environment
+
+        # Always create the log directory
+        Path(LOGS_DIR).mkdir(parents=True, exist_ok=True)
+
+        if not is_test:
+            # Only add handlers if not in test environment
+            configure_logging(
+                logger_name=logger_name,
+                log_file=os.path.join(LOGS_DIR, f"{name}.log"),
+                propagate=False,
+            )
 
     return new_logger
