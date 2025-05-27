@@ -13,9 +13,8 @@ from ..models.content_chunk import ContentChunk
 from ..embedder.embedding_utils import embed_chunks
 from .directory_utils import (
     get_step_dir,
-    clean_environment,
-    ensure_directory_structure,
-    PIPELINE_STEPS,
+    clean_pipeline,
+    ALLOWED_EXTENSIONS,
 )
 
 # Set up logging
@@ -107,40 +106,23 @@ def crawl_content(
     input_source: str,
     output_dir: Path,
     allowed_domains: Optional[List[str]] = None,
-    allowed_extensions: Optional[List[str]] = None,
     production: bool = False,
     skip_cleaning: bool = False,
 ) -> Tuple[List[Path], List[str]]:
     """
-    Crawl web or local content and save raw files.
-
-    Args:
-        input_source: URL (for web processing) or path (for local processing)
-        output_dir: Base directory for output files
-        allowed_domains: List of allowed domains for web crawling
-        allowed_extensions: List of allowed file extensions for local processing
-        production: Whether to run in production mode
-        skip_cleaning: Whether to skip cleaning (used when called from run_pipeline)
-
-    Returns:
-        Tuple of (list of extracted file paths, list of error messages)
+    Crawl web content and store HTML files in local_input_source.
     """
-    # Clean and ensure directory structure
     if not skip_cleaning:
-        clean_environment(output_dir, "crawled", production)
-    output_subdir = get_step_dir(output_dir, "crawled", production)
+        clean_pipeline(output_dir, "crawl", production)
+    output_subdir = get_step_dir(output_dir, "crawl", production)
 
     errors = []
     try:
-        if _is_valid_url(input_source):
-            crawler = WebCrawler(allowed_domains=allowed_domains)
-            extracted_files = crawler.extract(input_source, output_subdir)
-        else:
-            input_path = Path(input_source)
-            if not input_path.exists():
-                raise ValueError(f"Input path does not exist: {input_path}")
-            crawler = LocalCrawler(allowed_extensions=allowed_extensions)
-            extracted_files = crawler.extract(input_path, output_subdir)
+        if not _is_valid_url(input_source):
+            raise ValueError(f"Invalid URL: {input_source}")
+
+        crawler = WebCrawler(allowed_domains=allowed_domains)
+        extracted_files = crawler.extract(input_source, output_subdir)
         return extracted_files, errors
 
     except Exception as e:
@@ -150,39 +132,72 @@ def crawl_content(
         return [], errors
 
 
+def sort_files(
+    input_dir: Path,
+    output_dir: Path,
+    production: bool = False,
+    skip_cleaning: bool = False,
+) -> Tuple[List[Path], List[str]]:
+    """
+    Sort files from local_input_source to sorted_input_source by extension.
+
+    Args:
+        input_dir: Path to the input directory
+        output_dir: Path to the output directory
+        production: Whether to use production environment
+        skip_cleaning: Whether to skip cleaning the output directory
+
+    Returns:
+        Tuple of (list of sorted file paths, list of error messages)
+    """
+    if not skip_cleaning:
+        clean_pipeline(output_dir, "sort", production)
+    output_subdir = get_step_dir(output_dir, "sort", production)
+
+    errors = []
+    sorted_files = []
+    try:
+        crawler = LocalCrawler(allowed_extensions=ALLOWED_EXTENSIONS)
+        sorted_files = crawler.extract(input_dir, output_subdir)
+        return sorted_files, errors
+
+    except Exception as e:
+        error_msg = f"Sort failed: {str(e)}\n{traceback.format_exc()}"
+        logger.error(error_msg)
+        errors.append(error_msg)
+        return [], errors
+
+
 def parse_files(
     input_dir: Path,
     output_dir: Path,
-    allowed_extensions: Optional[List[str]] = None,
     n_limit: Optional[int] = None,
     production: bool = False,
     skip_cleaning: bool = False,
 ) -> Tuple[List[Path], List[str]]:
     """
-    Parse files into ContentChunk JSONs.
+    Parse files from sorted_input_source and output content chunks to parsed.
 
     Args:
-        input_dir: Directory containing input files
-        output_dir: Base directory for output files
-        allowed_extensions: List of allowed file extensions
-        n_limit: Maximum number of files to process
-        production: Whether to run in production mode
-        skip_cleaning: Whether to skip cleaning (used when called from run_pipeline)
+        input_dir: Path to the input directory
+        output_dir: Path to the output directory
+        n_limit: Optional limit on number of files to process
+        production: Whether to use production environment
+        skip_cleaning: Whether to skip cleaning the output directory
 
     Returns:
-        Tuple of (list of output JSON paths, list of error messages)
+        Tuple of (list of parsed file paths, list of error messages)
     """
-    # Clean and ensure directory structure
     if not skip_cleaning:
-        clean_environment(output_dir, "parsed", production)
-    output_subdir = get_step_dir(output_dir, "parsed", production)
+        clean_pipeline(output_dir, "parse", production)
+    output_subdir = get_step_dir(output_dir, "parse", production)
 
     errors = []
     output_paths = []
 
     # Find all files to process
     files_to_process = []
-    for ext in allowed_extensions or PARSER_MAP.keys():
+    for ext in ALLOWED_EXTENSIONS:
         files_to_process.extend(input_dir.rglob(f"*{ext}"))
 
     if n_limit:
@@ -212,23 +227,22 @@ def embed_chunks_from_dir(
     skip_cleaning: bool = False,
 ) -> Tuple[int, List[str]]:
     """
-    Embed all ContentChunk JSONs in a directory.
+    Embed content chunks from parsed and store in chroma_db.
 
     Args:
-        input_dir: Directory containing ContentChunk JSONs
-        output_dir: Path to ChromaDB database
-        collection_name: Name of ChromaDB collection
-        n_limit: Maximum number of files to embed
-        production: Whether to run in production mode
-        skip_cleaning: Whether to skip cleaning (used when called from run_pipeline)
+        input_dir: Path to the input directory
+        output_dir: Path to the output directory
+        collection_name: Name of the ChromaDB collection
+        n_limit: Optional limit on number of files to process
+        production: Whether to use production environment
+        skip_cleaning: Whether to skip cleaning the output directory
 
     Returns:
-        Tuple of (number of files embedded, list of error messages)
+        Tuple of (number of embedded files, list of error messages)
     """
-    # Clean and ensure directory structure
     if not skip_cleaning:
-        clean_environment(output_dir, "embedded", production, collection_name)
-    output_subdir = get_step_dir(output_dir, "embedded", production)
+        clean_pipeline(output_dir, "embed", production)
+    output_subdir = get_step_dir(output_dir, "embed", production)
 
     errors = []
     json_files = list(input_dir.rglob("*.json"))
@@ -251,109 +265,60 @@ def run_pipeline(
     output_dir: Path,
     collection_name: str,
     allowed_domains: Optional[List[str]] = None,
-    allowed_extensions: Optional[List[str]] = None,
     production: bool = False,
 ) -> Dict[str, Path]:
     """
-    Run the complete pipeline: crawl, parse, and embed content.
-
-    Args:
-        input_source: URL (for web processing) or path (for local processing)
-        output_dir: Base directory for output files
-        collection_name: Name of the collection to store embeddings
-        allowed_domains: List of allowed domains for web crawling
-        allowed_extensions: List of allowed file extensions for local processing
-        production: Whether to run in production mode
-
-    Returns:
-        Dictionary mapping step names to their output directories
+    Run the complete pipeline from crawl to embed.
     """
-    try:
-        # Clean and ensure directory structure for all steps
-        clean_environment(output_dir, PIPELINE_STEPS[0], production, collection_name)
-        ensure_directory_structure(output_dir, production)
+    # Clean all outputs before starting
+    clean_pipeline(output_dir, "crawl", production)
 
-        # Step 1: Crawl content
-        crawled_files, crawl_errors = crawl_content(
-            input_source,
-            output_dir,
-            allowed_domains,
-            allowed_extensions,
-            production,
-            skip_cleaning=True,
-        )
-        if crawl_errors:
-            logger.warning(f"Crawl completed with {len(crawl_errors)} errors")
-
-        # Step 2: Parse all crawled files
-        crawled_dir = get_step_dir(output_dir, "crawled", production)
-        parsed_files, parse_errors = parse_files(
-            crawled_dir,
-            output_dir,
-            allowed_extensions,
-            production=production,
-            skip_cleaning=True,
-        )
-        if parse_errors:
-            logger.warning(f"Parse completed with {len(parse_errors)} errors")
-
-        # Step 3: Embed chunks
-        n_embedded, embed_errors = embed_chunks_from_dir(
-            get_step_dir(output_dir, "parsed", production),
-            output_dir,
-            collection_name,
-            production=production,
-            skip_cleaning=True,
-        )
-        if embed_errors:
-            logger.warning(f"Embed completed with {len(embed_errors)} errors")
-
-        # Determine if input was web or local
-        is_web = _is_valid_url(input_source)
-        web_crawled_files = len(crawled_files) if is_web else 0
-        local_crawled_files = len(crawled_files) if not is_web else 0
-
-        return {
-            "output_dir": output_dir,
-            "crawled_dir": crawled_dir,
-            "parsed_dir": get_step_dir(output_dir, "parsed", production),
-            "web_crawled_files": web_crawled_files,
-            "local_crawled_files": local_crawled_files,
-            "parsed_files": len(parsed_files),
-            "embedded_files": n_embedded,
-        }
-    except Exception as e:
-        error_msg = f"Pipeline failed: {str(e)}\n{traceback.format_exc()}"
-        logger.error(error_msg)
-        raise RuntimeError(error_msg)
-
-
-# Backward compatibility functions
-def run_web_pipeline(
-    url: str,
-    output_dir: Path,
-    collection_name: str,
-    allowed_domains: List[str] = None,
-) -> Dict[str, Path]:
-    """Run the web processing pipeline (legacy function)."""
-    return run_pipeline(
-        input_source=url,
+    # Step 1: Crawl
+    crawled_files, crawl_errors = crawl_content(
+        input_source=input_source,
         output_dir=output_dir,
-        collection_name=collection_name,
         allowed_domains=allowed_domains,
+        production=production,
+        skip_cleaning=True,
     )
+    if crawl_errors:
+        logger.warning(f"Crawl completed with {len(crawl_errors)} errors")
 
+    # Step 2: Sort
+    sorted_files, sort_errors = sort_files(
+        input_dir=get_step_dir(output_dir, "crawl", production),
+        output_dir=output_dir,
+        production=production,
+        skip_cleaning=True,
+    )
+    if sort_errors:
+        logger.warning(f"Sort completed with {len(sort_errors)} errors")
 
-def run_local_pipeline(
-    input_dir: Path,
-    output_dir: Path,
-    collection_name: str,
-    allowed_extensions: List[str] = None,
-) -> Dict[str, Path]:
-    """Run the local file processing pipeline (legacy function)."""
-    return run_pipeline(
-        input_source=input_dir,
+    # Step 3: Parse
+    parsed_files, parse_errors = parse_files(
+        input_dir=get_step_dir(output_dir, "sort", production),
+        output_dir=output_dir,
+        production=production,
+        skip_cleaning=True,
+    )
+    if parse_errors:
+        logger.warning(f"Parse completed with {len(parse_errors)} errors")
+
+    # Step 4: Embed
+    n_embedded, embed_errors = embed_chunks_from_dir(
+        input_dir=get_step_dir(output_dir, "parse", production),
         output_dir=output_dir,
         collection_name=collection_name,
-        allowed_extensions=allowed_extensions,
+        production=production,
+        skip_cleaning=True,
     )
+    if embed_errors:
+        logger.warning(f"Embed completed with {len(embed_errors)} errors")
+
+    return {
+        "output_dir": output_dir,
+        "crawled_files": len(crawled_files),
+        "sorted_files": len(sorted_files),
+        "parsed_files": len(parsed_files),
+        "embedded_files": n_embedded,
+    }

@@ -2,16 +2,22 @@
 # This file defines common development tasks
 
 .PHONY: help serve serve-prod front test lint format \
-	crawl parse embed crawl-and-parse pipeline pipeline-prod \
-	local-crawl local-parse local-embed local-pipeline local-pipeline-prod \
-	clean repo repo-py repo-py-js reset-env
+	clean repo repo-py repo-py-js reset-env \
+	crawl sort parse embed pip-prod-full pip-dev-full pip-dev-fast pip-dev-local \
+	clean-crawl clean-sort clean-parse clean-embed clean-all
 
 # Default URL for crawling
 START_URL := https://www.metropoleballard.com/home
 MAX_PAGES := 50
-OUTPUT_DIR := ./backend_refactor/data/output
+
+# Pipeline configuration
+OUTPUT_DIR := ./backend_refactor/data
+DEV_OUTPUT := $(OUTPUT_DIR)
+PROD_OUTPUT := $(OUTPUT_DIR)
 COLLECTION := metropole
-LOCAL_INPUT_DIR := ./backend_refactor/data/local_input_source
+
+# Base command for pipeline steps
+PIPELINE_CMD := python -m backend_refactor.pipeline.pipeline_cli
 
 # Load environment variables from .env
 include .env
@@ -28,20 +34,15 @@ help:
 	@echo "  make lint        - Run linting checks (ruff, mypy)"
 	@echo "  make format      - Format code with black"
 	@echo ""
-	@echo "Web Processing Commands:"
-	@echo "  make crawl       - Run the crawler only"
-	@echo "  make parse       - Parse crawled files into chunks"
-	@echo "  make embed       - Run the embedding process"
-	@echo "  make crawl-and-parse - Run crawl and parse steps"
-	@echo "  make pipeline    - Run the full pipeline (crawl, parse, embed)"
-	@echo "  make pipeline-prod - Run the full pipeline in production mode"
-	@echo ""
-	@echo "Local File Processing Commands:"
-	@echo "  make local-crawl - Copy and organize local files"
-	@echo "  make local-parse - Parse local files into chunks"
-	@echo "  make local-embed - Embed parsed local files"
-	@echo "  make local-pipeline - Run full pipeline on local files"
-	@echo "  make local-pipeline-prod - Run full pipeline on local files in production mode"
+	@echo "Pipeline Commands:"
+	@echo "  make crawl       - Crawl web content"
+	@echo "  make sort        - Sort crawled content"
+	@echo "  make parse       - Parse sorted content"
+	@echo "  make embed       - Embed parsed content"
+	@echo "  make pip-prod-full - Run full pipeline in production mode"
+	@echo "  make pip-dev-full  - Run full pipeline in development mode"
+	@echo "  make pip-dev-fast  - Run parse and embed in development mode"
+	@echo "  make pip-dev-local - Run sort, parse, and embed in development mode"
 	@echo ""
 	@echo "Utility Commands:"
 	@echo "  make clean       - Clean up cache and temporary files"
@@ -83,159 +84,6 @@ format:
 	@which black > /dev/null || (echo "Error: black is not installed. Install with 'pip install black'"; exit 1)
 	black backend/ tests/ *.py
 
-# Web Processing Commands
-
-# Crawl website content from metropoleballard.com
-web-crawl:
-	python3 -m backend_refactor.pipeline.pipeline_cli \
-		--step crawl \
-		--input $(START_URL) \
-		--output $(OUTPUT_DIR) \
-		--collection $(COLLECTION) \
-		--allowed-domains metropoleballard.com
-
-# Process local files from data/documents directory
-local-crawl:
-	python3 -m backend_refactor.pipeline.pipeline_cli \
-		--step crawl \
-		--input $(LOCAL_INPUT_DIR) \
-		--output $(OUTPUT_DIR) \
-		--collection $(COLLECTION) \
-		--allowed-extensions .html .pdf .docx
-
-# Common Pipeline Steps
-
-# Parse crawled files into chunks
-parse:
-	python3 -m backend_refactor.pipeline.pipeline_cli \
-		--step parse \
-		--input $(OUTPUT_DIR)/dev/crawled \
-		--output $(OUTPUT_DIR) \
-		--collection $(COLLECTION) \
-		--allowed-extensions .html .pdf .docx
-
-# Run the embedding process
-embed:
-	python3 -m backend_refactor.pipeline.pipeline_cli \
-		--step embed \
-		--input $(OUTPUT_DIR)/dev/parsed \
-		--output $(OUTPUT_DIR) \
-		--collection $(COLLECTION)
-
-# Combined Pipeline Commands
-
-# Run crawl and parse steps for website content
-web-crawl-and-parse:
-	python3 -m backend_refactor.pipeline.pipeline_cli \
-		--step crawl_and_parse \
-		--input $(START_URL) \
-		--output $(OUTPUT_DIR) \
-		--collection $(COLLECTION) \
-		--allowed-domains metropoleballard.com \
-		--allowed-extensions .html .pdf .docx
-
-# Run crawl and parse steps for local files
-local-crawl-and-parse:
-	python3 -m backend_refactor.pipeline.pipeline_cli \
-		--step crawl_and_parse \
-		--input $(LOCAL_INPUT_DIR) \
-		--output $(OUTPUT_DIR) \
-		--collection $(COLLECTION) \
-		--allowed-extensions .html .pdf .docx
-
-# Run the full pipeline on website content (development mode)
-web-pipeline:
-	python3 -m backend_refactor.pipeline.pipeline_cli \
-		--step all \
-		--input $(START_URL) \
-		--output $(OUTPUT_DIR) \
-		--collection $(COLLECTION) \
-		--allowed-domains metropoleballard.com \
-		--allowed-extensions .html .pdf .docx
-
-# Run the full pipeline on website content (production mode)
-web-pipeline-prod:
-	python3 -m backend_refactor.pipeline.pipeline_cli \
-		--step all \
-		--input $(START_URL) \
-		--output $(OUTPUT_DIR) \
-		--collection $(COLLECTION) \
-		--allowed-domains metropoleballard.com \
-		--allowed-extensions .html .pdf .docx \
-		--production
-
-# Run full pipeline on local files (development mode)
-local-pipeline:
-	python3 -m backend_refactor.pipeline.pipeline_cli \
-		--step all \
-		--input $(LOCAL_INPUT_DIR) \
-		--output $(OUTPUT_DIR) \
-		--collection $(COLLECTION) \
-		--allowed-extensions .html .pdf .docx
-
-# Run full pipeline on local files (production mode)
-local-pipeline-prod:
-	python3 -m backend_refactor.pipeline.pipeline_cli \
-		--step all \
-		--input $(LOCAL_INPUT_DIR) \
-		--output $(OUTPUT_DIR) \
-		--collection $(COLLECTION) \
-		--allowed-extensions .html .pdf .docx \
-		--production
-
-# Run full pipeline on both web and local content (development mode)
-all-pipeline:
-	@echo "Running web pipeline..."
-	python3 -m backend_refactor.pipeline.pipeline_cli \
-		--step all \
-		--input $(START_URL) \
-		--output $(OUTPUT_DIR) \
-		--collection $(COLLECTION)_web \
-		--allowed-domains metropoleballard.com \
-		--allowed-extensions .html .pdf .docx
-	@echo "Running local pipeline..."
-	python3 -m backend_refactor.pipeline.pipeline_cli \
-		--step all \
-		--input $(LOCAL_INPUT_DIR) \
-		--output $(OUTPUT_DIR) \
-		--collection $(COLLECTION)_local \
-		--allowed-extensions .html .pdf .docx
-	@echo "Combining collections..."
-	python3 -m backend_refactor.pipeline.pipeline_cli \
-		--step combine \
-		--input $(OUTPUT_DIR) \
-		--output $(OUTPUT_DIR) \
-		--collection $(COLLECTION) \
-		--source-collections $(COLLECTION)_web $(COLLECTION)_local
-
-# Run full pipeline on both web and local content (production mode)
-all-pipeline-prod:
-	@echo "Running web pipeline..."
-	python3 -m backend_refactor.pipeline.pipeline_cli \
-		--step all \
-		--input $(START_URL) \
-		--output $(OUTPUT_DIR) \
-		--collection $(COLLECTION)_web \
-		--allowed-domains metropoleballard.com \
-		--allowed-extensions .html .pdf .docx \
-		--production
-	@echo "Running local pipeline..."
-	python3 -m backend_refactor.pipeline.pipeline_cli \
-		--step all \
-		--input $(LOCAL_INPUT_DIR) \
-		--output $(OUTPUT_DIR) \
-		--collection $(COLLECTION)_local \
-		--allowed-extensions .html .pdf .docx \
-		--production
-	@echo "Combining collections..."
-	python3 -m backend_refactor.pipeline.pipeline_cli \
-		--step combine \
-		--input $(OUTPUT_DIR) \
-		--output $(OUTPUT_DIR) \
-		--collection $(COLLECTION) \
-		--source-collections $(COLLECTION)_web $(COLLECTION)_local \
-		--production
-
 # Clean up cache and temporary files
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} +
@@ -272,3 +120,52 @@ reset-env:
 # Inspect vector database contents
 inspect-db:
 	python -m backend.scripts.inspect_db
+
+# Pipeline targets
+crawl:
+	$(PIPELINE_CMD) --step crawl --input "$(START_URL)" --output $(OUTPUT_DIR) --collection $(COLLECTION) --allowed-domains metropoleballard.com
+
+sort:
+	$(PIPELINE_CMD) --step sort --input $(OUTPUT_DIR)/dev/local_input_source --output $(OUTPUT_DIR) --collection $(COLLECTION)
+
+parse:
+	$(PIPELINE_CMD) --step parse --input $(OUTPUT_DIR)/dev/sorted_documents --output $(OUTPUT_DIR) --collection $(COLLECTION)
+
+embed:
+	$(PIPELINE_CMD) --step embed --input $(OUTPUT_DIR)/dev/json_chunks --output $(OUTPUT_DIR) --collection $(COLLECTION)
+
+# Full pipeline runs
+pip-prod-full:
+	$(PIPELINE_CMD) --step all --input "$(START_URL)" --output $(OUTPUT_DIR) --collection $(COLLECTION) --allowed-domains metropoleballard.com --production
+
+pip-dev-full:
+	$(PIPELINE_CMD) --step all --input "$(START_URL)" --output $(OUTPUT_DIR) --collection $(COLLECTION) --allowed-domains metropoleballard.com
+
+pip-dev-fast:
+	$(PIPELINE_CMD) --step parse --input $(OUTPUT_DIR)/dev/sorted_documents --output $(OUTPUT_DIR) --collection $(COLLECTION)
+	$(PIPELINE_CMD) --step embed --input $(OUTPUT_DIR)/dev/json_chunks --output $(OUTPUT_DIR) --collection $(COLLECTION)
+
+pip-dev-local:
+	$(PIPELINE_CMD) --step sort --input $(OUTPUT_DIR)/dev/local_input_source --output $(OUTPUT_DIR) --collection $(COLLECTION)
+	$(PIPELINE_CMD) --step parse --input $(OUTPUT_DIR)/dev/sorted_documents --output $(OUTPUT_DIR) --collection $(COLLECTION)
+	$(PIPELINE_CMD) --step embed --input $(OUTPUT_DIR)/dev/json_chunks --output $(OUTPUT_DIR) --collection $(COLLECTION)
+
+# Cleaning targets
+clean-crawl:
+	rm -rf $(OUTPUT_DIR)/dev/local_input_source $(OUTPUT_DIR)/dev/sorted_documents $(OUTPUT_DIR)/dev/json_chunks $(OUTPUT_DIR)/dev/chroma_db
+	rm -rf $(OUTPUT_DIR)/prod/local_input_source $(OUTPUT_DIR)/prod/sorted_documents $(OUTPUT_DIR)/prod/json_chunks $(OUTPUT_DIR)/prod/chroma_db
+
+clean-sort:
+	rm -rf $(OUTPUT_DIR)/dev/sorted_documents $(OUTPUT_DIR)/dev/json_chunks $(OUTPUT_DIR)/dev/chroma_db
+	rm -rf $(OUTPUT_DIR)/prod/sorted_documents $(OUTPUT_DIR)/prod/json_chunks $(OUTPUT_DIR)/prod/chroma_db
+
+clean-parse:
+	rm -rf $(OUTPUT_DIR)/dev/json_chunks $(OUTPUT_DIR)/dev/chroma_db
+	rm -rf $(OUTPUT_DIR)/prod/json_chunks $(OUTPUT_DIR)/prod/chroma_db
+
+clean-embed:
+	rm -rf $(OUTPUT_DIR)/dev/chroma_db
+	rm -rf $(OUTPUT_DIR)/prod/chroma_db
+
+clean-all:
+	rm -rf $(OUTPUT_DIR)

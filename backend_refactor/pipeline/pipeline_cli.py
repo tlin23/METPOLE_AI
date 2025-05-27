@@ -3,12 +3,13 @@ import sys
 from pathlib import Path
 from typing import List, Optional
 from .pipeline_orchestration import (
-    run_pipeline,
     crawl_content,
+    sort_files,
     parse_files,
     embed_chunks_from_dir,
 )
-from .directory_utils import ensure_directory_structure
+from .directory_utils import get_step_dir
+import logging
 
 
 def parse_args(args: Optional[List[str]] = None) -> argparse.Namespace:
@@ -20,7 +21,7 @@ def parse_args(args: Optional[List[str]] = None) -> argparse.Namespace:
     # Step selection
     parser.add_argument(
         "--step",
-        choices=["crawl", "parse", "embed", "crawl_and_parse", "all"],
+        choices=["crawl", "sort", "parse", "embed", "all"],
         required=True,
         help="Pipeline step to execute",
     )
@@ -55,12 +56,6 @@ def parse_args(args: Optional[List[str]] = None) -> argparse.Namespace:
         nargs="+",
         help="List of allowed domains for web crawling",
     )
-    parser.add_argument(
-        "--allowed-extensions",
-        type=str,
-        nargs="+",
-        help="List of allowed file extensions for local processing",
-    )
 
     # Optional limits
     parser.add_argument(
@@ -68,109 +63,128 @@ def parse_args(args: Optional[List[str]] = None) -> argparse.Namespace:
         type=int,
         help="Limit number of files to process (for parse/embed steps)",
     )
+    parser.add_argument(
+        "--max-pages",
+        type=int,
+        help="Maximum number of pages to crawl",
+    )
 
     return parser.parse_args(args)
 
 
-def main(args: Optional[List[str]] = None) -> int:
+def main():
     """Main entry point for the pipeline CLI."""
+    parsed_args = parse_args()
+
+    # Set up logging
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+    )
+
+    # Convert output path to Path object
+    output_dir = Path(parsed_args.output)
+
+    # Use the provided collection name directly
+    collection_name = parsed_args.collection
+
     try:
-        parsed_args = parse_args(args)
-        output_dir = Path(parsed_args.output)
-
-        # Ensure directory structure exists
-        ensure_directory_structure(output_dir, parsed_args.production)
-
-        # Get collection name based on production mode
-        collection_name = (
-            f"{parsed_args.collection}_{'prod' if parsed_args.production else 'dev'}"
-        )
-
         if parsed_args.step == "crawl":
-            crawled_files, errors = crawl_content(
-                input_source=parsed_args.input,
-                output_dir=output_dir,
-                allowed_domains=parsed_args.allowed_domains,
-                allowed_extensions=parsed_args.allowed_extensions,
-                production=parsed_args.production,
+            # Crawl content
+            crawl_content(
+                parsed_args.input,  # Keep as string for URL
+                output_dir,
+                parsed_args.allowed_domains,
+                parsed_args.production,
             )
-            if errors:
-                print(f"Warning: Crawl completed with {len(errors)} errors")
-            print(f"Crawled {len(crawled_files)} files")
+            print(
+                f"✅ Crawled content saved to {get_step_dir(output_dir, 'crawl', parsed_args.production)}"
+            )
+
+        elif parsed_args.step == "sort":
+            # Sort files
+            sorted_files = sort_files(
+                Path(parsed_args.input),  # Use Path object
+                output_dir,
+                parsed_args.production,
+            )
+            print(
+                f"✅ Sorted {len(sorted_files)} files to {get_step_dir(output_dir, 'sort', parsed_args.production)}"
+            )
 
         elif parsed_args.step == "parse":
-            parsed_files, errors = parse_files(
-                input_dir=Path(parsed_args.input),
-                output_dir=output_dir,
-                allowed_extensions=parsed_args.allowed_extensions,
-                n_limit=parsed_args.n_limit,
-                production=parsed_args.production,
+            # Parse files
+            parsed_files = parse_files(
+                Path(parsed_args.input),  # Use Path object
+                output_dir,
+                parsed_args.n_limit,
+                parsed_args.production,
             )
-            if errors:
-                print(f"Warning: Parse completed with {len(errors)} errors")
-            print(f"Parsed {len(parsed_files)} files")
+            print(
+                f"✅ Parsed {len(parsed_files)} files to {get_step_dir(output_dir, 'parse', parsed_args.production)}"
+            )
 
         elif parsed_args.step == "embed":
-            n_embedded, errors = embed_chunks_from_dir(
-                input_dir=Path(parsed_args.input),
-                output_dir=output_dir,
-                collection_name=collection_name,
-                n_limit=parsed_args.n_limit,
-                production=parsed_args.production,
+            # Embed chunks
+            embedded_chunks = embed_chunks_from_dir(
+                Path(parsed_args.input),  # Use Path object
+                output_dir,
+                collection_name,
+                parsed_args.n_limit,
+                parsed_args.production,
             )
-            if errors:
-                print(f"Warning: Embed completed with {len(errors)} errors")
-            print(f"Embedded {n_embedded} files")
-
-        elif parsed_args.step == "crawl_and_parse":
-            # First crawl
-            crawled_files, crawl_errors = crawl_content(
-                input_source=parsed_args.input,
-                output_dir=output_dir,
-                allowed_domains=parsed_args.allowed_domains,
-                allowed_extensions=parsed_args.allowed_extensions,
-                production=parsed_args.production,
+            print(
+                f"✅ Embedded {embedded_chunks} chunks to {get_step_dir(output_dir, 'embed', parsed_args.production)}"
             )
-            if crawl_errors:
-                print(f"Warning: Crawl completed with {len(crawl_errors)} errors")
-            print(f"Crawled {len(crawled_files)} files")
-
-            # Then parse the crawled files
-            parsed_files, parse_errors = parse_files(
-                input_dir=output_dir
-                / ("prod" if parsed_args.production else "dev")
-                / "crawled",
-                output_dir=output_dir,
-                allowed_extensions=parsed_args.allowed_extensions,
-                n_limit=parsed_args.n_limit,
-                production=parsed_args.production,
-            )
-            if parse_errors:
-                print(f"Warning: Parse completed with {len(parse_errors)} errors")
-            print(f"Parsed {len(parsed_files)} files")
 
         elif parsed_args.step == "all":
-            result = run_pipeline(
-                input_source=parsed_args.input,
-                output_dir=output_dir,
-                collection_name=collection_name,
-                allowed_domains=parsed_args.allowed_domains,
-                allowed_extensions=parsed_args.allowed_extensions,
-                production=parsed_args.production,
+            # Run full pipeline
+            crawl_content(
+                parsed_args.input,  # Keep as string for URL
+                output_dir,
+                parsed_args.allowed_domains,
+                parsed_args.production,
             )
-            print(f"Pipeline completed. Results saved to: {result['output_dir']}")
-            if result.get("web_crawled_files"):
-                print(f"Web content: {result['web_crawled_files']} files crawled")
-            if result.get("local_crawled_files"):
-                print(f"Local content: {result['local_crawled_files']} files processed")
-            print(f"Total files parsed: {result['parsed_files']}")
-            print(f"Total files embedded: {result['embedded_files']}")
+            print(
+                f"✅ Crawled content saved to {get_step_dir(output_dir, 'crawl', parsed_args.production)}"
+            )
 
-        return 0
+            sorted_files = sort_files(
+                get_step_dir(output_dir, "crawl", parsed_args.production),
+                output_dir,
+                parsed_args.production,
+            )
+            print(
+                f"✅ Sorted {len(sorted_files)} files to {get_step_dir(output_dir, 'sort', parsed_args.production)}"
+            )
+
+            parsed_files = parse_files(
+                get_step_dir(output_dir, "sort", parsed_args.production),
+                output_dir,
+                parsed_args.n_limit,
+                parsed_args.production,
+            )
+            print(
+                f"✅ Parsed {len(parsed_files)} files to {get_step_dir(output_dir, 'parse', parsed_args.production)}"
+            )
+
+            embedded_chunks = embed_chunks_from_dir(
+                get_step_dir(output_dir, "parse", parsed_args.production),
+                output_dir,
+                collection_name,
+                parsed_args.n_limit,
+                parsed_args.production,
+            )
+            print(
+                f"✅ Embedded {embedded_chunks} chunks to {get_step_dir(output_dir, 'embed', parsed_args.production)}"
+            )
+
+        else:
+            print(f"❌ Unknown step: {parsed_args.step}")
+            sys.exit(1)
 
     except Exception as e:
-        print(f"Error: {str(e)}")
-        return 1
+        print(f"❌ Error: {str(e)}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":

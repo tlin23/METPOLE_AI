@@ -11,6 +11,7 @@ from backend_refactor.pipeline.pipeline_orchestration import (
     _save_error_to_json,
     _process_single_file,
     _is_valid_url,
+    sort_files,
 )
 from backend_refactor.pipeline.directory_utils import get_step_dir
 from backend_refactor.models.content_chunk import ContentChunk
@@ -87,12 +88,12 @@ def test_get_output_subdir():
     base_dir = Path("/test/output")
 
     # Test dev mode
-    dev_dir = get_step_dir(base_dir, "crawled", False)
-    assert dev_dir == Path("/test/output/dev/crawled")
+    dev_dir = get_step_dir(base_dir, "crawl", False)
+    assert dev_dir == Path("/test/output/dev/local_input_source")
 
     # Test prod mode
-    prod_dir = get_step_dir(base_dir, "parsed", True)
-    assert prod_dir == Path("/test/output/prod/parsed")
+    prod_dir = get_step_dir(base_dir, "parse", True)
+    assert prod_dir == Path("/test/output/prod/json_chunks")
 
 
 def test_save_chunks_to_json(temp_dir, sample_chunks):
@@ -163,21 +164,26 @@ def test_crawl_content_web(mock_web_crawler, temp_dir):
 
 
 @patch("backend_refactor.pipeline.pipeline_orchestration.LocalCrawler")
-def test_crawl_content_local(mock_local_crawler, temp_dir):
-    """Test local content crawling."""
+def test_sort_files_local(mock_local_crawler, temp_dir):
+    """Test local file sorting."""
     mock_crawler = Mock()
     mock_crawler.extract.return_value = [temp_dir / "test.html"]
     mock_local_crawler.return_value = mock_crawler
 
-    files, errors = crawl_content(
-        input_source=str(temp_dir),
+    # Create test file
+    test_file = temp_dir / "test.html"
+    test_file.write_text("<html>Test</html>")
+
+    files, errors = sort_files(
+        input_dir=temp_dir,
         output_dir=temp_dir,
-        allowed_extensions=[".html"],
     )
 
     assert len(files) == 1
     assert len(errors) == 0
-    mock_local_crawler.assert_called_once_with(allowed_extensions=[".html"])
+    mock_local_crawler.assert_called_once_with(
+        allowed_extensions=[".pdf", ".docx", ".html"]
+    )
 
 
 def test_parse_files(temp_dir, parser_map_patch):
@@ -192,7 +198,6 @@ def test_parse_files(temp_dir, parser_map_patch):
         output_paths, errors = parse_files(
             input_dir=input_dir,
             output_dir=temp_dir,
-            allowed_extensions=[".html"],
             n_limit=1,
         )
 
@@ -201,9 +206,9 @@ def test_parse_files(temp_dir, parser_map_patch):
         assert output_paths[0].suffix == ".json"
 
 
+@patch("backend_refactor.pipeline.pipeline_orchestration.clean_pipeline")
 @patch("backend_refactor.pipeline.pipeline_orchestration.embed_chunks")
-@patch("backend_refactor.pipeline.pipeline_orchestration.clean_environment")
-def test_embed_chunks_from_dir(mock_clean_environment, mock_embed_chunks, temp_dir):
+def test_embed_chunks_from_dir(mock_embed_chunks, mock_clean_pipeline, temp_dir):
     """Test chunk embedding."""
     # Create test JSON files
     input_dir = temp_dir / "input"
@@ -215,6 +220,10 @@ def test_embed_chunks_from_dir(mock_clean_environment, mock_embed_chunks, temp_d
         '{"chunk_id": "chunk_2", "content": "Test 2"}'
     )
 
+    # Create output directory
+    output_dir = temp_dir / "dev" / "chroma_db"
+    output_dir.mkdir(parents=True, exist_ok=True)
+
     n_embedded, errors = embed_chunks_from_dir(
         input_dir=input_dir,
         output_dir=temp_dir,
@@ -224,49 +233,67 @@ def test_embed_chunks_from_dir(mock_clean_environment, mock_embed_chunks, temp_d
 
     assert n_embedded == 1
     assert len(errors) == 0
-    mock_embed_chunks.assert_called_once()
-    # Verify that only the embedded step was cleaned
-    mock_clean_environment.assert_called_once_with(
-        temp_dir, "embedded", False, "test_collection"
+
+    # Verify that embed_chunks was called with correct arguments
+    mock_embed_chunks.assert_called_once_with(
+        [input_dir / "test1.json"],  # Only first file due to n_limit=1
+        "test_collection",
+        output_dir,
     )
 
+    # Verify that clean_pipeline was called with correct arguments
+    mock_clean_pipeline.assert_called_once_with(temp_dir, "embed", False)
 
+
+@patch("backend_refactor.pipeline.pipeline_orchestration.clean_pipeline")
 @patch("backend_refactor.pipeline.pipeline_orchestration.crawl_content")
+@patch("backend_refactor.pipeline.pipeline_orchestration.sort_files")
 @patch("backend_refactor.pipeline.pipeline_orchestration.parse_files")
 @patch("backend_refactor.pipeline.pipeline_orchestration.embed_chunks_from_dir")
-@patch("backend_refactor.pipeline.pipeline_orchestration.clean_environment")
 def test_run_pipeline(
-    mock_clean_environment, mock_embed, mock_parse, mock_crawl, temp_dir
+    mock_embed_chunks, mock_parse, mock_sort, mock_crawl, mock_clean, temp_dir
 ):
     """Test full pipeline execution."""
+    # Create necessary directories
+    crawl_dir = temp_dir / "dev" / "local_input_source"
+    sort_dir = temp_dir / "dev" / "sorted_documents"
+    parse_dir = temp_dir / "dev" / "json_chunks"
+    embed_dir = temp_dir / "dev" / "chroma_db"
+
+    for dir_path in [crawl_dir, sort_dir, parse_dir, embed_dir]:
+        dir_path.mkdir(parents=True, exist_ok=True)
+
     # Mock crawl output
     mock_crawl.return_value = ([temp_dir / "test.html"], [])
+
+    # Mock sort output
+    mock_sort.return_value = ([temp_dir / "test.html"], [])
 
     # Mock parse output
     mock_parse.return_value = ([temp_dir / "test.json"], [])
 
     # Mock embed output
-    mock_embed.return_value = (1, [])
+    mock_embed_chunks.return_value = (1, [])
 
     result = run_pipeline(
         input_source="https://example.com",
         output_dir=temp_dir,
         collection_name="test_collection",
         allowed_domains=["example.com"],
-        allowed_extensions=[".html"],
     )
 
     assert "output_dir" in result
-    assert "crawled_dir" in result
-    assert "parsed_dir" in result
-    mock_crawl.assert_called_once()
-    mock_parse.assert_called_once()
-    mock_embed.assert_called_once()
+    assert "crawled_files" in result
+    assert "sorted_files" in result
+    assert "parsed_files" in result
+    assert "embedded_files" in result
 
-    # Verify that all steps were cleaned in the correct order
-    mock_clean_environment.assert_called_once_with(
-        temp_dir, "crawled", False, "test_collection"
-    )
+    # Verify that all steps were called in the correct order
+    mock_clean.assert_called_once_with(temp_dir, "crawl", False)
+    mock_crawl.assert_called_once()
+    mock_sort.assert_called_once()
+    mock_parse.assert_called_once()
+    mock_embed_chunks.assert_called_once()
 
 
 def test_crawl_content_invalid_input(temp_dir):
