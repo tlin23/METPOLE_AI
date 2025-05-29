@@ -36,6 +36,4 @@ service.add_middleware(
 service.include_router(api_router, prefix="/api")
 
 if __name__ == "__main__":
-    uvicorn.run(
-        "backend_refactor.server.app:service", host="127.0.0.1", port=8000, reload=True
-    )
+    uvicorn.run("backend.server.app:service", host="127.0.0.1", port=8000, reload=True)

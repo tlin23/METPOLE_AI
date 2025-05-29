@@ -1,3 +1,3 @@
 """
-Backend refactor package.
+Backend package.
 """

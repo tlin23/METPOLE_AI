@@ -11,13 +11,13 @@ START_URL := https://www.metropoleballard.com/home
 MAX_PAGES := 50
 
 # Pipeline configuration
-OUTPUT_DIR := ./backend_refactor/data
+OUTPUT_DIR := ./backend/data
 DEV_OUTPUT := $(OUTPUT_DIR)
 PROD_OUTPUT := $(OUTPUT_DIR)
 COLLECTION := metropole
 
 # Base command for pipeline steps
-PIPELINE_CMD := python -m backend_refactor.data_processing.pipeline.pipeline_cli
+PIPELINE_CMD := python -m backend.data_processing.pipeline.pipeline_cli
 
 # Load environment variables from .env
 include .env
@@ -53,7 +53,7 @@ help:
 
 # Run the FastAPI server with hot reload
 serve:
-	uvicorn backend_refactor.server:service --reload --host 127.0.0.1 --port 8000
+	uvicorn backend.server:service --reload --host 127.0.0.1 --port 8000
 
 # Run the FastAPI server without hot reload (for production-like environment)
 serve-prod:

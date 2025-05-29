@@ -16,7 +16,7 @@ def setup_logging():
     """Configure logging for tests."""
     # Configure root logger for testing
     configure_logging(
-        logger_name="metropole_ai_refactor",
+        logger_name="metropole_ai",
         log_level=logging.INFO,
         propagate=True,  # Enable propagation for caplog
     )

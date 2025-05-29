@@ -1,5 +1,5 @@
 """
-Centralized logging configuration for the backend_refactor application.
+Centralized logging configuration for the backend application.
 
 This module provides a standardized way to configure logging across the application.
 It sets up a shared logger with consistent formatting and handlers.
@@ -13,7 +13,7 @@ from logging.handlers import RotatingFileHandler
 
 
 # Feedback logging settings
-LOGS_DIR = "backend_refactor/logger/logs"
+LOGS_DIR = "backend/logger/logs"
 
 # Create logs directory if it doesn't exist
 Path(LOGS_DIR).mkdir(parents=True, exist_ok=True)
@@ -21,7 +21,7 @@ Path(LOGS_DIR).mkdir(parents=True, exist_ok=True)
 
 # Configure the root logger
 def configure_logging(
-    logger_name="metropole_ai_refactor",
+    logger_name="metropole_ai",
     log_level=logging.INFO,
     log_format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     log_file=None,
@@ -83,7 +83,7 @@ def configure_logging(
 
 # Create the default application logger
 logger = configure_logging(
-    logger_name="metropole_ai_refactor",
+    logger_name="metropole_ai",
     log_level=logging.INFO,
     log_file=os.path.join(LOGS_DIR, "metropole_ai.log"),
     propagate=False,  # Disable propagation for root logger
@@ -103,7 +103,7 @@ def get_logger(name=None):
     if name is None:
         return logger
 
-    logger_name = f"metropole_ai_refactor.{name}"
+    logger_name = f"metropole_ai.{name}"
     new_logger = logging.getLogger(logger_name)
 
     # If logger doesn't have handlers, configure it

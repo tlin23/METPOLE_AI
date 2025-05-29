@@ -17,13 +17,13 @@ def test_logger_creation():
     """Test that a logger can be created with default settings."""
     logger = get_logger("test")
     assert isinstance(logger, logging.Logger)
-    assert logger.name == "metropole_ai_refactor.test"
+    assert logger.name == "metropole_ai.test"
 
 
 def test_logger_hierarchy():
     """Test that logger hierarchy is maintained."""
     child_logger = get_logger("parent.child")
-    assert child_logger.name == "metropole_ai_refactor.parent.child"
+    assert child_logger.name == "metropole_ai.parent.child"
 
 
 def test_log_file_creation():
@@ -95,7 +95,7 @@ def test_log_format():
 
     # Verify the log record has the expected attributes
     assert handler.record is not None
-    assert handler.record.name == "metropole_ai_refactor.test_format"
+    assert handler.record.name == "metropole_ai.test_format"
     assert handler.record.levelname == "INFO"
     assert handler.record.getMessage() == test_message
 
@@ -171,4 +171,4 @@ def test_logger_propagation():
 
     # Verify the message was received by the parent's handler
     assert len(handler.records) == 1
-    assert handler.records[0].name == "metropole_ai_refactor.test_propagation.child"
+    assert handler.records[0].name == "metropole_ai.test_propagation.child"
