@@ -28,7 +28,7 @@ INDEX_DIR = "/data/chroma_db"
 PRODUCTION = "true"
 
 [mounts]
-  source = "chroma_embeddings"
+  source = "chroma_data"
   destination = "/data"
 
 [build]
