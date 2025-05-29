@@ -5,7 +5,7 @@ from typing import List, Dict, Type, Optional, Tuple
 from urllib.parse import urlparse
 from ..crawlers.web_crawler import WebCrawler
 from ..crawlers.local_crawler import LocalCrawler
-from ..parsers.html_parser import HTMLParser
+from ..parsers.unified_html_parser import UnifiedHTMLParser
 from ..parsers.pdf_parser import PDFParser
 from ..parsers.docx_parser import DOCXParser
 from ..models.content_chunk import ContentChunk
@@ -22,7 +22,7 @@ logger = get_logger("pipeline.orchestration")
 
 # Map file extensions to their corresponding parsers
 PARSER_MAP: Dict[str, Type] = {
-    ".html": HTMLParser,
+    ".html": UnifiedHTMLParser,
     ".pdf": PDFParser,
     ".docx": DOCXParser,
 }

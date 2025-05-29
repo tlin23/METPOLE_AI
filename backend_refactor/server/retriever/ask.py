@@ -206,7 +206,16 @@ class Retriever:
         # Add context from chunks
         prompt += "Context:\n"
         for i, chunk in enumerate(chunks, 1):
-            prompt += f"{i}. {chunk.text}\n"
+            # Get document title from metadata
+            metadata = (
+                chunk.metadata if hasattr(chunk, "metadata") and chunk.metadata else {}
+            )
+            document_title = (
+                metadata.get("document_title")
+                or metadata.get("document_name")
+                or "Unknown Document"
+            )
+            prompt += f"{i}. [From: {document_title}]\n{chunk.text}\n"
 
         # Add instructions
         prompt += "\nInstructions:\n"
