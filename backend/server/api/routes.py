@@ -4,6 +4,7 @@ API routes for the application.
 
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
+import os
 
 from .models import AskRequest, ChunkResult, AskResponse
 from ..retriever.ask import Retriever
@@ -12,7 +13,7 @@ from ..retriever.ask import Retriever
 router = APIRouter()
 
 # Initialize components
-retriever = Retriever(production=False)  # Use development environment by default
+retriever = Retriever(production=os.getenv("PRODUCTION", "false").lower() == "true")
 
 
 @router.get("/health")

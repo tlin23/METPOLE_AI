@@ -24,10 +24,11 @@ primary_region = 'sea'
   cpus = 1
 
 [env]
-INDEX_DIR = "/data/index"
+INDEX_DIR = "/data/chroma_db"
+PRODUCTION = "true"
 
 [mounts]
-  source = "chroma_data"
+  source = "chroma_embeddings"
   destination = "/data"
 
 [build]
