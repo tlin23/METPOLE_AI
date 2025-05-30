@@ -86,3 +86,4 @@ repomix-output.xml
 
 backend/data/
 backend/data_processing/logger/logs
+backend/server/data/app.db
