@@ -1,9 +1,16 @@
 import { useState, useRef, useEffect } from "react";
 import axios from "axios";
+import { GoogleOAuthProvider } from "@react-oauth/google";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import Login from "./components/Login";
 import "./App.css";
 import styles from "./App.styles.js";
 
-function App() {
+// Get Google Client ID from environment
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
+function ChatApp() {
+  const { user, logout } = useAuth();
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -56,7 +63,6 @@ function App() {
     setIsLoading(true);
 
     try {
-      // Send request to backend API using full URL
       const response = await axios.post(
         `${import.meta.env.VITE_BACKEND_URL}/api/ask`,
         {
@@ -65,7 +71,6 @@ function App() {
         }
       );
 
-      // Check if the request was successful
       if (response.data.success) {
         setMessages((prevMessages) => [
           ...prevMessages,
@@ -115,6 +120,10 @@ function App() {
     setShowSourceInfo(!showSourceInfo);
   };
 
+  if (!user) {
+    return <Login />;
+  }
+
   return (
     <div style={styles.container}>
       {/* App Header */}
@@ -134,6 +143,9 @@ function App() {
           </div>
           <button onClick={handleReset} style={styles.resetButton}>
             Start Over
+          </button>
+          <button onClick={logout} style={styles.logoutButton}>
+            Sign Out
           </button>
         </div>
       </header>
@@ -244,6 +256,16 @@ function App() {
         </form>
       </main>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+      <AuthProvider>
+        <ChatApp />
+      </AuthProvider>
+    </GoogleOAuthProvider>
   );
 }
 

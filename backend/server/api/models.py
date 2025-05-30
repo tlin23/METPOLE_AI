@@ -27,3 +27,5 @@ class AskResponse(BaseModel):
     success: bool
     message: str
     prompt: Optional[str] = None
+    quota_remaining: int
+    stacktrace: Optional[str] = None

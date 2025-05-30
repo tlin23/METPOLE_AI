@@ -1,0 +1,67 @@
+import { createContext, useContext, useState, useEffect } from "react";
+import axios from "axios";
+
+const AuthContext = createContext(null);
+
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+
+  // Initialize axios with auth interceptor
+  useEffect(() => {
+    const interceptor = axios.interceptors.request.use(
+      (config) => {
+        const token = localStorage.getItem("token");
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+      },
+      (error) => {
+        return Promise.reject(error);
+      }
+    );
+
+    // Add response interceptor to handle 401s
+    const responseInterceptor = axios.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response?.status === 401) {
+          setUser(null);
+          localStorage.removeItem("token");
+        }
+        return Promise.reject(error);
+      }
+    );
+
+    return () => {
+      axios.interceptors.request.eject(interceptor);
+      axios.interceptors.response.eject(responseInterceptor);
+    };
+  }, []);
+
+  const login = (token) => {
+    localStorage.setItem("token", token);
+    setUser({ token });
+  };
+
+  const logout = () => {
+    localStorage.removeItem("token");
+    setUser(null);
+  };
+
+  const value = {
+    user,
+    login,
+    logout,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
+};
