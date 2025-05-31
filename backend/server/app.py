@@ -26,6 +26,7 @@ service.add_middleware(
         "http://localhost:5173",  # Local dev (Vite)
         "http://localhost:3000",  # Docker
         "https://metpole-ai.vercel.app",  # Your Vercel frontend
+        "http://localhost:8080",  # OAuth CLI redirect
     ],
     allow_credentials=True,
     allow_methods=["*"],

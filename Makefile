@@ -4,7 +4,8 @@
 .PHONY: help serve serve-prod front test lint format \
 	clean repo repo-py repo-py-js reset-env \
 	crawl sort parse embed pip-prod-full pip-dev-full pip-dev-fast pip-dev-local \
-	clean-crawl clean-sort clean-parse clean-embed clean-all
+	clean-crawl clean-sort clean-parse clean-embed clean-all \
+	admin-status admin-list admin-add admin-remove admin-reset-quota admin-check-quota
 
 # Default URL for crawling
 START_URL := https://www.metropoleballard.com/home
@@ -33,6 +34,14 @@ help:
 	@echo "  make test        - Run all tests"
 	@echo "  make lint        - Run linting checks (ruff, mypy)"
 	@echo "  make format      - Format code with black"
+	@echo ""
+	@echo "Admin Commands (backend/server/cli/admin.py):"
+	@echo "  make admin-status         - Check system status and admin privileges"
+	@echo "  make admin-list           - List all admin users (requires admin privileges)"
+	@echo "  make admin-add email=...  - Promote a user to admin (replace ... with email)"
+	@echo "  make admin-remove email=... - Remove admin status from a user (replace ... with email)"
+	@echo "  make admin-reset-quota email=... - Reset question quota for a user (replace ... with email)"
+	@echo "  make admin-check-quota email=... - Check question quota for a user (replace ... with email)"
 	@echo ""
 	@echo "Pipeline Commands:"
 	@echo "  make crawl       - Crawl web content"
@@ -169,3 +178,26 @@ clean-embed:
 
 clean-all:
 	rm -rf $(OUTPUT_DIR)
+
+# === Admin CLI commands ===
+admin-status:
+	python3 backend/server/cli/admin.py status
+
+admin-list:
+	python3 backend/server/cli/admin.py list
+
+admin-add:
+	@if [ -z "$$email" ]; then echo "Usage: make admin-add email=someone@example.com"; exit 1; fi; \
+	python3 backend/server/cli/admin.py add $$email
+
+admin-remove:
+	@if [ -z "$$email" ]; then echo "Usage: make admin-remove email=someone@example.com"; exit 1; fi; \
+	python3 backend/server/cli/admin.py remove $$email
+
+admin-reset-quota:
+	@if [ -z "$$email" ]; then echo "Usage: make admin-reset-quota email=someone@example.com"; exit 1; fi; \
+	python3 backend/server/cli/admin.py reset-quota $$email
+
+admin-check-quota:
+	@if [ -z "$$email" ]; then echo "Usage: make admin-check-quota email=someone@example.com"; exit 1; fi; \
+	python3 backend/server/cli/admin.py check-quota $$email

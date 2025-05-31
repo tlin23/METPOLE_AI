@@ -107,7 +107,12 @@ def test_health_check():
     """Test health check endpoint."""
     response = client.get("/api/health")
     assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
+    data = response.json()
+    assert data["status"] == "ok"
+    assert "system" in data
+    assert "has_admins" in data["system"]
+    assert "admin_count" in data["system"]
+    assert isinstance(data["system"]["admin_count"], int)
 
 
 def test_ask_question_unauthorized():
@@ -150,7 +155,10 @@ def test_ask_question_quota_exceeded(mock_token_verification, mock_retriever, te
     )
     assert response.status_code == 429
     data = response.json()
-    assert data["detail"]["message"] == "Daily question quota exceeded"
+    assert (
+        data["detail"]["message"]
+        == "You have reached your daily question limit. Your quota will reset tomorrow at midnight UTC. Please try again then."
+    )
     assert data["detail"]["quota_remaining"] == 0
 
 

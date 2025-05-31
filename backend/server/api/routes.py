@@ -7,6 +7,8 @@ from fastapi.responses import JSONResponse
 import os
 from typing import List, Dict, Any
 import traceback
+from datetime import datetime, timedelta
+import pytz
 
 from .models import AskRequest, ChunkResult, AskResponse
 from ..retriever.ask import Retriever
@@ -22,8 +24,26 @@ retriever = Retriever(production=os.getenv("PRODUCTION", "false").lower() == "tr
 
 @router.get("/health")
 async def health_check():
-    """Health check endpoint to verify the server is running."""
-    return JSONResponse(content={"status": "ok"})
+    """
+    Health check endpoint to verify the server is running and check system status.
+    Returns information about the system state, including admin existence.
+    """
+    conn = get_db_connection()
+    try:
+        # Check if any admins exist
+        cursor = conn.execute(
+            "SELECT COUNT(*) as admin_count FROM users WHERE is_admin = 1"
+        )
+        admin_count = cursor.fetchone()["admin_count"]
+
+        return JSONResponse(
+            content={
+                "status": "ok",
+                "system": {"has_admins": admin_count > 0, "admin_count": admin_count},
+            }
+        )
+    finally:
+        conn.close()
 
 
 @router.post("/ask", response_model=AskResponse)
@@ -46,9 +66,17 @@ async def ask_question(
     # Check quota
     quota_remaining = User.increment_question_count(user_info["user_id"])
     if quota_remaining <= 0:
+        # Calculate next reset time (midnight UTC)
+        now = datetime.utcnow().replace(tzinfo=pytz.UTC)
+        tomorrow = now + timedelta(days=1)
+        reset_time = tomorrow.replace(hour=0, minute=0, second=0, microsecond=0)
         raise HTTPException(
             status_code=429,
-            detail={"message": "Daily question quota exceeded", "quota_remaining": 0},
+            detail={
+                "message": "You have reached your daily question limit. Your quota will reset tomorrow at midnight UTC. Please try again then.",
+                "quota_remaining": 0,
+                "reset_time": reset_time.isoformat(),
+            },
         )
 
     try:
@@ -136,18 +164,50 @@ async def list_admins(
 
 @router.post("/admin/add")
 async def add_admin(
-    email: str, user_info: Dict[str, Any] = Depends(require_admin)
+    email: str, user_info: Dict[str, Any] = Depends(validate_token)
 ) -> Dict[str, Any]:
     """Add a new admin user."""
     conn = get_db_connection()
     try:
+        # Check if this is the first admin
         cursor = conn.execute(
-            "UPDATE users SET is_admin = 1 WHERE email = ? RETURNING user_id, email",
-            (email,),
+            "SELECT COUNT(*) as admin_count FROM users WHERE is_admin = 1"
+        )
+        is_first_admin = cursor.fetchone()["admin_count"] == 0
+
+        # If not first admin, require admin privileges
+        if not is_first_admin:
+            # Verify current user is admin
+            current_user = User.get(user_info["user_id"])
+            if not current_user or not current_user["is_admin"]:
+                raise HTTPException(status_code=403, detail="Admin privileges required")
+
+        # First check if user exists
+        cursor = conn.execute(
+            "SELECT user_id, email FROM users WHERE email = ?", (email,)
         )
         row = cursor.fetchone()
+
         if not row:
-            raise HTTPException(status_code=404, detail="User not found")
+            # User doesn't exist, create them
+            # Use the actual user_id from the token
+            cursor = conn.execute(
+                """
+                INSERT INTO users (user_id, email, is_admin, question_count, last_question_reset)
+                VALUES (?, ?, 1, 0, date('now'))
+                RETURNING user_id, email
+                """,
+                (user_info["user_id"], email),
+            )
+            row = cursor.fetchone()
+        else:
+            # User exists, update their admin status
+            cursor = conn.execute(
+                "UPDATE users SET is_admin = 1 WHERE email = ? RETURNING user_id, email",
+                (email,),
+            )
+            row = cursor.fetchone()
+
         conn.commit()
         return dict(row)
     finally:
@@ -195,5 +255,40 @@ async def reset_quota(
             raise HTTPException(status_code=404, detail="User not found")
         conn.commit()
         return dict(row)
+    finally:
+        conn.close()
+
+
+@router.get("/admin/check-quota")
+async def check_quota(
+    email: str, user_info: Dict[str, Any] = Depends(require_admin)
+) -> Dict[str, Any]:
+    """Check question quota for a user."""
+    conn = get_db_connection()
+    try:
+        cursor = conn.execute(
+            """
+            SELECT user_id, email, question_count, is_admin, last_question_reset
+            FROM users
+            WHERE email = ?
+        """,
+            (email,),
+        )
+        row = cursor.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        user_data = dict(row)
+        max_quota = 20 if user_data["is_admin"] else 5
+        quota_remaining = max(0, max_quota - user_data["question_count"])
+
+        return {
+            "user_id": user_data["user_id"],
+            "email": user_data["email"],
+            "question_count": user_data["question_count"],
+            "max_quota": max_quota,
+            "quota_remaining": quota_remaining,
+            "last_reset": user_data["last_question_reset"],
+        }
     finally:
         conn.close()

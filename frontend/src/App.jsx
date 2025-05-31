@@ -102,11 +102,19 @@ function ChatApp() {
       }
     } catch (error) {
       console.error("API error:", error.response?.data || error.message);
+      let errorMsg =
+        "Sorry, there was an error processing your request. Please try again.";
+      if (
+        error.response?.status === 429 &&
+        error.response?.data?.detail?.message
+      ) {
+        errorMsg = error.response.data.detail.message;
+      }
       setMessages((prevMessages) => [
         ...prevMessages,
         {
           id: Date.now(),
-          text: "Sorry, there was an error processing your request. Please try again.",
+          text: errorMsg,
           sender: "bot",
         },
       ]);

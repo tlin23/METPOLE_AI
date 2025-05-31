@@ -14,7 +14,7 @@ DONE ## 1. User Authentication
 
 ---
 
-## 2. Access Tiers & Rate Limits
+DONE ## 2. Access Tiers & Rate Limits
 
 - **Regular user**: 5 questions/day.
 - **Admin user**: 20 questions/day (identified by admin flag in DB).
@@ -22,7 +22,7 @@ DONE ## 1. User Authentication
 
 ---
 
-## 3. Data Model (SQLite)
+DONE ## 3. Data Model (SQLite)
 
 - **User**:
   - `user_id` (Google), `email`, `is_admin`, `question_count`, `last_question_reset`
@@ -35,7 +35,7 @@ DONE ## 1. User Authentication
 
 ---
 
-## 4. Admin Management
+DONE ## 4. Admin Management
 
 - Admin status (bool in User table).
 - Admin-only API endpoints for:
