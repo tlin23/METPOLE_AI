@@ -6,6 +6,14 @@ const AuthContext = createContext(null);
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
 
+  // Check for existing token on mount
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      setUser({ token });
+    }
+  }, []);
+
   // Initialize axios with auth interceptor
   useEffect(() => {
     const interceptor = axios.interceptors.request.use(
