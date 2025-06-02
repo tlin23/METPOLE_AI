@@ -10,13 +10,14 @@ import sys
 import argparse
 import requests
 from dotenv import load_dotenv
-from typing import Dict
+from typing import Dict, Optional
 import webbrowser
 import json
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import threading
 import urllib.parse
 import time
+from tabulate import tabulate
 
 # Load environment variables
 load_dotenv()
@@ -264,113 +265,479 @@ def check_user_quota(email: str) -> None:
             headers=get_headers(),
         )
         response.raise_for_status()
-        data = response.json()
-        print(f"\nQuota information for {data['email']}:")
-        print(f"Questions used: {data['question_count']}/{data['max_quota']}")
-        print(f"Quota remaining: {data['quota_remaining']}")
-        print(f"Last reset: {data['last_reset']}")
+        user = response.json()
+        print(f"\nQuota for {user['email']}:")
+        print(f"Questions asked today: {user['question_count']}")
+        print(f"Last reset: {user['last_question_reset']}")
     except requests.exceptions.RequestException as e:
         print(f"Error checking quota: {e}")
 
 
+def list_messages(
+    limit: int = 100,
+    offset: int = 0,
+    user: Optional[str] = None,
+    type: Optional[str] = None,
+    since: Optional[str] = None,
+    until: Optional[str] = None,
+    json_output: bool = False,
+) -> None:
+    """List messages with optional filtering."""
+    try:
+        params = {
+            "limit": limit,
+            "offset": offset,
+        }
+        if user:
+            params["user_id"] = user
+        if type:
+            params["message_type"] = type
+        if since:
+            params["since"] = since
+        if until:
+            params["until"] = until
+
+        response = requests.get(
+            f"{API_BASE_URL}/admin/messages",
+            params=params,
+            headers=get_headers(),
+        )
+        response.raise_for_status()
+        messages = response.json()
+
+        if json_output:
+            print(json.dumps(messages, indent=2))
+        else:
+            if not messages:
+                print("No messages found.")
+                return
+
+            table_data = []
+            for msg in messages:
+                table_data.append(
+                    [
+                        msg["timestamp"],
+                        msg["user_email"],
+                        msg["message_type"],
+                        (
+                            msg["message_text"][:100] + "..."
+                            if len(msg["message_text"]) > 100
+                            else msg["message_text"]
+                        ),
+                    ]
+                )
+            print(
+                tabulate(
+                    table_data,
+                    headers=["Timestamp", "User", "Type", "Message"],
+                    tablefmt="grid",
+                )
+            )
+    except requests.exceptions.RequestException as e:
+        print(f"Error listing messages: {e}")
+
+
+def search_messages(
+    text: str,
+    fuzzy: bool = False,
+    limit: int = 100,
+    offset: int = 0,
+    user: Optional[str] = None,
+    type: Optional[str] = None,
+    since: Optional[str] = None,
+    until: Optional[str] = None,
+    json_output: bool = False,
+) -> None:
+    """Search messages by text with optional filtering."""
+    try:
+        params = {
+            "text": text,
+            "fuzzy": fuzzy,
+            "limit": limit,
+            "offset": offset,
+        }
+        if user:
+            params["user_id"] = user
+        if type:
+            params["message_type"] = type
+        if since:
+            params["since"] = since
+        if until:
+            params["until"] = until
+
+        response = requests.get(
+            f"{API_BASE_URL}/admin/messages/search",
+            params=params,
+            headers=get_headers(),
+        )
+        response.raise_for_status()
+        messages = response.json()
+
+        if json_output:
+            print(json.dumps(messages, indent=2))
+        else:
+            if not messages:
+                print("No messages found.")
+                return
+
+            table_data = []
+            for msg in messages:
+                table_data.append(
+                    [
+                        msg["timestamp"],
+                        msg["user_email"],
+                        msg["message_type"],
+                        (
+                            msg["message_text"][:100] + "..."
+                            if len(msg["message_text"]) > 100
+                            else msg["message_text"]
+                        ),
+                    ]
+                )
+            print(
+                tabulate(
+                    table_data,
+                    headers=["Timestamp", "User", "Type", "Message"],
+                    tablefmt="grid",
+                )
+            )
+    except requests.exceptions.RequestException as e:
+        print(f"Error searching messages: {e}")
+
+
+def search_users(
+    query: str,
+    fuzzy: bool = False,
+    limit: int = 100,
+    offset: int = 0,
+    json_output: bool = False,
+) -> None:
+    """Search users by email or name."""
+    try:
+        response = requests.get(
+            f"{API_BASE_URL}/admin/users/search",
+            params={
+                "query": query,
+                "fuzzy": fuzzy,
+                "limit": limit,
+                "offset": offset,
+            },
+            headers=get_headers(),
+        )
+        response.raise_for_status()
+        users = response.json()
+
+        if json_output:
+            print(json.dumps(users, indent=2))
+        else:
+            if not users:
+                print("No users found.")
+                return
+
+            table_data = []
+            for user in users:
+                table_data.append(
+                    [
+                        user["email"],
+                        user["is_admin"],
+                        user["question_count"],
+                        user["message_count"],
+                        user["last_question_reset"],
+                    ]
+                )
+            print(
+                tabulate(
+                    table_data,
+                    headers=[
+                        "Email",
+                        "Admin",
+                        "Questions Today",
+                        "Total Messages",
+                        "Last Reset",
+                    ],
+                    tablefmt="grid",
+                )
+            )
+    except requests.exceptions.RequestException as e:
+        print(f"Error searching users: {e}")
+
+
+def get_stats(
+    since: Optional[str] = None,
+    until: Optional[str] = None,
+    limit: int = 10,
+    json_output: bool = False,
+) -> None:
+    """Get message statistics."""
+    try:
+        params = {
+            "limit": limit,
+        }
+        if since:
+            params["since"] = since
+        if until:
+            params["until"] = until
+
+        response = requests.get(
+            f"{API_BASE_URL}/admin/stats",
+            params=params,
+            headers=get_headers(),
+        )
+        response.raise_for_status()
+        stats = response.json()
+
+        if json_output:
+            print(json.dumps(stats, indent=2))
+        else:
+            # Top questions
+            print("\nTop Questions:")
+            if stats["top_questions"]:
+                table_data = [
+                    [q["message_text"], q["count"]] for q in stats["top_questions"]
+                ]
+                print(
+                    tabulate(table_data, headers=["Question", "Count"], tablefmt="grid")
+                )
+            else:
+                print("No questions found.")
+
+            # Top answers
+            print("\nTop Answers:")
+            if stats["top_answers"]:
+                table_data = [
+                    [a["message_text"], a["count"]] for a in stats["top_answers"]
+                ]
+                print(
+                    tabulate(table_data, headers=["Answer", "Count"], tablefmt="grid")
+                )
+            else:
+                print("No answers found.")
+
+            # Top chunks
+            print("\nTop Retrieved Chunks:")
+            if stats["top_chunks"]:
+                table_data = [
+                    [c["chunk_text"], c["count"]] for c in stats["top_chunks"]
+                ]
+                print(tabulate(table_data, headers=["Chunk", "Count"], tablefmt="grid"))
+            else:
+                print("No chunks found.")
+
+            # Top users
+            print("\nTop Users by Questions:")
+            if stats["top_users"]:
+                table_data = [
+                    [u["email"], u["question_count"]] for u in stats["top_users"]
+                ]
+                print(
+                    tabulate(
+                        table_data, headers=["User", "Question Count"], tablefmt="grid"
+                    )
+                )
+            else:
+                print("No users found.")
+    except requests.exceptions.RequestException as e:
+        print(f"Error getting stats: {e}")
+
+
 def main():
-    """Main CLI interface."""
-    parser = argparse.ArgumentParser(
-        description="Admin management CLI",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-  # Check system status
-  python admin.py status
+    """Main entry point for the CLI."""
+    parser = argparse.ArgumentParser(description="Admin CLI for Metropole")
+    subparsers = parser.add_subparsers(dest="command", help="Command to run")
 
-  # List all admins (requires admin privileges)
-  python admin.py list
-
-  # Add a new admin
-  python admin.py add user@example.com
-
-  # Remove an admin
-  python admin.py remove admin@example.com
-
-  # Reset user quota
-  python admin.py reset-quota user@example.com
-
-  # Check user quota
-  python admin.py check-quota user@example.com
-        """,
+    # Check status command
+    status_parser = subparsers.add_parser("status", help="Check system status")
+    status_parser.add_argument(
+        "--admin", action="store_true", help="Check admin status"
     )
 
-    subparsers = parser.add_subparsers(dest="command", help="Command to execute")
-
-    # Status command (public)
-    subparsers.add_parser("status", help="Check system status and admin privileges")
-
-    # List command (admin only)
-    subparsers.add_parser(
-        "list", help="List all admin users (requires admin privileges)"
-    )
+    # List admins command
+    subparsers.add_parser("list", help="List all admin users")
 
     # Add admin command
-    add_parser = subparsers.add_parser("add", help="Promote a user to admin")
+    add_parser = subparsers.add_parser("add", help="Add a new admin user")
     add_parser.add_argument("email", help="Email of the user to promote")
 
     # Remove admin command
-    remove_parser = subparsers.add_parser(
-        "remove", help="Remove admin status from a user"
-    )
-    remove_parser.add_argument("email", help="Email of the admin to demote")
+    remove_parser = subparsers.add_parser("remove", help="Remove admin status")
+    remove_parser.add_argument("email", help="Email of the user to demote")
 
     # Reset quota command
-    reset_parser = subparsers.add_parser(
-        "reset-quota", help="Reset question quota for a user"
+    quota_parser = subparsers.add_parser("quota", help="Manage user quotas")
+    quota_subparsers = quota_parser.add_subparsers(
+        dest="quota_command", help="Quota command"
     )
-    reset_parser.add_argument("email", help="Email of the user whose quota to reset")
 
-    # Check quota command
-    check_parser = subparsers.add_parser(
-        "check-quota", help="Check question quota for a user"
+    reset_quota_parser = quota_subparsers.add_parser("reset", help="Reset user quota")
+    reset_quota_parser.add_argument("email", help="Email of the user")
+
+    check_quota_parser = quota_subparsers.add_parser("check", help="Check user quota")
+    check_quota_parser.add_argument("email", help="Email of the user")
+
+    # Messages command
+    messages_parser = subparsers.add_parser("messages", help="Manage messages")
+    messages_subparsers = messages_parser.add_subparsers(
+        dest="messages_command", help="Messages command"
     )
-    check_parser.add_argument("email", help="Email of the user whose quota to check")
+
+    # List messages command
+    list_messages_parser = messages_subparsers.add_parser("list", help="List messages")
+    list_messages_parser.add_argument(
+        "--limit", type=int, default=100, help="Maximum number of messages to return"
+    )
+    list_messages_parser.add_argument(
+        "--offset", type=int, default=0, help="Offset for pagination"
+    )
+    list_messages_parser.add_argument("--user", help="Filter by user ID")
+    list_messages_parser.add_argument("--type", help="Filter by message type")
+    list_messages_parser.add_argument(
+        "--since", help="Filter by start date (YYYY-MM-DD)"
+    )
+    list_messages_parser.add_argument("--until", help="Filter by end date (YYYY-MM-DD)")
+    list_messages_parser.add_argument(
+        "--json", action="store_true", help="Output as JSON"
+    )
+
+    # Search messages command
+    search_messages_parser = messages_subparsers.add_parser(
+        "search", help="Search messages"
+    )
+    search_messages_parser.add_argument(
+        "--text", required=True, help="Text to search for"
+    )
+    search_messages_parser.add_argument(
+        "--fuzzy", action="store_true", help="Use fuzzy search"
+    )
+    search_messages_parser.add_argument(
+        "--limit", type=int, default=100, help="Maximum number of messages to return"
+    )
+    search_messages_parser.add_argument(
+        "--offset", type=int, default=0, help="Offset for pagination"
+    )
+    search_messages_parser.add_argument("--user", help="Filter by user ID")
+    search_messages_parser.add_argument("--type", help="Filter by message type")
+    search_messages_parser.add_argument(
+        "--since", help="Filter by start date (YYYY-MM-DD)"
+    )
+    search_messages_parser.add_argument(
+        "--until", help="Filter by end date (YYYY-MM-DD)"
+    )
+    search_messages_parser.add_argument(
+        "--json", action="store_true", help="Output as JSON"
+    )
+
+    # Users command
+    users_parser = subparsers.add_parser("users", help="Manage users")
+    users_subparsers = users_parser.add_subparsers(
+        dest="users_command", help="Users command"
+    )
+
+    # Search users command
+    search_users_parser = users_subparsers.add_parser("search", help="Search users")
+    search_users_parser.add_argument("--query", required=True, help="Search query")
+    search_users_parser.add_argument(
+        "--fuzzy", action="store_true", help="Use fuzzy search"
+    )
+    search_users_parser.add_argument(
+        "--limit", type=int, default=100, help="Maximum number of users to return"
+    )
+    search_users_parser.add_argument(
+        "--offset", type=int, default=0, help="Offset for pagination"
+    )
+    search_users_parser.add_argument(
+        "--json", action="store_true", help="Output as JSON"
+    )
+
+    # Stats command
+    stats_parser = subparsers.add_parser("stats", help="View statistics")
+    stats_parser.add_argument("--since", help="Filter by start date (YYYY-MM-DD)")
+    stats_parser.add_argument("--until", help="Filter by end date (YYYY-MM-DD)")
+    stats_parser.add_argument(
+        "--limit", type=int, default=10, help="Maximum number of items to return"
+    )
+    stats_parser.add_argument("--json", action="store_true", help="Output as JSON")
 
     args = parser.parse_args()
 
-    if not args.command:
-        parser.print_help()
-        return
-
-    # Handle status command (public)
     if args.command == "status":
-        system_status = check_system_status()
-        is_admin = check_admin_status()
-        print(f"System status: {system_status.get('status', 'unknown')}")
-        print(f"Current user is admin: {is_admin}")
-        if not is_admin and is_first_admin():
-            print("\nNo admins found. You can add the first admin using:")
-            print("python admin.py add your.email@example.com")
-        return
+        if args.admin:
+            if check_admin_status():
+                print("You are an admin.")
+            else:
+                print("You are not an admin.")
+        else:
+            status = check_system_status()
+            print(f"System status: {status['status']}")
+            if status["system"]["has_admins"]:
+                print(f"Number of admins: {status['system']['admin_count']}")
+            else:
+                print("No admins exist yet.")
 
-    # Special case: Allow adding first admin without requiring admin privileges
-    if args.command == "add" and is_first_admin():
-        print("No admins found. Adding first admin...")
-        add_admin(args.email)
-        return
-
-    # Check admin status for all other admin commands
-    if not check_admin_status():
-        print("Error: You must be an admin to use this command")
-        sys.exit(1)
-
-    # Execute the requested command
-    if args.command == "list":
+    elif args.command == "list":
         list_admins()
+
     elif args.command == "add":
         add_admin(args.email)
+
     elif args.command == "remove":
         remove_admin(args.email)
-    elif args.command == "reset-quota":
-        reset_user_quota(args.email)
-    elif args.command == "check-quota":
-        check_user_quota(args.email)
+
+    elif args.command == "quota":
+        if args.quota_command == "reset":
+            reset_user_quota(args.email)
+        elif args.quota_command == "check":
+            check_user_quota(args.email)
+        else:
+            quota_parser.print_help()
+
+    elif args.command == "messages":
+        if args.messages_command == "list":
+            list_messages(
+                limit=args.limit,
+                offset=args.offset,
+                user=args.user,
+                type=args.type,
+                since=args.since,
+                until=args.until,
+                json_output=args.json,
+            )
+        elif args.messages_command == "search":
+            search_messages(
+                text=args.text,
+                fuzzy=args.fuzzy,
+                limit=args.limit,
+                offset=args.offset,
+                user=args.user,
+                type=args.type,
+                since=args.since,
+                until=args.until,
+                json_output=args.json,
+            )
+        else:
+            messages_parser.print_help()
+
+    elif args.command == "users":
+        if args.users_command == "search":
+            search_users(
+                query=args.query,
+                fuzzy=args.fuzzy,
+                limit=args.limit,
+                offset=args.offset,
+                json_output=args.json,
+            )
+        else:
+            users_parser.print_help()
+
+    elif args.command == "stats":
+        get_stats(
+            since=args.since,
+            until=args.until,
+            limit=args.limit,
+            json_output=args.json,
+        )
+
+    else:
+        parser.print_help()
 
 
 if __name__ == "__main__":

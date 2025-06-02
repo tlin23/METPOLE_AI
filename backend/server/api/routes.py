@@ -5,7 +5,7 @@ API routes for the application.
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import JSONResponse
 import os
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import traceback
 from datetime import datetime, timedelta
 import pytz
@@ -268,7 +268,7 @@ async def check_quota(
     try:
         cursor = conn.execute(
             """
-            SELECT user_id, email, question_count, is_admin, last_question_reset
+            SELECT user_id, email, question_count, last_question_reset
             FROM users
             WHERE email = ?
         """,
@@ -277,18 +277,106 @@ async def check_quota(
         row = cursor.fetchone()
         if not row:
             raise HTTPException(status_code=404, detail="User not found")
-
-        user_data = dict(row)
-        max_quota = 20 if user_data["is_admin"] else 5
-        quota_remaining = max(0, max_quota - user_data["question_count"])
-
-        return {
-            "user_id": user_data["user_id"],
-            "email": user_data["email"],
-            "question_count": user_data["question_count"],
-            "max_quota": max_quota,
-            "quota_remaining": quota_remaining,
-            "last_reset": user_data["last_question_reset"],
-        }
+        return dict(row)
     finally:
         conn.close()
+
+
+# New admin query endpoints
+@router.get("/admin/messages")
+async def list_messages(
+    limit: int = 100,
+    offset: int = 0,
+    user_id: Optional[str] = None,
+    message_type: Optional[str] = None,
+    since: Optional[datetime] = None,
+    until: Optional[datetime] = None,
+    user_info: Dict[str, Any] = Depends(require_admin),
+) -> List[Dict[str, Any]]:
+    """List messages with optional filtering."""
+    return Message.list_messages(
+        limit=limit,
+        offset=offset,
+        user_id=user_id,
+        message_type=message_type,
+        since=since,
+        until=until,
+    )
+
+
+@router.get("/admin/messages/search")
+async def search_messages(
+    text: str,
+    fuzzy: bool = False,
+    limit: int = 100,
+    offset: int = 0,
+    user_id: Optional[str] = None,
+    message_type: Optional[str] = None,
+    since: Optional[datetime] = None,
+    until: Optional[datetime] = None,
+    user_info: Dict[str, Any] = Depends(require_admin),
+) -> List[Dict[str, Any]]:
+    """Search messages by text with optional filtering."""
+    return Message.search_messages(
+        text=text,
+        fuzzy=fuzzy,
+        limit=limit,
+        offset=offset,
+        user_id=user_id,
+        message_type=message_type,
+        since=since,
+        until=until,
+    )
+
+
+@router.get("/admin/users/search")
+async def search_users(
+    query: str,
+    fuzzy: bool = False,
+    limit: int = 100,
+    offset: int = 0,
+    user_info: Dict[str, Any] = Depends(require_admin),
+) -> List[Dict[str, Any]]:
+    """Search users by email or name."""
+    return User.search_users(
+        query=query,
+        fuzzy=fuzzy,
+        limit=limit,
+        offset=offset,
+    )
+
+
+@router.get("/admin/users/{user_id}/messages")
+async def get_user_messages(
+    user_id: str,
+    limit: int = 100,
+    offset: int = 0,
+    message_type: Optional[str] = None,
+    since: Optional[datetime] = None,
+    until: Optional[datetime] = None,
+    user_info: Dict[str, Any] = Depends(require_admin),
+) -> List[Dict[str, Any]]:
+    """Get messages for a specific user."""
+    return User.get_user_messages(
+        user_id=user_id,
+        limit=limit,
+        offset=offset,
+        message_type=message_type,
+        since=since,
+        until=until,
+    )
+
+
+@router.get("/admin/stats")
+async def get_stats(
+    since: Optional[datetime] = None,
+    until: Optional[datetime] = None,
+    limit: int = 10,
+    user_info: Dict[str, Any] = Depends(require_admin),
+) -> Dict[str, Any]:
+    """Get message statistics."""
+    return Message.get_stats(
+        since=since,
+        until=until,
+        limit=limit,
+    )

@@ -5,7 +5,8 @@
 	clean repo repo-py repo-py-js reset-env \
 	crawl sort parse embed pip-prod-full pip-dev-full pip-dev-fast pip-dev-local \
 	clean-crawl clean-sort clean-parse clean-embed clean-all \
-	admin-status admin-list admin-add admin-remove admin-reset-quota admin-check-quota
+	admin-status admin-list admin-add admin-remove admin-reset-quota admin-check-quota \
+	admin-messages-list admin-messages-search admin-users-search admin-stats
 
 # Default URL for crawling
 START_URL := https://www.metropoleballard.com/home
@@ -42,6 +43,16 @@ help:
 	@echo "  make admin-remove email=... - Remove admin status from a user (replace ... with email)"
 	@echo "  make admin-reset-quota email=... - Reset question quota for a user (replace ... with email)"
 	@echo "  make admin-check-quota email=... - Check question quota for a user (replace ... with email)"
+	@echo ""
+	@echo "Admin Query Commands:"
+	@echo "  make admin-messages-list [limit=100] [offset=0] [user=...] [type=...] [since=...] [until=...] [json]"
+	@echo "    - List messages with optional filtering"
+	@echo "  make admin-messages-search text=... [fuzzy] [limit=100] [offset=0] [user=...] [type=...] [since=...] [until=...] [json]"
+	@echo "    - Search messages by text with optional filtering"
+	@echo "  make admin-users-search query=... [fuzzy] [limit=100] [offset=0] [json]"
+	@echo "    - Search users by email or name"
+	@echo "  make admin-stats [since=...] [until=...] [limit=10] [json]"
+	@echo "    - View message statistics"
 	@echo ""
 	@echo "Pipeline Commands:"
 	@echo "  make crawl       - Crawl web content"
@@ -196,8 +207,47 @@ admin-remove:
 
 admin-reset-quota:
 	@if [ -z "$$email" ]; then echo "Usage: make admin-reset-quota email=someone@example.com"; exit 1; fi; \
-	python3 backend/server/cli/admin.py reset-quota $$email
+	python3 backend/server/cli/admin.py quota reset $$email
 
 admin-check-quota:
 	@if [ -z "$$email" ]; then echo "Usage: make admin-check-quota email=someone@example.com"; exit 1; fi; \
-	python3 backend/server/cli/admin.py check-quota $$email
+	python3 backend/server/cli/admin.py quota check $$email
+
+admin-messages-list:
+	python3 backend/server/cli/admin.py messages list \
+		$(if $(limit),--limit $(limit)) \
+		$(if $(offset),--offset $(offset)) \
+		$(if $(user),--user $(user)) \
+		$(if $(type),--type $(type)) \
+		$(if $(since),--since $(since)) \
+		$(if $(until),--until $(until)) \
+		$(if $(json),--json)
+
+admin-messages-search:
+	@if [ -z "$$text" ]; then echo "Usage: make admin-messages-search text=\"search text\" [fuzzy] [limit=100] [offset=0] [user=...] [type=...] [since=...] [until=...] [json]"; exit 1; fi; \
+	python3 backend/server/cli/admin.py messages search \
+		--text "$$text" \
+		$(if $(fuzzy),--fuzzy) \
+		$(if $(limit),--limit $(limit)) \
+		$(if $(offset),--offset $(offset)) \
+		$(if $(user),--user $(user)) \
+		$(if $(type),--type $(type)) \
+		$(if $(since),--since $(since)) \
+		$(if $(until),--until $(until)) \
+		$(if $(json),--json)
+
+admin-users-search:
+	@if [ -z "$$query" ]; then echo "Usage: make admin-users-search query=\"search query\" [fuzzy] [limit=100] [offset=0] [json]"; exit 1; fi; \
+	python3 backend/server/cli/admin.py users search \
+		--query "$$query" \
+		$(if $(fuzzy),--fuzzy) \
+		$(if $(limit),--limit $(limit)) \
+		$(if $(offset),--offset $(offset)) \
+		$(if $(json),--json)
+
+admin-stats:
+	python3 backend/server/cli/admin.py stats \
+		$(if $(since),--since $(since)) \
+		$(if $(until),--until $(until)) \
+		$(if $(limit),--limit $(limit)) \
+		$(if $(json),--json)

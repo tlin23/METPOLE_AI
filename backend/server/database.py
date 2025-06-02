@@ -164,6 +164,56 @@ class User:
         finally:
             conn.close()
 
+    @staticmethod
+    def search_users(
+        query: str,
+        fuzzy: bool = False,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> List[Dict[str, Any]]:
+        """Search users by email or name."""
+        conn = get_db_connection()
+        try:
+            if fuzzy:
+                # SQLite doesn't have built-in fuzzy search, so we'll use LIKE for now
+                search_query = f"%{query}%"
+            else:
+                search_query = query
+
+            cursor = conn.execute(
+                """
+                SELECT u.*,
+                       (SELECT COUNT(*) FROM messages m WHERE m.user_id = u.user_id) as message_count
+                FROM users u
+                WHERE u.email LIKE ?
+                ORDER BY u.email
+                LIMIT ? OFFSET ?
+                """,
+                (search_query, limit, offset),
+            )
+            return [dict(row) for row in cursor.fetchall()]
+        finally:
+            conn.close()
+
+    @staticmethod
+    def get_user_messages(
+        user_id: str,
+        limit: int = 100,
+        offset: int = 0,
+        message_type: Optional[str] = None,
+        since: Optional[datetime] = None,
+        until: Optional[datetime] = None,
+    ) -> List[Dict[str, Any]]:
+        """Get messages for a specific user."""
+        return Message.list_messages(
+            limit=limit,
+            offset=offset,
+            user_id=user_id,
+            message_type=message_type,
+            since=since,
+            until=until,
+        )
+
 
 class Session:
     @staticmethod
@@ -222,5 +272,187 @@ class Message:
             )
             conn.commit()
             return message_id
+        finally:
+            conn.close()
+
+    @staticmethod
+    def list_messages(
+        limit: int = 100,
+        offset: int = 0,
+        user_id: Optional[str] = None,
+        message_type: Optional[str] = None,
+        since: Optional[datetime] = None,
+        until: Optional[datetime] = None,
+    ) -> List[Dict[str, Any]]:
+        """List messages with optional filtering."""
+        conn = get_db_connection()
+        try:
+            query = """
+                SELECT m.*, u.email as user_email
+                FROM messages m
+                JOIN users u ON m.user_id = u.user_id
+                WHERE 1=1
+            """
+            params = []
+
+            if user_id:
+                query += " AND m.user_id = ?"
+                params.append(user_id)
+            if message_type:
+                query += " AND m.message_type = ?"
+                params.append(message_type)
+            if since:
+                query += " AND m.timestamp >= ?"
+                params.append(since)
+            if until:
+                query += " AND m.timestamp <= ?"
+                params.append(until)
+
+            query += " ORDER BY m.timestamp DESC LIMIT ? OFFSET ?"
+            params.extend([limit, offset])
+
+            cursor = conn.execute(query, params)
+            return [dict(row) for row in cursor.fetchall()]
+        finally:
+            conn.close()
+
+    @staticmethod
+    def search_messages(
+        text: str,
+        fuzzy: bool = False,
+        limit: int = 100,
+        offset: int = 0,
+        user_id: Optional[str] = None,
+        message_type: Optional[str] = None,
+        since: Optional[datetime] = None,
+        until: Optional[datetime] = None,
+    ) -> List[Dict[str, Any]]:
+        """Search messages by text with optional filtering."""
+        conn = get_db_connection()
+        try:
+            query = """
+                SELECT m.*, u.email as user_email
+                FROM messages m
+                JOIN users u ON m.user_id = u.user_id
+                WHERE 1=1
+            """
+            params = []
+
+            if fuzzy:
+                # SQLite doesn't have built-in fuzzy search, so we'll use LIKE for now
+                query += " AND m.message_text LIKE ?"
+                params.append(f"%{text}%")
+            else:
+                query += " AND m.message_text LIKE ?"
+                params.append(f"%{text}%")
+
+            if user_id:
+                query += " AND m.user_id = ?"
+                params.append(user_id)
+            if message_type:
+                query += " AND m.message_type = ?"
+                params.append(message_type)
+            if since:
+                query += " AND m.timestamp >= ?"
+                params.append(since)
+            if until:
+                query += " AND m.timestamp <= ?"
+                params.append(until)
+
+            query += " ORDER BY m.timestamp DESC LIMIT ? OFFSET ?"
+            params.extend([limit, offset])
+
+            cursor = conn.execute(query, params)
+            return [dict(row) for row in cursor.fetchall()]
+        finally:
+            conn.close()
+
+    @staticmethod
+    def get_stats(
+        since: Optional[datetime] = None,
+        until: Optional[datetime] = None,
+        limit: int = 10,
+    ) -> Dict[str, Any]:
+        """Get message statistics."""
+        conn = get_db_connection()
+        try:
+            where_clause = "WHERE 1=1"
+            params = []
+
+            if since:
+                where_clause += " AND timestamp >= ?"
+                params.append(since)
+            if until:
+                where_clause += " AND timestamp <= ?"
+                params.append(until)
+
+            # Most common questions
+            cursor = conn.execute(
+                f"""
+                SELECT message_text, COUNT(*) as count
+                FROM messages
+                {where_clause}
+                AND message_type = 'question'
+                GROUP BY message_text
+                ORDER BY count DESC
+                LIMIT ?
+                """,
+                params + [limit],
+            )
+            top_questions = [dict(row) for row in cursor.fetchall()]
+
+            # Most common answers
+            cursor = conn.execute(
+                f"""
+                SELECT message_text, COUNT(*) as count
+                FROM messages
+                {where_clause}
+                AND message_type = 'answer'
+                GROUP BY message_text
+                ORDER BY count DESC
+                LIMIT ?
+                """,
+                params + [limit],
+            )
+            top_answers = [dict(row) for row in cursor.fetchall()]
+
+            # Most common retrieved chunks
+            cursor = conn.execute(
+                f"""
+                SELECT json_extract(retrieved_chunks, '$[0].text') as chunk_text,
+                       COUNT(*) as count
+                FROM messages
+                {where_clause}
+                AND retrieved_chunks IS NOT NULL
+                GROUP BY chunk_text
+                ORDER BY count DESC
+                LIMIT ?
+                """,
+                params + [limit],
+            )
+            top_chunks = [dict(row) for row in cursor.fetchall()]
+
+            # Top users by question count
+            cursor = conn.execute(
+                f"""
+                SELECT u.email, COUNT(*) as question_count
+                FROM messages m
+                JOIN users u ON m.user_id = u.user_id
+                {where_clause}
+                AND m.message_type = 'question'
+                GROUP BY m.user_id
+                ORDER BY question_count DESC
+                LIMIT ?
+                """,
+                params + [limit],
+            )
+            top_users = [dict(row) for row in cursor.fetchall()]
+
+            return {
+                "top_questions": top_questions,
+                "top_answers": top_answers,
+                "top_chunks": top_chunks,
+                "top_users": top_users,
+            }
         finally:
             conn.close()
