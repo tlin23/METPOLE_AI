@@ -14,6 +14,7 @@ services:
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       - PRODUCTION=false
       - ENABLE_DB_DUMP=True
+      - METROPOLE_DB_PATH=/app/backend/server/data/app.db
 
   frontend:
     build:

@@ -3,21 +3,35 @@ Database setup and models for the application.
 """
 
 import sqlite3
+import os
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 import json
+import logging
 
-# Database path
-DB_PATH = Path(__file__).parent / "data" / "app.db"
-
-# Ensure data directory exists
-DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+logger = logging.getLogger(__name__)
 
 
 def get_db_connection():
     """Get a database connection."""
-    conn = sqlite3.connect(str(DB_PATH))
+    db_path = os.environ.get("METROPOLE_DB_PATH")
+    if not db_path:
+        error_msg = "METROPOLE_DB_PATH not set. Please set the environment variable to the absolute path of your SQLite DB file."
+        logger.error(error_msg)
+        raise RuntimeError(error_msg)
+
+    # Ensure the path is absolute
+    db_path = Path(db_path).resolve()
+    if not db_path.is_absolute():
+        error_msg = f"METROPOLE_DB_PATH must be an absolute path, got: {db_path}"
+        logger.error(error_msg)
+        raise RuntimeError(error_msg)
+
+    # Ensure parent directory exists
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+
+    conn = sqlite3.connect(str(db_path))
     conn.row_factory = sqlite3.Row
     return conn
 

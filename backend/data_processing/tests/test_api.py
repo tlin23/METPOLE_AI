@@ -5,6 +5,9 @@ Tests for API endpoints.
 import pytest
 from fastapi.testclient import TestClient
 from unittest.mock import patch
+import os
+from pathlib import Path
+import tempfile
 from backend.server.app import service
 from backend.server.database import User, get_db_connection
 
@@ -16,63 +19,71 @@ client = TestClient(service)
 @pytest.fixture
 def test_db():
     """Create a test database in memory."""
-    conn = get_db_connection()
-    try:
-        # Drop existing tables to ensure clean state
-        conn.execute("DROP TABLE IF EXISTS messages")
-        conn.execute("DROP TABLE IF EXISTS sessions")
-        conn.execute("DROP TABLE IF EXISTS users")
+    # Create a temporary directory for the test database
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # Set the environment variable for the test database
+        test_db_path = Path(temp_dir) / "test.db"
+        os.environ["METROPOLE_DB_PATH"] = str(test_db_path)
 
-        # Create tables
-        conn.execute(
+        conn = get_db_connection()
+        try:
+            # Drop existing tables to ensure clean state
+            conn.execute("DROP TABLE IF EXISTS messages")
+            conn.execute("DROP TABLE IF EXISTS sessions")
+            conn.execute("DROP TABLE IF EXISTS users")
+
+            # Create tables
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS users (
+                    user_id TEXT PRIMARY KEY,
+                    email TEXT NOT NULL UNIQUE,
+                    is_admin BOOLEAN NOT NULL DEFAULT 0,
+                    question_count INTEGER NOT NULL DEFAULT 0,
+                    last_question_reset DATE NOT NULL
+                )
             """
-            CREATE TABLE IF NOT EXISTS users (
-                user_id TEXT PRIMARY KEY,
-                email TEXT NOT NULL UNIQUE,
-                is_admin BOOLEAN NOT NULL DEFAULT 0,
-                question_count INTEGER NOT NULL DEFAULT 0,
-                last_question_reset DATE NOT NULL
             )
-        """
-        )
 
-        conn.execute(
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS sessions (
+                    session_id TEXT PRIMARY KEY,
+                    user_id TEXT NOT NULL,
+                    start_time TIMESTAMP NOT NULL,
+                    FOREIGN KEY (user_id) REFERENCES users(user_id)
+                )
             """
-            CREATE TABLE IF NOT EXISTS sessions (
-                session_id TEXT PRIMARY KEY,
-                user_id TEXT NOT NULL,
-                start_time TIMESTAMP NOT NULL,
-                FOREIGN KEY (user_id) REFERENCES users(user_id)
             )
-        """
-        )
 
-        conn.execute(
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS messages (
+                    message_id TEXT PRIMARY KEY,
+                    session_id TEXT NOT NULL,
+                    user_id TEXT NOT NULL,
+                    timestamp TIMESTAMP NOT NULL,
+                    message_type TEXT NOT NULL,
+                    message_text TEXT NOT NULL,
+                    retrieved_chunks TEXT,
+                    FOREIGN KEY (session_id) REFERENCES sessions(session_id),
+                    FOREIGN KEY (user_id) REFERENCES users(user_id)
+                )
             """
-            CREATE TABLE IF NOT EXISTS messages (
-                message_id TEXT PRIMARY KEY,
-                session_id TEXT NOT NULL,
-                user_id TEXT NOT NULL,
-                timestamp TIMESTAMP NOT NULL,
-                message_type TEXT NOT NULL,
-                message_text TEXT NOT NULL,
-                retrieved_chunks TEXT,
-                FOREIGN KEY (session_id) REFERENCES sessions(session_id),
-                FOREIGN KEY (user_id) REFERENCES users(user_id)
             )
-        """
-        )
 
-        conn.commit()
-        yield conn
+            conn.commit()
+            yield conn
 
-        # Clean up after test
-        conn.execute("DROP TABLE IF EXISTS messages")
-        conn.execute("DROP TABLE IF EXISTS sessions")
-        conn.execute("DROP TABLE IF EXISTS users")
-        conn.commit()
-    finally:
-        conn.close()
+            # Clean up after test
+            conn.execute("DROP TABLE IF EXISTS messages")
+            conn.execute("DROP TABLE IF EXISTS sessions")
+            conn.execute("DROP TABLE IF EXISTS users")
+            conn.commit()
+        finally:
+            conn.close()
+            # Clean up environment variable
+            os.environ.pop("METROPOLE_DB_PATH", None)
 
 
 # Mock Google token verification
