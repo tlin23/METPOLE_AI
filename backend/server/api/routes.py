@@ -83,13 +83,8 @@ async def ask_question(
         # Create session if needed
         session_id = Session.create(user_info["user_id"])
 
-        # Log the question
-        Message.create(
-            session_id=session_id,
-            user_id=user_info["user_id"],
-            message_type="question",
-            message_text=request.question,
-        )
+        # Get current timestamp for question
+        question_timestamp = datetime.utcnow()
 
         # Query the vector store using cosine similarity
         results = retriever.query(request.question, request.top_k)
@@ -115,12 +110,15 @@ async def ask_question(
         # Generate an answer using OpenAI's GPT model
         answer_result = retriever.generate_answer(request.question, chunks)
 
-        # Log the answer
+        # Log the Q&A pair
         Message.create(
             session_id=session_id,
             user_id=user_info["user_id"],
-            message_type="answer",
-            message_text=answer_result["answer"],
+            question=request.question,
+            answer=answer_result["answer"],
+            prompt=answer_result.get("prompt", ""),
+            question_timestamp=question_timestamp,
+            answer_timestamp=datetime.utcnow(),
             retrieved_chunks=[chunk.model_dump() for chunk in chunks],
         )
 
@@ -288,17 +286,15 @@ async def list_messages(
     limit: int = 100,
     offset: int = 0,
     user_id: Optional[str] = None,
-    message_type: Optional[str] = None,
     since: Optional[datetime] = None,
     until: Optional[datetime] = None,
     user_info: Dict[str, Any] = Depends(require_admin),
 ) -> List[Dict[str, Any]]:
-    """List messages with optional filtering."""
+    """List Q&A pairs with optional filtering."""
     return Message.list_messages(
         limit=limit,
         offset=offset,
         user_id=user_id,
-        message_type=message_type,
         since=since,
         until=until,
     )
@@ -311,19 +307,17 @@ async def search_messages(
     limit: int = 100,
     offset: int = 0,
     user_id: Optional[str] = None,
-    message_type: Optional[str] = None,
     since: Optional[datetime] = None,
     until: Optional[datetime] = None,
     user_info: Dict[str, Any] = Depends(require_admin),
 ) -> List[Dict[str, Any]]:
-    """Search messages by text with optional filtering."""
+    """Search Q&A pairs by text with optional filtering."""
     return Message.search_messages(
         text=text,
         fuzzy=fuzzy,
         limit=limit,
         offset=offset,
         user_id=user_id,
-        message_type=message_type,
         since=since,
         until=until,
     )
@@ -351,17 +345,15 @@ async def get_user_messages(
     user_id: str,
     limit: int = 100,
     offset: int = 0,
-    message_type: Optional[str] = None,
     since: Optional[datetime] = None,
     until: Optional[datetime] = None,
     user_info: Dict[str, Any] = Depends(require_admin),
 ) -> List[Dict[str, Any]]:
-    """Get messages for a specific user."""
+    """Get Q&A pairs for a specific user."""
     return User.get_user_messages(
         user_id=user_id,
         limit=limit,
         offset=offset,
-        message_type=message_type,
         since=since,
         until=until,
     )

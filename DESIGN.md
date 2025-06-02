@@ -1,131 +1,115 @@
-# Design Doc: Docker-Proof Database Path Handling for CLI & API
+# Design Doc: Refactor Messages Data Model to 1:1 Q\&A Structure
 
-## Background & Motivation
+## Overview
 
-Current DB path handling across CLI tools, admin scripts, and API endpoints is inconsistent. Some tools accept a DB file path as a CLI argument, others use hardcoded defaults, and some (like `dump_db`) work because the correct path is explicitly given. This inconsistency leads to issues, especially in Docker/containerized environments, where the app may point to the wrong SQLite file or create a fresh DB.
-
-**Goal:**
-Unify and standardize all database access in CLI and API code to reliably use a single, Docker-configured path, eliminating ambiguity and risk of silent failures or empty databases.
+Currently, the Messages table stores individual entries for both questions and answers, distinguished by a “Type” column. This leads to redundancy, complexity, and the potential for mismatched Q/A pairs. This document proposes a new data model in which each message row represents a **single Q\&A pair**. This will simplify data management, querying, and downstream processing.
 
 ---
 
-## Design Requirements
+## Goals
 
-### 1. Source of Truth
-
-- All DB access must use a single environment variable:
-  `METROPOLE_DB_PATH`
-
-### 2. Absolute Path
-
-- The environment variable **must always contain an absolute path** (e.g., `/data/app.db`) inside the container.
-- Docker/compose configs and deployment scripts must ensure the volume is mounted at this path.
-
-### 3. Fail Fast
-
-- If `METROPOLE_DB_PATH` is not set, all entry points (CLI, API, admin scripts) must:
-
-  - Fail immediately,
-  - Emit a clear, prominent error via logging and/or stderr,
-  - Exit with a non-zero code (for CLI) or return an error code (for API).
-
-### 4. Always Read Directly From Environment
-
-- All DB connections must **read the env var each time** they connect (no module-level or config-file caching).
-- No default/fallback path allowed.
-
-### 5. No CLI Overrides
-
-- All CLI tools and scripts must **remove support for specifying the DB path as a command-line argument**.
-  The environment variable is the only accepted way to specify the DB location.
-
-### 6. Logging and Error Style
-
-- Follow the project’s existing logging/error handling patterns (e.g., via the logger for API, stderr for CLI).
-- Error message for missing env var should be clear and actionable.
-
-### 7. SQLite Error Handling
-
-- Do not pre-validate that the file exists or is a valid DB;
-  allow SQLite to throw its native errors.
-
-### 8. Test/CI Environment Flexibility
-
-- Automated tests and CI jobs **may set **\`\`** internally or use test-specific values**.
-- No requirement for a “real” DB file in tests unless the test is designed for that.
+- Store every Q\&A as a single row.
+- Remove the “Type” and “Message” columns.
+- All CRUD operations, APIs, and admin CLI should use the new model.
+- Update all tests and clean up legacy/unused code.
 
 ---
 
-## Implementation Scope
+## New Messages Schema
 
-- **Affected code:**
+| Field              | Type       | Notes                                                   |
+| ------------------ | ---------- | ------------------------------------------------------- |
+| message_id         | UUID / INT | Unique identifier                                       |
+| session_id         | UUID / INT | Identifies conversation session                         |
+| user_id            | UUID / INT | User who sent the question                              |
+| question           | TEXT       | The question text                                       |
+| answer             | TEXT       | The answer text                                         |
+| prompt             | TEXT       | System prompt used for generating the answer            |
+| question_timestamp | DATETIME   | When the question was asked                             |
+| answer_timestamp   | DATETIME   | When the answer was generated                           |
+| response_time      | FLOAT      | answer_timestamp - question_timestamp (can be computed) |
+| retrieved_chunks   | JSON       | JSON array/object representing the retrieved chunks     |
 
-  - All CLI tools (admin.py, dump_db, etc.)
-  - All FastAPI or Flask route handlers and app/database initialization code
-  - All helper or model modules that connect to SQLite directly
-
-- **Not affected:**
-
-  - Anything not touching the database
-  - Dockerfile and compose configs (handled separately)
-
----
-
-## Implementation Steps
-
-1. **Refactor all DB access code:**
-
-   - Remove any default DB file paths or CLI argument parsing for DB location.
-   - At every DB connect, read `os.environ['METROPOLE_DB_PATH']`.
-   - If the env var is missing, log and exit/fail as per the entry point’s style.
-
-2. **Update documentation:**
-
-   - CLI help, README, and deployment docs must state that `METROPOLE_DB_PATH` is mandatory and must be an absolute path.
-
-3. **Tests:**
-
-   - Refactor any test helpers to always set `METROPOLE_DB_PATH` for test DBs.
-   - Do not break existing test functionality.
-
-4. **Verify Docker setup:**
-
-   - Ensure that Docker/compose templates and any deploy scripts set and mount `METROPOLE_DB_PATH` as an absolute path.
+- **All fields are required** except potentially `retrieved_chunks` (depending on pipeline flow).
+- No attachments/media are supported (text only).
 
 ---
 
-## Error Message Example
+## Migration & Code Refactor Plan
 
-When missing:
+### 1. Database Migration
 
-```
-[ERROR] METROPOLE_DB_PATH not set. Please set the environment variable to the absolute path of your SQLite DB file.
-```
+- Drop “Type” and “Message” columns.
+- Add new fields: `question`, `answer`, `prompt`, `question_timestamp`, `answer_timestamp`, `response_time`.
+- Update or create the `retrieved_chunks` column as JSON type if not already.
+- Remove any old/legacy fields not in the new schema.
+
+### 2. Model Update
+
+- Update the ORM/data class for Messages to match the new schema.
+
+### 3. Data Ingestion Logic
+
+- Update message creation to enforce 1:1 Q/A: a row is only created if both question and answer exist.
+- Always save the system prompt used to generate the answer.
+- Set timestamps appropriately; always compute `response_time` as the delta.
+
+### 4. API & CLI
+
+- Update all endpoints and admin CLI commands to use the new Q\&A structure.
+- Remove any logic that assumes separate question/answer rows or “Type” filtering.
+- All query, search, filter, and list operations should operate on Q\&A pairs.
+
+### 5. Tests & Validation
+
+- Update or rewrite tests to cover the new structure.
+- Remove tests for deprecated functionality (e.g., creating messages with only Q or A).
+- Ensure full CRUD and edge case coverage (no empty Q/A pairs, correct timestamp handling, etc.).
+
+### 6. Code Cleanup
+
+- Remove all unused/irrelevant code from the old design (models, routes, admin scripts, etc.).
+- Clean up comments, docstrings, and documentation to reflect new model.
 
 ---
 
-## Risks & Trade-offs
+## Notes
 
-- **Efficiency:** Reading the env var every time is a micro-optimization loss, but maximizes clarity and prevents subtle bugs.
-- **Strictness:** CLI users must adapt to the env-var-only approach, but this prevents accidental divergence across environments.
-- **Containerization:** Absolute paths remove ambiguity, but require careful Docker volume setup (which is good practice anyway).
-
----
-
-## Future Considerations
-
-- If future migration to a different DB system (e.g., Postgres), this pattern makes switching the connection string seamless.
-- If supporting multi-tenant or multi-DB use, revisit the “always from env” rule.
+- `response_time` can be stored for convenience, but should always match `answer_timestamp - question_timestamp`.
+- `prompt` is required for every Q\&A pair and must match what was used to generate the answer.
+- `retrieved_chunks` remains as a JSON array/object.
 
 ---
 
-## Acceptance Criteria
+## Risks & Mitigations
 
-- No code in the codebase can access the DB without the env variable set.
-- No CLI or API uses a hardcoded or default DB path.
-- All DB connections work inside Docker, provided `METROPOLE_DB_PATH` is set and mounted.
-- Tests still run by explicitly setting the env var per test.
+- **Data migration risk:** Legacy messages may need a migration script to join Q/A pairs before schema changes.
+- **Orphaned data:** Prevent creation of partial rows (e.g., question with no answer).
+- **API/CLI compatibility:** Ensure all integrations are updated to match new schema.
 
 ---
 
-**Ready for implementation.**
+## Deliverables
+
+1. New Messages schema and migration scripts.
+2. Updated model and data access logic.
+3. Refactored APIs and admin CLI.
+4. Complete test suite covering new behavior.
+5. Documentation and developer notes.
+
+---
+
+## Out of Scope
+
+- No support for message editing/versioning.
+- No media/attachment fields.
+
+---
+
+## Handoff Notes
+
+- Remove all fields not listed in the new schema.
+- Update all dependent files and tests accordingly.
+- Clean up code and documentation.
+
+---

@@ -72,9 +72,12 @@ def init_db():
                 message_id TEXT PRIMARY KEY,
                 session_id TEXT NOT NULL,
                 user_id TEXT NOT NULL,
-                timestamp TIMESTAMP NOT NULL,
-                message_type TEXT NOT NULL,
-                message_text TEXT NOT NULL,
+                question TEXT NOT NULL,
+                answer TEXT NOT NULL,
+                prompt TEXT NOT NULL,
+                question_timestamp DATETIME NOT NULL,
+                answer_timestamp DATETIME NOT NULL,
+                response_time FLOAT NOT NULL,
                 retrieved_chunks TEXT,
                 FOREIGN KEY (session_id) REFERENCES sessions(session_id),
                 FOREIGN KEY (user_id) REFERENCES users(user_id)
@@ -214,7 +217,6 @@ class User:
         user_id: str,
         limit: int = 100,
         offset: int = 0,
-        message_type: Optional[str] = None,
         since: Optional[datetime] = None,
         until: Optional[datetime] = None,
     ) -> List[Dict[str, Any]]:
@@ -223,7 +225,6 @@ class User:
             limit=limit,
             offset=offset,
             user_id=user_id,
-            message_type=message_type,
             since=since,
             until=until,
         )
@@ -256,31 +257,39 @@ class Message:
     def create(
         session_id: str,
         user_id: str,
-        message_type: str,
-        message_text: str,
+        question: str,
+        answer: str,
+        prompt: str,
+        question_timestamp: datetime,
+        answer_timestamp: datetime,
         retrieved_chunks: Optional[List[Dict[str, Any]]] = None,
     ) -> str:
-        """Create a new message and return its ID."""
+        """Create a new Q&A pair and return its ID."""
         import uuid
 
         message_id = str(uuid.uuid4())
+        response_time = (answer_timestamp - question_timestamp).total_seconds()
+
         conn = get_db_connection()
         try:
             conn.execute(
                 """
                 INSERT INTO messages (
-                    message_id, session_id, user_id, timestamp,
-                    message_type, message_text, retrieved_chunks
+                    message_id, session_id, user_id, question, answer, prompt,
+                    question_timestamp, answer_timestamp, response_time, retrieved_chunks
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
                 (
                     message_id,
                     session_id,
                     user_id,
-                    datetime.utcnow(),
-                    message_type,
-                    message_text,
+                    question,
+                    answer,
+                    prompt,
+                    question_timestamp,
+                    answer_timestamp,
+                    response_time,
                     json.dumps(retrieved_chunks) if retrieved_chunks else None,
                 ),
             )
@@ -294,11 +303,10 @@ class Message:
         limit: int = 100,
         offset: int = 0,
         user_id: Optional[str] = None,
-        message_type: Optional[str] = None,
         since: Optional[datetime] = None,
         until: Optional[datetime] = None,
     ) -> List[Dict[str, Any]]:
-        """List messages with optional filtering."""
+        """List Q&A pairs with optional filtering."""
         conn = get_db_connection()
         try:
             query = """
@@ -312,17 +320,14 @@ class Message:
             if user_id:
                 query += " AND m.user_id = ?"
                 params.append(user_id)
-            if message_type:
-                query += " AND m.message_type = ?"
-                params.append(message_type)
             if since:
-                query += " AND m.timestamp >= ?"
+                query += " AND m.question_timestamp >= ?"
                 params.append(since)
             if until:
-                query += " AND m.timestamp <= ?"
+                query += " AND m.question_timestamp <= ?"
                 params.append(until)
 
-            query += " ORDER BY m.timestamp DESC LIMIT ? OFFSET ?"
+            query += " ORDER BY m.question_timestamp DESC LIMIT ? OFFSET ?"
             params.extend([limit, offset])
 
             cursor = conn.execute(query, params)
@@ -337,11 +342,10 @@ class Message:
         limit: int = 100,
         offset: int = 0,
         user_id: Optional[str] = None,
-        message_type: Optional[str] = None,
         since: Optional[datetime] = None,
         until: Optional[datetime] = None,
     ) -> List[Dict[str, Any]]:
-        """Search messages by text with optional filtering."""
+        """Search Q&A pairs by text with optional filtering."""
         conn = get_db_connection()
         try:
             query = """
@@ -354,26 +358,25 @@ class Message:
 
             if fuzzy:
                 # SQLite doesn't have built-in fuzzy search, so we'll use LIKE for now
-                query += " AND m.message_text LIKE ?"
-                params.append(f"%{text}%")
+                query += " AND (m.question LIKE ? OR m.answer LIKE ?)"
+                search_term = f"%{text}%"
+                params.extend([search_term, search_term])
             else:
-                query += " AND m.message_text LIKE ?"
-                params.append(f"%{text}%")
+                query += " AND (m.question LIKE ? OR m.answer LIKE ?)"
+                search_term = f"%{text}%"
+                params.extend([search_term, search_term])
 
             if user_id:
                 query += " AND m.user_id = ?"
                 params.append(user_id)
-            if message_type:
-                query += " AND m.message_type = ?"
-                params.append(message_type)
             if since:
-                query += " AND m.timestamp >= ?"
+                query += " AND m.question_timestamp >= ?"
                 params.append(since)
             if until:
-                query += " AND m.timestamp <= ?"
+                query += " AND m.question_timestamp <= ?"
                 params.append(until)
 
-            query += " ORDER BY m.timestamp DESC LIMIT ? OFFSET ?"
+            query += " ORDER BY m.question_timestamp DESC LIMIT ? OFFSET ?"
             params.extend([limit, offset])
 
             cursor = conn.execute(query, params)
@@ -387,27 +390,26 @@ class Message:
         until: Optional[datetime] = None,
         limit: int = 10,
     ) -> Dict[str, Any]:
-        """Get message statistics."""
+        """Get Q&A statistics."""
         conn = get_db_connection()
         try:
             where_clause = "WHERE 1=1"
             params = []
 
             if since:
-                where_clause += " AND timestamp >= ?"
+                where_clause += " AND question_timestamp >= ?"
                 params.append(since)
             if until:
-                where_clause += " AND timestamp <= ?"
+                where_clause += " AND question_timestamp <= ?"
                 params.append(until)
 
             # Most common questions
             cursor = conn.execute(
                 f"""
-                SELECT message_text, COUNT(*) as count
+                SELECT question, COUNT(*) as count
                 FROM messages
                 {where_clause}
-                AND message_type = 'question'
-                GROUP BY message_text
+                GROUP BY question
                 ORDER BY count DESC
                 LIMIT ?
                 """,
@@ -418,11 +420,10 @@ class Message:
             # Most common answers
             cursor = conn.execute(
                 f"""
-                SELECT message_text, COUNT(*) as count
+                SELECT answer, COUNT(*) as count
                 FROM messages
                 {where_clause}
-                AND message_type = 'answer'
-                GROUP BY message_text
+                GROUP BY answer
                 ORDER BY count DESC
                 LIMIT ?
                 """,
@@ -453,7 +454,6 @@ class Message:
                 FROM messages m
                 JOIN users u ON m.user_id = u.user_id
                 {where_clause}
-                AND m.message_type = 'question'
                 GROUP BY m.user_id
                 ORDER BY question_count DESC
                 LIMIT ?

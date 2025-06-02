@@ -277,12 +277,11 @@ def list_messages(
     limit: int = 100,
     offset: int = 0,
     user: Optional[str] = None,
-    type: Optional[str] = None,
     since: Optional[str] = None,
     until: Optional[str] = None,
     json_output: bool = False,
 ) -> None:
-    """List messages with optional filtering."""
+    """List Q&A pairs with optional filtering."""
     try:
         params = {
             "limit": limit,
@@ -290,8 +289,6 @@ def list_messages(
         }
         if user:
             params["user_id"] = user
-        if type:
-            params["message_type"] = type
         if since:
             params["since"] = since
         if until:
@@ -316,20 +313,31 @@ def list_messages(
             for msg in messages:
                 table_data.append(
                     [
-                        msg["timestamp"],
+                        msg["question_timestamp"],
                         msg["user_email"],
-                        msg["message_type"],
                         (
-                            msg["message_text"][:100] + "..."
-                            if len(msg["message_text"]) > 100
-                            else msg["message_text"]
+                            msg["question"][:50] + "..."
+                            if len(msg["question"]) > 50
+                            else msg["question"]
                         ),
+                        (
+                            msg["answer"][:50] + "..."
+                            if len(msg["answer"]) > 50
+                            else msg["answer"]
+                        ),
+                        f"{msg['response_time']:.2f}s",
                     ]
                 )
             print(
                 tabulate(
                     table_data,
-                    headers=["Timestamp", "User", "Type", "Message"],
+                    headers=[
+                        "Timestamp",
+                        "User",
+                        "Question",
+                        "Answer",
+                        "Response Time",
+                    ],
                     tablefmt="grid",
                 )
             )
@@ -343,12 +351,11 @@ def search_messages(
     limit: int = 100,
     offset: int = 0,
     user: Optional[str] = None,
-    type: Optional[str] = None,
     since: Optional[str] = None,
     until: Optional[str] = None,
     json_output: bool = False,
 ) -> None:
-    """Search messages by text with optional filtering."""
+    """Search Q&A pairs by text with optional filtering."""
     try:
         params = {
             "text": text,
@@ -358,8 +365,6 @@ def search_messages(
         }
         if user:
             params["user_id"] = user
-        if type:
-            params["message_type"] = type
         if since:
             params["since"] = since
         if until:
@@ -384,20 +389,31 @@ def search_messages(
             for msg in messages:
                 table_data.append(
                     [
-                        msg["timestamp"],
+                        msg["question_timestamp"],
                         msg["user_email"],
-                        msg["message_type"],
                         (
-                            msg["message_text"][:100] + "..."
-                            if len(msg["message_text"]) > 100
-                            else msg["message_text"]
+                            msg["question"][:50] + "..."
+                            if len(msg["question"]) > 50
+                            else msg["question"]
                         ),
+                        (
+                            msg["answer"][:50] + "..."
+                            if len(msg["answer"]) > 50
+                            else msg["answer"]
+                        ),
+                        f"{msg['response_time']:.2f}s",
                     ]
                 )
             print(
                 tabulate(
                     table_data,
-                    headers=["Timestamp", "User", "Type", "Message"],
+                    headers=[
+                        "Timestamp",
+                        "User",
+                        "Question",
+                        "Answer",
+                        "Response Time",
+                    ],
                     tablefmt="grid",
                 )
             )
@@ -493,7 +509,7 @@ def get_stats(
             print("\nTop Questions:")
             if stats["top_questions"]:
                 table_data = [
-                    [q["message_text"], q["count"]] for q in stats["top_questions"]
+                    [q["question"], q["count"]] for q in stats["top_questions"]
                 ]
                 print(
                     tabulate(table_data, headers=["Question", "Count"], tablefmt="grid")
@@ -504,9 +520,7 @@ def get_stats(
             # Top answers
             print("\nTop Answers:")
             if stats["top_answers"]:
-                table_data = [
-                    [a["message_text"], a["count"]] for a in stats["top_answers"]
-                ]
+                table_data = [[a["answer"], a["count"]] for a in stats["top_answers"]]
                 print(
                     tabulate(table_data, headers=["Answer", "Count"], tablefmt="grid")
                 )
@@ -599,7 +613,6 @@ def main():
         "--offset", type=int, default=0, help="Offset for pagination"
     )
     list_messages_parser.add_argument("--user", help="Filter by user ID")
-    list_messages_parser.add_argument("--type", help="Filter by message type")
     list_messages_parser.add_argument(
         "--since", help="Filter by start date (YYYY-MM-DD)"
     )
@@ -625,7 +638,6 @@ def main():
         "--offset", type=int, default=0, help="Offset for pagination"
     )
     search_messages_parser.add_argument("--user", help="Filter by user ID")
-    search_messages_parser.add_argument("--type", help="Filter by message type")
     search_messages_parser.add_argument(
         "--since", help="Filter by start date (YYYY-MM-DD)"
     )
@@ -709,7 +721,6 @@ def main():
                 limit=args.limit,
                 offset=args.offset,
                 user=args.user,
-                type=args.type,
                 since=args.since,
                 until=args.until,
                 json_output=args.json,
@@ -721,7 +732,6 @@ def main():
                 limit=args.limit,
                 offset=args.offset,
                 user=args.user,
-                type=args.type,
                 since=args.since,
                 until=args.until,
                 json_output=args.json,

@@ -10,6 +10,7 @@ from backend.server.database import User, Session, Message, get_db_connection
 import os
 from pathlib import Path
 import tempfile
+from datetime import datetime
 
 
 # Mock Google token verification
@@ -67,9 +68,12 @@ def test_db():
                     message_id TEXT PRIMARY KEY,
                     session_id TEXT NOT NULL,
                     user_id TEXT NOT NULL,
-                    timestamp TIMESTAMP NOT NULL,
-                    message_type TEXT NOT NULL,
-                    message_text TEXT NOT NULL,
+                    question TEXT NOT NULL,
+                    answer TEXT NOT NULL,
+                    prompt TEXT NOT NULL,
+                    question_timestamp DATETIME NOT NULL,
+                    answer_timestamp DATETIME NOT NULL,
+                    response_time FLOAT NOT NULL,
                     retrieved_chunks TEXT,
                     FOREIGN KEY (session_id) REFERENCES sessions(session_id),
                     FOREIGN KEY (user_id) REFERENCES users(user_id)
@@ -203,42 +207,36 @@ def test_message_logging(test_db):
     User.create_or_update("test_user_id", "test@example.com")
     session_id = Session.create("test_user_id")
 
-    # Log question
+    # Get timestamps
+    question_timestamp = datetime.utcnow()
+    answer_timestamp = datetime.utcnow()
+
+    # Log Q&A pair
     message_id = Message.create(
         session_id=session_id,
         user_id="test_user_id",
-        message_type="question",
-        message_text="Test question",
+        question="Test question",
+        answer="Test answer",
+        prompt="Test prompt",
+        question_timestamp=question_timestamp,
+        answer_timestamp=answer_timestamp,
+        retrieved_chunks=[{"text": "Test chunk", "metadata": {"source": "test"}}],
     )
 
-    # Log answer with chunks
-    chunks = [{"text": "Test chunk", "metadata": {"source": "test"}}]
-    answer_id = Message.create(
-        session_id=session_id,
-        user_id="test_user_id",
-        message_type="answer",
-        message_text="Test answer",
-        retrieved_chunks=chunks,
-    )
-
-    # Verify messages
+    # Verify message
     conn = get_db_connection()
     try:
         cursor = conn.execute(
-            "SELECT * FROM messages WHERE message_id IN (?, ?)", (message_id, answer_id)
+            "SELECT * FROM messages WHERE message_id = ?", (message_id,)
         )
-        messages = cursor.fetchall()
-        assert len(messages) == 2
-
-        # Check question
-        question = next(m for m in messages if m["message_type"] == "question")
-        assert question["message_text"] == "Test question"
-        assert question["retrieved_chunks"] is None
-
-        # Check answer
-        answer = next(m for m in messages if m["message_type"] == "answer")
-        assert answer["message_text"] == "Test answer"
-        assert json.loads(answer["retrieved_chunks"]) == chunks
+        message = cursor.fetchone()
+        assert message is not None
+        assert message["question"] == "Test question"
+        assert message["answer"] == "Test answer"
+        assert message["prompt"] == "Test prompt"
+        assert json.loads(message["retrieved_chunks"]) == [
+            {"text": "Test chunk", "metadata": {"source": "test"}}
+        ]
     finally:
         conn.close()
 

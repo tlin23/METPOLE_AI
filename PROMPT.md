@@ -1,74 +1,84 @@
-# IMPLEMENTATION PROMPT: Docker-Proof DB Path Handling (METROPOLE_DB_PATH)
+# Cursor Implementation Prompt: Messages 1:1 Q\&A Refactor
 
-## Overview
+## Objective
 
-Refactor all CLI tools, admin scripts, API endpoints, and any helper/module that connects to the SQLite database so that **all database access** uses the environment variable `METROPOLE_DB_PATH` as a required absolute path.
-
-**No part of the codebase should connect to a DB file without `METROPOLE_DB_PATH` set, and there must be no way to specify the DB file via a CLI argument or fallback path.**
+Refactor the Messages data model and all related logic to enforce a strict 1:1 Question-Answer (Q\&A) structure, as detailed in the design doc.
 
 ---
 
-## Implementation Tasks
+## Tasks
 
-1. **Enforce single source of DB path:**
+### 1. **Schema Migration**
 
-   - Remove any CLI arguments, function parameters, or config options for specifying the database path.
-   - At every point a DB connection is opened (including API route handlers, CLI commands, admin scripts, and model helpers), _always_ read the value of `os.environ['METROPOLE_DB_PATH']` at connection time.
-   - Ensure that the value is an absolute path (e.g., `/data/app.db` inside Docker).
-   - If `METROPOLE_DB_PATH` is not set, log an error (following the existing logging/stderr style for the entry point) and exit/fail immediately:
-     - For CLI: exit non-zero and print to stderr.
-     - For API: log and return an error response/code.
+- Remove the `Type` and `Message` columns from the Messages table.
+- Add the following fields:
 
-2. **No CLI overrides:**
+  - `question` (TEXT, required)
+  - `answer` (TEXT, required)
+  - `prompt` (TEXT, required)
+  - `question_timestamp` (DATETIME, required)
+  - `answer_timestamp` (DATETIME, required)
+  - `response_time` (FLOAT, required; always computed as `answer_timestamp - question_timestamp`)
 
-   - Remove any support for specifying the DB file via CLI arguments (e.g., `--db-path` or positional DB path args).
-   - Remove or deprecate any references in help texts or docs for DB path CLI args.
+- Ensure `retrieved_chunks` is stored as a JSON array/object (required, but may be empty).
+- Remove any legacy or unused fields not in the new schema.
 
-3. **Always fresh read from environment:**
+### 2. **Model and Data Layer Update**
 
-   - Do not cache or store the DB path anywhere in the codebase; always access it from `os.environ` at connection time.
+- Update the Messages ORM/model class to match the new schema exactly.
+- Update data access logic to always create/save rows with complete Q\&A pairs (question + answer + required metadata).
+- Make `prompt` a required field (cannot be NULL).
+- Ensure `response_time` is always calculated from the timestamps.
 
-4. **Do not pre-validate SQLite files:**
+### 3. **API and CLI Refactor**
 
-   - Only check that the environment variable is present and non-empty. Do not check file existence or SQLite format. Allow SQLite to raise errors as appropriate.
+- Update all backend endpoints and admin CLI operations to:
 
-5. **Logging & error handling:**
+  - Work with the new Q\&A pair structure.
+  - Remove or refactor any logic or routes that relied on message `Type` or separate Q/A entries.
+  - Return, query, and filter messages as Q\&A pairs.
 
-   - Follow the codebase’s current logging and error pattern for both CLI and API entry points.
-   - Use clear, actionable errors. Example:
-     ```
-     [ERROR] METROPOLE_DB_PATH not set. Please set the environment variable to the absolute path of your SQLite DB file.
-     ```
+- Update API docs/comments as needed.
 
-6. **Testing/CI flexibility:**
+### 4. **Test Refactor**
 
-   - In test and CI code, it’s acceptable to set `METROPOLE_DB_PATH` to a test or temp file before running tests.
-   - Do **not** introduce any fallback to a default test DB—fail if unset.
+- Update or rewrite tests to cover the new Q\&A schema and logic.
+- Remove or update tests that reference the old message structure or separate Q/A rows.
+- Ensure test coverage for:
 
-7. **Documentation:**
+  - Creating, reading, and listing Q\&A pairs
+  - Timestamps and response_time calculation
+  - Querying and filtering by session_id, user_id, etc.
 
-   - Update CLI help, README, and any deployment docs to clearly state that `METROPOLE_DB_PATH` is mandatory, must be an absolute path, and is the _only_ way to specify the DB location.
+### 5. **Code Cleanup**
 
-8. **Verify Docker setup (out of scope for code, but required for completion):**
+- Remove unused code, models, helpers, and scripts related to the legacy message structure.
+- Update docstrings and comments to reflect the new design.
 
-   - Make sure Docker/compose configs and deployment scripts always set and mount `METROPOLE_DB_PATH` correctly.
+### 6. **Validation & Consistency**
 
-9. **Code cleanup:**
-   - Remove any dead code, legacy config options, or TODOs related to DB path selection.
-   - Add or update docstrings/comments as needed to clarify that `METROPOLE_DB_PATH` is the only supported mechanism.
+- Ensure that no partial messages are ever saved (a row must have both question and answer, plus all required fields).
+- All references to messages in the codebase (CRUD, admin, API, retrieval, analytics) must use the new schema.
+
+### 7. **Documentation**
+
+- Update any developer docs, READMEs, or in-repo documentation for the new Q\&A message model.
 
 ---
 
 ## Acceptance Criteria
 
-- All DB access code fails if `METROPOLE_DB_PATH` is unset.
-- No CLI or API code uses a hardcoded or default DB path.
-- No CLI argument or config allows specifying the DB file.
-- All connection points fetch the DB path from `os.environ` at time of connection.
-- Existing logging/error style is followed.
-- Tests can set the env var as needed but must not rely on fallbacks.
-- Docs updated for the new behavior.
+- There are no remaining uses of the old message structure or Type-based logic in the codebase.
+- All functionality, including API, CLI, and admin operations, works with the new Q\&A pair schema.
+- Tests are updated and passing.
+- Code is clean, no unused models or logic remain.
 
 ---
 
-**Do not start implementation until you have reviewed the design doc. When finished, run/expand the test suite and verify the application runs in Docker using the new pattern. Clean up any dead code.**
+## Notes
+
+- Reference the design doc for full requirements and field details.
+- This refactor is breaking—migrate any legacy data as necessary before deployment.
+- Ask clarifying questions if any ambiguity arises during implementation.
+
+---
