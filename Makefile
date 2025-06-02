@@ -6,7 +6,7 @@
 	crawl sort parse embed pip-prod-full pip-dev-full pip-dev-fast pip-dev-local \
 	clean-crawl clean-sort clean-parse clean-embed clean-all \
 	admin-status admin-list admin-add admin-remove admin-reset-quota admin-check-quota \
-	admin-messages-list admin-messages-search admin-users-search admin-stats
+	admin-messages-list admin-messages-search admin-users-search admin-stats admin-dump-db
 
 # Default URL for crawling
 START_URL := https://www.metropoleballard.com/home
@@ -251,3 +251,6 @@ admin-stats:
 		$(if $(until),--until $(until)) \
 		$(if $(limit),--limit $(limit)) \
 		$(if $(json),--json)
+
+admin-dump-db:
+	python3 backend/server/cli/admin.py dump-db

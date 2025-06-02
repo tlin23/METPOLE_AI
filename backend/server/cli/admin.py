@@ -540,6 +540,16 @@ def get_stats(
         print(f"Error getting stats: {e}")
 
 
+def dump_db():
+    """Dump the database tables as JSON (admin only, if enabled)."""
+    try:
+        response = requests.get(f"{API_BASE_URL}/admin/dump-db", headers=get_headers())
+        response.raise_for_status()
+        print(json.dumps(response.json(), indent=2))
+    except requests.exceptions.RequestException as e:
+        print(f"Error dumping DB: {e}")
+
+
 def main():
     """Main entry point for the CLI."""
     parser = argparse.ArgumentParser(description="Admin CLI for Metropole")
@@ -657,6 +667,9 @@ def main():
     )
     stats_parser.add_argument("--json", action="store_true", help="Output as JSON")
 
+    # Dump DB command
+    subparsers.add_parser("dump-db", help="Dump the database (admin only, if enabled)")
+
     args = parser.parse_args()
 
     if args.command == "status":
@@ -735,6 +748,9 @@ def main():
             limit=args.limit,
             json_output=args.json,
         )
+
+    elif args.command == "dump-db":
+        dump_db()
 
     else:
         parser.print_help()

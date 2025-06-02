@@ -380,3 +380,19 @@ async def get_stats(
         until=until,
         limit=limit,
     )
+
+
+@router.get("/admin/dump-db")
+async def dump_db(user_info: dict = Depends(require_admin)):
+    # Only allow if explicitly enabled via env var
+    if os.getenv("ENABLE_DB_DUMP", "false").lower() != "true":
+        raise HTTPException(status_code=403, detail="DB dump not enabled")
+    conn = get_db_connection()
+    try:
+        result = {}
+        for table in ["users", "sessions", "messages"]:
+            rows = conn.execute(f"SELECT * FROM {table}").fetchall()
+            result[table] = [dict(r) for r in rows]
+        return result
+    finally:
+        conn.close()

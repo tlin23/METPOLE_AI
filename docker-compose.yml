@@ -1,17 +1,19 @@
-version: "3.9"
-
 services:
   backend:
     build:
       context: .
       dockerfile: backend/Dockerfile
     volumes:
-      - ./backend:/app/backend
+      - metpol-sqlite:/app/backend/server/data
+      - metpol-db:/app/backend/data/prod/chroma_db
     ports:
       - "8000:8000"
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       - PRODUCTION=false
+      - ENABLE_DB_DUMP=True
 
   frontend:
     build:
@@ -23,3 +25,7 @@ services:
       - ./frontend/.env.production
     depends_on:
       - backend
+
+volumes:
+  metpol-sqlite:
+  metpol-db:
