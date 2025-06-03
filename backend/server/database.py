@@ -4,13 +4,17 @@ Database setup and models for the application.
 
 import sqlite3
 import os
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Optional, List, Dict, Any
+from .config import MAX_QUESTIONS_PER_DAY, MAX_QUESTIONS_PER_DAY_ADMIN
 import json
 import logging
 
 logger = logging.getLogger(__name__)
+
+MAX_QUESTIONS_PER_DAY = int(MAX_QUESTIONS_PER_DAY)
+MAX_QUESTIONS_PER_DAY_ADMIN = int(MAX_QUESTIONS_PER_DAY_ADMIN)
 
 
 def get_db_connection():
@@ -159,7 +163,11 @@ class User:
                 return 0
 
             question_count = row["question_count"]
-            max_quota = 20 if row["is_admin"] else 5
+            max_quota = (
+                MAX_QUESTIONS_PER_DAY_ADMIN
+                if row["is_admin"]
+                else MAX_QUESTIONS_PER_DAY
+            )
 
             # Only increment if under quota
             if question_count < max_quota:
@@ -244,7 +252,7 @@ class Session:
                 INSERT INTO sessions (session_id, user_id, start_time)
                 VALUES (?, ?, ?)
             """,
-                (session_id, user_id, datetime.utcnow()),
+                (session_id, user_id, datetime.now(UTC)),
             )
             conn.commit()
             return session_id

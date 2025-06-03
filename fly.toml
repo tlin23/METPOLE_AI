@@ -24,8 +24,12 @@ primary_region = 'sea'
   cpus = 1
 
 [env]
-INDEX_DIR = "/data/chroma_db"
-PRODUCTION = "true"
+  INDEX_DIR = "/data/chroma_db"
+  PRODUCTION = "true"
+  ENABLE_DB_DUMP = "True"
+  METROPOLE_DB_PATH = "/data/app.db"
+  MAX_QUESTIONS_PER_DAY = 30
+  MAX_QUESTIONS_PER_DAY_ADMIN = 300
 
 [mounts]
   source = "chroma_data"

@@ -10,9 +10,13 @@ from pathlib import Path
 import tempfile
 from backend.server.app import service
 from backend.server.database import User, get_db_connection
+from backend.server.config import MAX_QUESTIONS_PER_DAY
 
 # Test client
 client = TestClient(service)
+
+
+MAX_QUESTIONS_PER_DAY = int(MAX_QUESTIONS_PER_DAY)
 
 
 # Test database setup
@@ -150,7 +154,7 @@ def test_ask_question(mock_token_verification, mock_retriever, test_db):
     assert data["question"] == "Test question"
     assert data["answer"] == "Test answer"
     assert data["success"] is True
-    assert data["quota_remaining"] == 4  # 5 - 1
+    assert data["quota_remaining"] == MAX_QUESTIONS_PER_DAY - 1
 
 
 def test_ask_question_quota_exceeded(mock_token_verification, mock_retriever, test_db):
@@ -159,7 +163,7 @@ def test_ask_question_quota_exceeded(mock_token_verification, mock_retriever, te
     User.create_or_update("admin_user_id", "admin@example.com")
 
     # Use up quota
-    for _ in range(5):
+    for _ in range(MAX_QUESTIONS_PER_DAY):
         User.increment_question_count("admin_user_id")
 
     response = client.post(

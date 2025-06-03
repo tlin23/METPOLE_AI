@@ -32,3 +32,7 @@ SUPPORTED_EXTENSIONS = ALLOWED_EXTENSIONS
 # ChromaDB paths
 CHROMA_DEV_PATH = get_step_dir(DATA_DIR, "embed", production=False)
 CHROMA_PROD_PATH = get_step_dir(DATA_DIR, "embed", production=True)
+
+# Quota settings
+MAX_QUESTIONS_PER_DAY = os.getenv("MAX_QUESTIONS_PER_DAY")
+MAX_QUESTIONS_PER_DAY_ADMIN = os.getenv("MAX_QUESTIONS_PER_DAY_ADMIN")

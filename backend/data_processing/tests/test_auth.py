@@ -7,10 +7,14 @@ from unittest.mock import patch, Mock
 import json
 from backend.server.auth import validate_token, require_admin
 from backend.server.database import User, Session, Message, get_db_connection
+from backend.server.config import MAX_QUESTIONS_PER_DAY, MAX_QUESTIONS_PER_DAY_ADMIN
 import os
 from pathlib import Path
 import tempfile
-from datetime import datetime
+from datetime import UTC, datetime
+
+MAX_QUESTIONS_PER_DAY = int(MAX_QUESTIONS_PER_DAY)
+MAX_QUESTIONS_PER_DAY_ADMIN = int(MAX_QUESTIONS_PER_DAY_ADMIN)
 
 
 # Mock Google token verification
@@ -126,9 +130,9 @@ def test_question_quota(test_db):
     User.create_or_update("test_user_id", "test@example.com")
 
     # Test quota for regular user
-    for i in range(5):
+    for i in range(MAX_QUESTIONS_PER_DAY):
         remaining = User.increment_question_count("test_user_id")
-        assert remaining == 4 - i
+        assert remaining == MAX_QUESTIONS_PER_DAY - 1 - i
 
     # Should return 0 when quota exceeded
     remaining = User.increment_question_count("test_user_id")
@@ -141,9 +145,9 @@ def test_admin_quota(test_db):
     User.create_or_update("admin_user_id", "admin@example.com", is_admin=True)
 
     # Test quota for admin user
-    for i in range(20):
+    for i in range(MAX_QUESTIONS_PER_DAY_ADMIN):
         remaining = User.increment_question_count("admin_user_id")
-        assert remaining == 19 - i
+        assert remaining == MAX_QUESTIONS_PER_DAY_ADMIN - 1 - i
 
     # Should return 0 when quota exceeded
     remaining = User.increment_question_count("admin_user_id")
@@ -156,7 +160,7 @@ def test_quota_reset(test_db):
     User.create_or_update("test_user_id", "test@example.com")
 
     # Use up quota
-    for _ in range(5):
+    for _ in range(MAX_QUESTIONS_PER_DAY):
         User.increment_question_count("test_user_id")
 
     # Set last reset to yesterday
@@ -176,7 +180,7 @@ def test_quota_reset(test_db):
 
     # Should reset quota
     remaining = User.increment_question_count("test_user_id")
-    assert remaining == 4  # 5 - 1
+    assert remaining == MAX_QUESTIONS_PER_DAY - 1
 
 
 def test_session_creation(test_db):
@@ -208,8 +212,8 @@ def test_message_logging(test_db):
     session_id = Session.create("test_user_id")
 
     # Get timestamps
-    question_timestamp = datetime.utcnow()
-    answer_timestamp = datetime.utcnow()
+    question_timestamp = datetime.now(UTC)
+    answer_timestamp = datetime.now(UTC)
 
     # Log Q&A pair
     message_id = Message.create(

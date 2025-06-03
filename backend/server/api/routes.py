@@ -7,8 +7,7 @@ from fastapi.responses import JSONResponse
 import os
 from typing import List, Dict, Any, Optional
 import traceback
-from datetime import datetime, timedelta
-import pytz
+from datetime import datetime, timedelta, UTC
 
 from .models import AskRequest, ChunkResult, AskResponse
 from ..retriever.ask import Retriever
@@ -67,7 +66,7 @@ async def ask_question(
     quota_remaining = User.increment_question_count(user_info["user_id"])
     if quota_remaining <= 0:
         # Calculate next reset time (midnight UTC)
-        now = datetime.utcnow().replace(tzinfo=pytz.UTC)
+        now = datetime.now(UTC)
         tomorrow = now + timedelta(days=1)
         reset_time = tomorrow.replace(hour=0, minute=0, second=0, microsecond=0)
         raise HTTPException(
@@ -84,7 +83,7 @@ async def ask_question(
         session_id = Session.create(user_info["user_id"])
 
         # Get current timestamp for question
-        question_timestamp = datetime.utcnow()
+        question_timestamp = datetime.now(UTC)
 
         # Query the vector store using cosine similarity
         results = retriever.query(request.question, request.top_k)
@@ -118,7 +117,7 @@ async def ask_question(
             answer=answer_result["answer"],
             prompt=answer_result.get("prompt", ""),
             question_timestamp=question_timestamp,
-            answer_timestamp=datetime.utcnow(),
+            answer_timestamp=datetime.now(UTC),
             retrieved_chunks=[chunk.model_dump() for chunk in chunks],
         )
 

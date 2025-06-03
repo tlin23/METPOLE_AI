@@ -30,7 +30,8 @@ if not GOOGLE_CLIENT_ID:
     sys.exit(1)
 
 # API base URL
-API_BASE_URL = "http://localhost:8000/api"
+# API_BASE_URL = "http://localhost:8000/api"
+API_BASE_URL = "https://metpol-ai.fly.dev/api"
 
 # OAuth configuration
 OAUTH_REDIRECT_PORT = 8080
