@@ -3,6 +3,7 @@ import axios from "axios";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import Login from "./components/Login";
+import Feedback from "./components/Feedback";
 import "./App.css";
 import styles from "./App.styles.js";
 
@@ -52,7 +53,7 @@ function ChatApp() {
     if (!inputValue.trim()) return;
 
     const userMessage = {
-      id: Date.now(),
+      id: Date.now().toString(),
       text: inputValue,
       sender: "user",
     };
@@ -75,7 +76,7 @@ function ChatApp() {
         setMessages((prevMessages) => [
           ...prevMessages,
           {
-            id: Date.now(),
+            id: Date.now().toString(),
             text: (
               response.data.answer ||
               "I'm sorry, I couldn't find an answer to that."
@@ -90,7 +91,7 @@ function ChatApp() {
         setMessages((prevMessages) => [
           ...prevMessages,
           {
-            id: Date.now(),
+            id: Date.now().toString(),
             text:
               response.data.message ||
               "Sorry, there was an error processing your request.",
@@ -113,7 +114,7 @@ function ChatApp() {
       setMessages((prevMessages) => [
         ...prevMessages,
         {
-          id: Date.now(),
+          id: Date.now().toString(),
           text: errorMsg,
           sender: "bot",
         },
@@ -198,38 +199,23 @@ function ChatApp() {
                     message.sourceInfo && (
                       <>
                         {/* Collapsible Panel Source Display */}
-                        {
-                          <details style={styles.sourcePanel}>
-                            <summary style={styles.sourcePanelSummary}>
+                        <div style={styles.sourceInfo}>
+                          <div style={styles.sourceInfoHeader}>
+                            <h3 style={styles.sourceInfoTitle}>
                               Source Information
-                            </summary>
-                            Prompt: {message.prompt}
-                            <div style={styles.sourcePanelContent}>
-                              {message.chunks.map((chunk, index) => (
-                                <div key={index} style={styles.sourceChunk}>
-                                  <strong>Chunk ID:</strong>{" "}
-                                  {chunk.metadata?.chunk_id || "Unknown"}
-                                  <br />
-                                  <strong>Section:</strong>{" "}
-                                  {chunk.metadata?.section || "N/A"}
-                                  <br />
-                                  <strong>Page:</strong>{" "}
-                                  {chunk.metadata?.document_title || "Unknown"}
-                                  <br />
-                                  <strong>Text:</strong>{" "}
-                                  {chunk.text || "No text available"}
-                                  <br />
-                                  <strong>Relevance Score:</strong>{" "}
-                                  {chunk.distance
-                                    ? chunk.distance.toFixed(3)
-                                    : "N/A"}
-                                </div>
-                              ))}
-                            </div>
-                          </details>
-                        }
+                            </h3>
+                          </div>
+                          <div style={styles.sourceInfoContent}>
+                            {message.sourceInfo}
+                          </div>
+                        </div>
                       </>
                     )}
+
+                  {/* Feedback Component */}
+                  {message.sender === "bot" && message.id !== "welcome" && (
+                    <Feedback answerId={message.id} />
+                  )}
                 </div>
               </div>
             ))

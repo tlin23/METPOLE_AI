@@ -9,10 +9,10 @@ from typing import List, Dict, Any, Optional
 import traceback
 from datetime import datetime, timedelta, UTC
 
-from .models import AskRequest, ChunkResult, AskResponse
+from .models import AskRequest, ChunkResult, AskResponse, FeedbackRequest
 from ..retriever.ask import Retriever
 from ..auth import validate_token, require_admin
-from ..database import User, Session, Message, get_db_connection
+from ..database import User, Session, Message, Feedback, get_db_connection
 
 # Create router
 router = APIRouter()
@@ -387,3 +387,66 @@ async def dump_db(user_info: dict = Depends(require_admin)):
         return result
     finally:
         conn.close()
+
+
+# Feedback endpoints
+@router.post("/feedback")
+async def create_feedback(
+    feedback: FeedbackRequest,
+    user_info: Dict[str, Any] = Depends(validate_token),
+) -> Dict[str, Any]:
+    """Create or update feedback for an answer."""
+    try:
+        feedback_id = Feedback.create_or_update(
+            user_id=user_info["user_id"],
+            answer_id=feedback.answer_id,
+            like=feedback.like,
+            suggestion=feedback.suggestion,
+        )
+        return {
+            "success": True,
+            "message": "Feedback saved successfully",
+            "feedback_id": feedback_id,
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to save feedback: {str(e)}",
+        )
+
+
+@router.get("/feedback")
+async def get_feedback(
+    answer_id: str,
+    user_info: Dict[str, Any] = Depends(validate_token),
+) -> Dict[str, Any]:
+    """Get feedback for an answer."""
+    feedback = Feedback.get(user_id=user_info["user_id"], answer_id=answer_id)
+    if not feedback:
+        return {"success": True, "feedback": None}
+    return {"success": True, "feedback": feedback}
+
+
+@router.delete("/feedback")
+async def delete_feedback(
+    answer_id: str,
+    user_info: Dict[str, Any] = Depends(validate_token),
+) -> Dict[str, Any]:
+    """Delete feedback for an answer."""
+    success = Feedback.delete(user_id=user_info["user_id"], answer_id=answer_id)
+    return {
+        "success": success,
+        "message": "Feedback deleted successfully" if success else "No feedback found",
+    }
+
+
+# Admin feedback endpoints
+@router.get("/admin/feedback")
+async def list_feedback(
+    user_id: Optional[str] = None,
+    limit: int = 100,
+    offset: int = 0,
+    user_info: Dict[str, Any] = Depends(require_admin),
+) -> List[Dict[str, Any]]:
+    """List all feedback entries, optionally filtered by user_id."""
+    return Feedback.list_feedback(user_id=user_id, limit=limit, offset=offset)

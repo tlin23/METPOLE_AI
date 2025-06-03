@@ -6,7 +6,9 @@
 	crawl sort parse embed pip-prod-full pip-dev-full pip-dev-fast pip-dev-local \
 	clean-crawl clean-sort clean-parse clean-embed clean-all \
 	admin-status admin-list admin-add admin-remove admin-reset-quota admin-check-quota \
-	admin-messages-list admin-messages-search admin-users-search admin-stats admin-dump-db
+	admin-messages-list admin-messages-search admin-users-search admin-stats admin-dump-db \
+	feedback-list feedback-list-user feedback-get feedback-stats feedback-stats-since feedback-stats-until feedback-stats-range \
+	feedback-dislikes feedback-dislikes-user feedback-suggestions feedback-suggestions-user
 
 # Default URL for crawling
 START_URL := https://www.metropoleballard.com/home
@@ -70,6 +72,13 @@ help:
 	@echo "  make repo-py     - Run repomix on Python files only"
 	@echo "  make repo-py-js  - Run repomix on Python and JavaScript files"
 	@echo "  make reset-env   - Rebuild the virtual environment using Python 3.11"
+	@echo "  make feedback-list - List all feedback"
+	@echo "  make feedback-list-user - List feedback for a specific user"
+	@echo "  make feedback-get - Get feedback for a specific answer"
+	@echo "  make feedback-stats - Get feedback statistics"
+	@echo "  make feedback-stats-since - Get feedback statistics since a specific date"
+	@echo "  make feedback-stats-until - Get feedback statistics until a specific date"
+	@echo "  make feedback-stats-range - Get feedback statistics for a specific date range"
 
 # Run the FastAPI server with hot reload
 serve:
@@ -254,3 +263,37 @@ admin-stats:
 
 admin-dump-db:
 	python3 backend/server/cli/admin.py dump-db
+
+# Feedback commands
+feedback-list:
+	@python -m backend.server.cli.feedback list
+
+feedback-list-user:
+	@python -m backend.server.cli.feedback list --user-id $(user_id)
+
+feedback-get:
+	@python -m backend.server.cli.feedback get $(user_id) $(answer_id)
+
+feedback-stats:
+	@python -m backend.server.cli.feedback stats
+
+feedback-stats-since:
+	@python -m backend.server.cli.feedback stats --since $(date)
+
+feedback-stats-until:
+	@python -m backend.server.cli.feedback stats --until $(date)
+
+feedback-stats-range:
+	@python -m backend.server.cli.feedback stats --since $(since) --until $(until)
+
+feedback-dislikes:
+	@python -m backend.server.cli.feedback dislikes
+
+feedback-dislikes-user:
+	@python -m backend.server.cli.feedback dislikes --user-id $(user_id)
+
+feedback-suggestions:
+	@python -m backend.server.cli.feedback suggestions
+
+feedback-suggestions-user:
+	@python -m backend.server.cli.feedback suggestions --user-id $(user_id)

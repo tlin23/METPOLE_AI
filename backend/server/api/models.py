@@ -29,3 +29,9 @@ class AskResponse(BaseModel):
     prompt: Optional[str] = None
     quota_remaining: int
     stacktrace: Optional[str] = None
+
+
+class FeedbackRequest(BaseModel):
+    answer_id: str
+    like: bool
+    suggestion: Optional[str] = None

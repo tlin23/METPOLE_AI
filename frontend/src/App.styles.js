@@ -227,6 +227,33 @@ const styles = {
     marginBottom: "2px",
     color: "#6b7280",
   },
+
+  sourceInfo: {
+    marginTop: "8px",
+    border: "1px solid #ddd",
+    borderRadius: "4px",
+    overflow: "hidden",
+  },
+
+  sourceInfoHeader: {
+    backgroundColor: "#f5f5f5",
+    padding: "8px 12px",
+    borderBottom: "1px solid #ddd",
+  },
+
+  sourceInfoTitle: {
+    margin: 0,
+    fontSize: "14px",
+    fontWeight: "500",
+    color: "#333",
+  },
+
+  sourceInfoContent: {
+    padding: "12px",
+    fontSize: "14px",
+    color: "#666",
+    whiteSpace: "pre-wrap",
+  },
 };
 
 export default styles;
