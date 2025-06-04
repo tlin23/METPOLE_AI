@@ -2,6 +2,7 @@
 Answer model for database operations.
 """
 
+import json
 import uuid
 from datetime import datetime
 from typing import Optional, Dict, Any, List
@@ -12,9 +13,10 @@ class Answer:
     @staticmethod
     def create(
         question_id: str,
-        session_id: str,
         answer_text: str,
-        answer_timestamp: datetime,
+        prompt: str,
+        retrieved_chunks: List[Dict[str, Any]],
+        response_time: float,
     ) -> str:
         """Create a new answer and return its ID."""
         answer_id = str(uuid.uuid4())
@@ -23,17 +25,18 @@ class Answer:
             conn.execute(
                 """
                 INSERT INTO answers (
-                    answer_id, question_id, session_id, answer_text,
-                    answer_timestamp, created_at
+                    answer_id, question_id, answer_text,
+                    prompt, retrieved_chunks, response_time, created_at
                 )
-                VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
             """,
                 (
                     answer_id,
                     question_id,
-                    session_id,
                     answer_text,
-                    answer_timestamp,
+                    prompt,
+                    json.dumps(retrieved_chunks),
+                    response_time,
                 ),
             )
             conn.commit()

@@ -70,7 +70,6 @@ def init_db():
                 session_id TEXT NOT NULL,
                 user_id TEXT NOT NULL,
                 question_text TEXT NOT NULL,
-                prompt TEXT NOT NULL,
                 created_at DATETIME NOT NULL,
                 FOREIGN KEY (session_id) REFERENCES sessions(session_id),
                 FOREIGN KEY (user_id) REFERENCES users(user_id)
@@ -85,8 +84,9 @@ def init_db():
                 answer_id TEXT PRIMARY KEY,
                 question_id TEXT NOT NULL,
                 answer_text TEXT NOT NULL,
-                response_time FLOAT NOT NULL,
+                prompt TEXT NOT NULL,
                 retrieved_chunks TEXT,
+                response_time FLOAT NOT NULL,
                 created_at DATETIME NOT NULL,
                 FOREIGN KEY (question_id) REFERENCES questions(question_id)
             )

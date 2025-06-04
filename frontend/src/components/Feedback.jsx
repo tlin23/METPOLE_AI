@@ -24,9 +24,9 @@ const Feedback = ({ answerId }) => {
   const fetchFeedback = async () => {
     try {
       const response = await axios.get(`/api/feedback?answer_id=${answerId}`);
-      if (response.data.success && response.data.feedback) {
-        setFeedback(response.data.feedback);
-        setSuggestion(response.data.feedback.suggestion || "");
+      if (response.data) {
+        setFeedback(response.data);
+        setSuggestion(response.data.suggestion || "");
       } else {
         setFeedback(null);
         setSuggestion("");
@@ -56,7 +56,7 @@ const Feedback = ({ answerId }) => {
           like: true,
           suggestion: null,
         });
-        if (response.data.success) {
+        if (response.data.feedback_id) {
           setFeedback({ like: true, suggestion: null });
           setMessage("Feedback saved successfully");
         }
@@ -89,7 +89,7 @@ const Feedback = ({ answerId }) => {
           like: false,
           suggestion: null,
         });
-        if (response.data.success) {
+        if (response.data.feedback_id) {
           setFeedback({ like: false, suggestion: null });
           setMessage("Feedback saved successfully");
         }
@@ -111,7 +111,7 @@ const Feedback = ({ answerId }) => {
         like: false,
         suggestion,
       });
-      if (response.data.success) {
+      if (response.data.feedback_id) {
         setFeedback({ like: false, suggestion });
         setMessage("Feedback updated with suggestion");
       }

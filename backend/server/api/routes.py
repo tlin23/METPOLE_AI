@@ -8,6 +8,7 @@ import os
 from typing import List, Dict, Any, Optional
 import traceback
 from datetime import datetime, timedelta, UTC
+import time
 
 from .models import AskRequest, ChunkResult, AskResponse, FeedbackRequest
 from ..retriever.ask import Retriever
@@ -83,8 +84,8 @@ async def ask_question(
         # Create session if needed
         session_id = Session.create(user_info["user_id"])
 
-        # Get current timestamp for question
-        question_timestamp = datetime.now(UTC)
+        # Start timing
+        start_time = time.time()
 
         # Query the vector store using cosine similarity
         results = retriever.query(request.question, request.top_k)
@@ -110,24 +111,22 @@ async def ask_question(
         # Generate an answer using OpenAI's GPT model
         answer_result = retriever.generate_answer(request.question, chunks)
 
-        # Get current timestamp for answer
-        answer_timestamp = datetime.now(UTC)
+        # Calculate response time
+        response_time = time.time() - start_time
 
         # Create question and answer
         question_id = Question.create(
             session_id=session_id,
             user_id=user_info["user_id"],
             question_text=request.question,
-            prompt=answer_result.get("prompt", ""),
-            question_timestamp=question_timestamp,
-            retrieved_chunks=[chunk.model_dump() for chunk in chunks],
         )
 
         Answer.create(
             question_id=question_id,
-            session_id=session_id,
             answer_text=answer_result["answer"],
-            answer_timestamp=answer_timestamp,
+            prompt=answer_result.get("prompt", ""),
+            retrieved_chunks=[chunk.model_dump() for chunk in chunks],
+            response_time=response_time,
         )
 
         return AskResponse(
@@ -332,7 +331,7 @@ async def list_messages_with_feedback(
         answer = Answer.get_by_question(question["question_id"])
         if answer:
             question["answer"] = answer
-            feedback = Feedback.get(answer["answer_id"])
+            feedback = Feedback.get(answer["answer_id"], question["user_id"])
             if feedback:
                 question["feedback"] = feedback
 
@@ -414,10 +413,10 @@ async def get_stats(
         params = []
 
         if since:
-            where_clause += " AND question_timestamp >= ?"
+            where_clause += " AND created_at >= ?"
             params.append(since)
         if until:
-            where_clause += " AND question_timestamp <= ?"
+            where_clause += " AND created_at <= ?"
             params.append(until)
 
         # Most common questions
@@ -512,14 +511,11 @@ async def create_feedback(
     user_info: Dict[str, Any] = Depends(validate_token),
 ) -> Dict[str, Any]:
     """Create or update feedback for an answer."""
-    # Create feedback text from like and suggestion
-    feedback_text = "Liked" if feedback.like else "Disliked"
-    if feedback.suggestion:
-        feedback_text += f": {feedback.suggestion}"
-
     feedback_id = Feedback.create_or_update(
+        user_id=user_info["user_id"],
         answer_id=feedback.answer_id,
-        feedback_text=feedback_text,
+        like=feedback.like,
+        suggestion=feedback.suggestion,
     )
     return {"feedback_id": feedback_id}
 
@@ -530,7 +526,7 @@ async def get_feedback(
     user_info: Dict[str, Any] = Depends(validate_token),
 ) -> Dict[str, Any]:
     """Get feedback for an answer."""
-    feedback = Feedback.get(answer_id)
+    feedback = Feedback.get(answer_id, user_info["user_id"])
     if not feedback:
         raise HTTPException(status_code=404, detail="Feedback not found")
     return feedback
@@ -542,7 +538,7 @@ async def delete_feedback(
     user_info: Dict[str, Any] = Depends(validate_token),
 ) -> Dict[str, Any]:
     """Delete feedback for an answer."""
-    success = Feedback.delete(answer_id)
+    success = Feedback.delete(answer_id, user_info["user_id"])
     if not success:
         raise HTTPException(status_code=404, detail="Feedback not found")
     return {"success": True}
@@ -553,6 +549,7 @@ async def delete_feedback(
 async def list_feedback(
     limit: int = 100,
     offset: int = 0,
+    user_id: Optional[str] = None,
     session_id: Optional[str] = None,
     since: Optional[datetime] = None,
     until: Optional[datetime] = None,
@@ -562,6 +559,7 @@ async def list_feedback(
     feedbacks = Feedback.list_feedback(
         limit=limit,
         offset=offset,
+        user_id=user_id,
         session_id=session_id,
         since=since,
         until=until,

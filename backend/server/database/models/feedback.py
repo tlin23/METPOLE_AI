@@ -11,8 +11,10 @@ from ..connection import get_db_connection
 class Feedback:
     @staticmethod
     def create_or_update(
+        user_id: str,
         answer_id: str,
-        feedback_text: str,
+        like: bool,
+        suggestion: Optional[str] = None,
     ) -> str:
         """Create or update feedback for an answer."""
         feedback_id = str(uuid.uuid4())
@@ -20,13 +22,14 @@ class Feedback:
         try:
             conn.execute(
                 """
-                INSERT INTO feedback (feedback_id, answer_id, feedback_text, created_at)
-                VALUES (?, ?, ?, CURRENT_TIMESTAMP)
-                ON CONFLICT(answer_id) DO UPDATE SET
-                    feedback_text = excluded.feedback_text,
-                    created_at = CURRENT_TIMESTAMP
+                INSERT INTO feedback (feedback_id, user_id, answer_id, like, suggestion, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                ON CONFLICT(user_id, answer_id) DO UPDATE SET
+                    like = excluded.like,
+                    suggestion = excluded.suggestion,
+                    updated_at = CURRENT_TIMESTAMP
             """,
-                (feedback_id, answer_id, feedback_text),
+                (feedback_id, user_id, answer_id, like, suggestion),
             )
             conn.commit()
             return feedback_id
@@ -34,8 +37,8 @@ class Feedback:
             conn.close()
 
     @staticmethod
-    def get(answer_id: str) -> Optional[Dict[str, Any]]:
-        """Get feedback for an answer."""
+    def get(answer_id: str, user_id: str) -> Optional[Dict[str, Any]]:
+        """Get feedback for an answer from a specific user."""
         conn = get_db_connection()
         try:
             cursor = conn.execute(
@@ -45,9 +48,9 @@ class Feedback:
                 JOIN answers a ON f.answer_id = a.answer_id
                 JOIN questions q ON a.question_id = q.question_id
                 LEFT JOIN users u ON q.user_id = u.user_id
-                WHERE f.answer_id = ?
+                WHERE f.answer_id = ? AND f.user_id = ?
             """,
-                (answer_id,),
+                (answer_id, user_id),
             )
             row = cursor.fetchone()
             return dict(row) if row else None
@@ -55,16 +58,16 @@ class Feedback:
             conn.close()
 
     @staticmethod
-    def delete(answer_id: str) -> bool:
-        """Delete feedback for an answer."""
+    def delete(answer_id: str, user_id: str) -> bool:
+        """Delete feedback for an answer from a specific user."""
         conn = get_db_connection()
         try:
             cursor = conn.execute(
                 """
                 DELETE FROM feedback
-                WHERE answer_id = ?
+                WHERE answer_id = ? AND user_id = ?
             """,
-                (answer_id,),
+                (answer_id, user_id),
             )
             conn.commit()
             return cursor.rowcount > 0
@@ -75,6 +78,7 @@ class Feedback:
     def list_feedback(
         limit: int = 100,
         offset: int = 0,
+        user_id: Optional[str] = None,
         session_id: Optional[str] = None,
         since: Optional[datetime] = None,
         until: Optional[datetime] = None,
@@ -92,6 +96,9 @@ class Feedback:
             """
             params = []
 
+            if user_id:
+                query += " AND f.user_id = ?"
+                params.append(user_id)
             if session_id:
                 query += " AND a.session_id = ?"
                 params.append(session_id)

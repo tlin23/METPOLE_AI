@@ -6,7 +6,6 @@ import uuid
 from datetime import datetime
 from typing import Optional, List, Dict, Any
 from ..connection import get_db_connection
-import json
 
 
 class Question:
@@ -15,9 +14,6 @@ class Question:
         session_id: str,
         user_id: Optional[str],
         question_text: str,
-        prompt: str,
-        question_timestamp: datetime,
-        retrieved_chunks: Optional[List[Dict[str, Any]]] = None,
     ) -> str:
         """Create a new question and return its ID."""
         question_id = str(uuid.uuid4())
@@ -26,19 +22,15 @@ class Question:
             conn.execute(
                 """
                 INSERT INTO questions (
-                    question_id, session_id, user_id, question_text, prompt,
-                    question_timestamp, retrieved_chunks, created_at
+                    question_id, session_id, user_id, question_text, created_at
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
             """,
                 (
                     question_id,
                     session_id,
                     user_id,
                     question_text,
-                    prompt,
-                    question_timestamp,
-                    json.dumps(retrieved_chunks) if retrieved_chunks else None,
                 ),
             )
             conn.commit()
