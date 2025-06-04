@@ -6,7 +6,8 @@ import pytest
 from unittest.mock import patch, Mock
 import json
 from backend.server.auth import validate_token, require_admin
-from backend.server.database import User, Session, Message, get_db_connection
+from backend.server.database.models import User, Session, Message
+from backend.server.database.connection import get_db_connection
 from backend.server.config import MAX_QUESTIONS_PER_DAY, MAX_QUESTIONS_PER_DAY_ADMIN
 import os
 from pathlib import Path

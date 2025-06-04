@@ -7,7 +7,8 @@ import click
 import json
 from datetime import datetime
 from typing import Optional
-from backend.server.database import Feedback, get_db_connection
+from backend.server.database.models import Feedback
+from backend.server.database.connection import get_db_connection
 from backend.logger.logging_config import configure_logging
 
 # Configure logging

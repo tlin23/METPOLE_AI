@@ -12,7 +12,8 @@ from datetime import datetime, timedelta, UTC
 from .models import AskRequest, ChunkResult, AskResponse, FeedbackRequest
 from ..retriever.ask import Retriever
 from ..auth import validate_token, require_admin
-from ..database import User, Session, Message, Feedback, get_db_connection
+from ..database.models import User, Session, Message, Feedback
+from ..database.connection import get_db_connection
 
 # Create router
 router = APIRouter()
@@ -291,6 +292,25 @@ async def list_messages(
 ) -> List[Dict[str, Any]]:
     """List Q&A pairs with optional filtering."""
     return Message.list_messages(
+        limit=limit,
+        offset=offset,
+        user_id=user_id,
+        since=since,
+        until=until,
+    )
+
+
+@router.get("/admin/messages/with-feedback")
+async def list_messages_with_feedback(
+    limit: int = 100,
+    offset: int = 0,
+    user_id: Optional[str] = None,
+    since: Optional[datetime] = None,
+    until: Optional[datetime] = None,
+    user_info: Dict[str, Any] = Depends(require_admin),
+) -> List[Dict[str, Any]]:
+    """List Q&A pairs with their feedback (if any)."""
+    return Message.list_messages_with_feedback(
         limit=limit,
         offset=offset,
         user_id=user_id,

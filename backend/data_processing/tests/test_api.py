@@ -9,7 +9,8 @@ import os
 from pathlib import Path
 import tempfile
 from backend.server.app import service
-from backend.server.database import User, get_db_connection
+from backend.server.database.models import User
+from backend.server.database.connection import get_db_connection
 from backend.server.config import MAX_QUESTIONS_PER_DAY
 
 # Test client
