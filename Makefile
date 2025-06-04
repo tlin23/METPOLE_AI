@@ -47,14 +47,14 @@ help:
 	@echo "  make admin-check-quota email=... - Check question quota for a user (replace ... with email)"
 	@echo ""
 	@echo "Admin Query Commands:"
-	@echo "  make admin-messages-list [limit=100] [offset=0] [user=...] [type=...] [since=...] [until=...] [json]"
-	@echo "    - List messages with optional filtering"
-	@echo "  make admin-messages-search text=... [fuzzy] [limit=100] [offset=0] [user=...] [type=...] [since=...] [until=...] [json]"
-	@echo "    - Search messages by text with optional filtering"
+	@echo "  make admin-messages-list [limit=100] [offset=0] [user=...] [since=...] [until=...] [json]"
+	@echo "    - List Q&A pairs with optional filtering"
+	@echo "  make admin-messages-search text=... [fuzzy] [limit=100] [offset=0] [user=...] [since=...] [until=...] [json]"
+	@echo "    - Search Q&A pairs by text with optional filtering"
 	@echo "  make admin-users-search query=... [fuzzy] [limit=100] [offset=0] [json]"
 	@echo "    - Search users by email or name"
 	@echo "  make admin-stats [since=...] [until=...] [limit=10] [json]"
-	@echo "    - View message statistics"
+	@echo "    - View Q&A statistics"
 	@echo ""
 	@echo "Pipeline Commands:"
 	@echo "  make crawl       - Crawl web content"
@@ -209,53 +209,51 @@ clean-all:
 
 # === Admin CLI commands ===
 admin-status:
-	python3 backend/server/cli/admin.py status
+	python3 -m backend.server.cli.admin status
 
 admin-list:
-	python3 backend/server/cli/admin.py list
+	python3 -m backend.server.cli.admin list
 
 admin-add:
 	@if [ -z "$$email" ]; then echo "Usage: make admin-add email=someone@example.com"; exit 1; fi; \
-	python3 backend/server/cli/admin.py add $$email
+	python3 -m backend.server.cli.admin add $$email
 
 admin-remove:
 	@if [ -z "$$email" ]; then echo "Usage: make admin-remove email=someone@example.com"; exit 1; fi; \
-	python3 backend/server/cli/admin.py remove $$email
+	python3 -m backend.server.cli.admin remove $$email
 
 admin-reset-quota:
 	@if [ -z "$$email" ]; then echo "Usage: make admin-reset-quota email=someone@example.com"; exit 1; fi; \
-	python3 backend/server/cli/admin.py quota reset $$email
+	python3 -m backend.server.cli.admin quota reset $$email
 
 admin-check-quota:
 	@if [ -z "$$email" ]; then echo "Usage: make admin-check-quota email=someone@example.com"; exit 1; fi; \
-	python3 backend/server/cli/admin.py quota check $$email
+	python3 -m backend.server.cli.admin quota check $$email
 
 admin-messages-list:
-	python3 backend/server/cli/admin.py messages list \
+	python3 -m backend.server.cli.admin messages list \
 		$(if $(limit),--limit $(limit)) \
 		$(if $(offset),--offset $(offset)) \
 		$(if $(user),--user $(user)) \
-		$(if $(type),--type $(type)) \
 		$(if $(since),--since $(since)) \
 		$(if $(until),--until $(until)) \
 		$(if $(json),--json)
 
 admin-messages-search:
-	@if [ -z "$$text" ]; then echo "Usage: make admin-messages-search text=\"search text\" [fuzzy] [limit=100] [offset=0] [user=...] [type=...] [since=...] [until=...] [json]"; exit 1; fi; \
-	python3 backend/server/cli/admin.py messages search \
+	@if [ -z "$$text" ]; then echo "Usage: make admin-messages-search text=\"search text\" [fuzzy] [limit=100] [offset=0] [user=...] [since=...] [until=...] [json]"; exit 1; fi; \
+	python3 -m backend.server.cli.admin messages search \
 		--text "$$text" \
 		$(if $(fuzzy),--fuzzy) \
 		$(if $(limit),--limit $(limit)) \
 		$(if $(offset),--offset $(offset)) \
 		$(if $(user),--user $(user)) \
-		$(if $(type),--type $(type)) \
 		$(if $(since),--since $(since)) \
 		$(if $(until),--until $(until)) \
 		$(if $(json),--json)
 
 admin-users-search:
 	@if [ -z "$$query" ]; then echo "Usage: make admin-users-search query=\"search query\" [fuzzy] [limit=100] [offset=0] [json]"; exit 1; fi; \
-	python3 backend/server/cli/admin.py users search \
+	python3 -m backend.server.cli.admin users search \
 		--query "$$query" \
 		$(if $(fuzzy),--fuzzy) \
 		$(if $(limit),--limit $(limit)) \
@@ -263,14 +261,14 @@ admin-users-search:
 		$(if $(json),--json)
 
 admin-stats:
-	python3 backend/server/cli/admin.py stats \
+	python3 -m backend.server.cli.admin stats \
 		$(if $(since),--since $(since)) \
 		$(if $(until),--until $(until)) \
 		$(if $(limit),--limit $(limit)) \
 		$(if $(json),--json)
 
 admin-dump-db:
-	python3 backend/server/cli/admin.py dump-db
+	python3 -m backend.server.cli.admin dump-db
 
 feedback-list:
 	@python -m backend.server.cli.feedback list

@@ -305,6 +305,13 @@ async def list_messages(
         since=since,
         until=until,
     )
+
+    # Get answers for each question
+    for question in questions:
+        answer = Answer.get_by_question(question["question_id"])
+        if answer:
+            question["answer"] = answer
+
     return questions
 
 
@@ -359,6 +366,13 @@ async def search_messages(
         since=since,
         until=until,
     )
+
+    # Get answers for each question
+    for question in questions:
+        answer = Answer.get_by_question(question["question_id"])
+        if answer:
+            question["answer"] = answer
+
     return questions
 
 

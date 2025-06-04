@@ -84,13 +84,13 @@ class Question:
                 query += " AND q.session_id = ?"
                 params.append(session_id)
             if since:
-                query += " AND q.question_timestamp >= ?"
+                query += " AND q.created_at >= ?"
                 params.append(since)
             if until:
-                query += " AND q.question_timestamp <= ?"
+                query += " AND q.created_at <= ?"
                 params.append(until)
 
-            query += " ORDER BY q.question_timestamp DESC LIMIT ? OFFSET ?"
+            query += " ORDER BY q.created_at DESC LIMIT ? OFFSET ?"
             params.extend([limit, offset])
 
             cursor = conn.execute(query, params)
@@ -136,13 +136,13 @@ class Question:
                 query += " AND q.session_id = ?"
                 params.append(session_id)
             if since:
-                query += " AND q.question_timestamp >= ?"
+                query += " AND q.created_at >= ?"
                 params.append(since)
             if until:
-                query += " AND q.question_timestamp <= ?"
+                query += " AND q.created_at <= ?"
                 params.append(until)
 
-            query += " ORDER BY q.question_timestamp DESC LIMIT ? OFFSET ?"
+            query += " ORDER BY q.created_at DESC LIMIT ? OFFSET ?"
             params.extend([limit, offset])
 
             cursor = conn.execute(query, params)

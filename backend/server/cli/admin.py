@@ -17,6 +17,7 @@ import threading
 import urllib.parse
 import time
 from tabulate import tabulate
+
 from .config import (
     GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET,
@@ -304,21 +305,22 @@ def list_messages(
 
             table_data = []
             for msg in messages:
+                answer = msg.get("answer", {})
                 table_data.append(
                     [
-                        msg["question_timestamp"],
+                        msg["created_at"],
                         msg["user_email"],
                         (
-                            msg["question"][:50] + "..."
-                            if len(msg["question"]) > 50
-                            else msg["question"]
+                            msg["question_text"][:50] + "..."
+                            if len(msg["question_text"]) > 50
+                            else msg["question_text"]
                         ),
                         (
-                            msg["answer"][:50] + "..."
-                            if len(msg["answer"]) > 50
-                            else msg["answer"]
+                            answer.get("answer_text", "")[:50] + "..."
+                            if answer and len(answer.get("answer_text", "")) > 50
+                            else answer.get("answer_text", "")
                         ),
-                        f"{msg['response_time']:.2f}s",
+                        f"{answer.get('response_time', 0):.2f}s" if answer else "N/A",
                     ]
                 )
             print(
@@ -380,21 +382,22 @@ def search_messages(
 
             table_data = []
             for msg in messages:
+                answer = msg.get("answer", {})
                 table_data.append(
                     [
-                        msg["question_timestamp"],
+                        msg["created_at"],
                         msg["user_email"],
                         (
-                            msg["question"][:50] + "..."
-                            if len(msg["question"]) > 50
-                            else msg["question"]
+                            msg["question_text"][:50] + "..."
+                            if len(msg["question_text"]) > 50
+                            else msg["question_text"]
                         ),
                         (
-                            msg["answer"][:50] + "..."
-                            if len(msg["answer"]) > 50
-                            else msg["answer"]
+                            answer.get("answer_text", "")[:50] + "..."
+                            if answer and len(answer.get("answer_text", "")) > 50
+                            else answer.get("answer_text", "")
                         ),
-                        f"{msg['response_time']:.2f}s",
+                        f"{answer.get('response_time', 0):.2f}s" if answer else "N/A",
                     ]
                 )
             print(

@@ -88,7 +88,7 @@ class Answer:
     def list_answers(
         limit: int = 100,
         offset: int = 0,
-        session_id: Optional[str] = None,
+        question_id: Optional[str] = None,
         since: Optional[datetime] = None,
         until: Optional[datetime] = None,
     ) -> List[Dict[str, Any]]:
@@ -104,17 +104,17 @@ class Answer:
             """
             params = []
 
-            if session_id:
-                query += " AND a.session_id = ?"
-                params.append(session_id)
+            if question_id:
+                query += " AND a.question_id = ?"
+                params.append(question_id)
             if since:
-                query += " AND a.answer_timestamp >= ?"
+                query += " AND a.created_at >= ?"
                 params.append(since)
             if until:
-                query += " AND a.answer_timestamp <= ?"
+                query += " AND a.created_at <= ?"
                 params.append(until)
 
-            query += " ORDER BY a.answer_timestamp DESC LIMIT ? OFFSET ?"
+            query += " ORDER BY a.created_at DESC LIMIT ? OFFSET ?"
             params.extend([limit, offset])
 
             cursor = conn.execute(query, params)
@@ -128,7 +128,7 @@ class Answer:
         fuzzy: bool = False,
         limit: int = 100,
         offset: int = 0,
-        session_id: Optional[str] = None,
+        question_id: Optional[str] = None,
         since: Optional[datetime] = None,
         until: Optional[datetime] = None,
     ) -> List[Dict[str, Any]]:
@@ -153,17 +153,17 @@ class Answer:
                 search_term = f"%{text}%"
                 params.append(search_term)
 
-            if session_id:
-                query += " AND a.session_id = ?"
-                params.append(session_id)
+            if question_id:
+                query += " AND a.question_id = ?"
+                params.append(question_id)
             if since:
-                query += " AND a.answer_timestamp >= ?"
+                query += " AND a.created_at >= ?"
                 params.append(since)
             if until:
-                query += " AND a.answer_timestamp <= ?"
+                query += " AND a.created_at <= ?"
                 params.append(until)
 
-            query += " ORDER BY a.answer_timestamp DESC LIMIT ? OFFSET ?"
+            query += " ORDER BY a.created_at DESC LIMIT ? OFFSET ?"
             params.extend([limit, offset])
 
             cursor = conn.execute(query, params)
