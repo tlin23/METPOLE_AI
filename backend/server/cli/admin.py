@@ -9,7 +9,6 @@ import os
 import sys
 import argparse
 import requests
-from dotenv import load_dotenv
 from typing import Dict, Optional
 import webbrowser
 import json
@@ -18,28 +17,21 @@ import threading
 import urllib.parse
 import time
 from tabulate import tabulate
+from .config import (
+    GOOGLE_CLIENT_ID,
+    GOOGLE_CLIENT_SECRET,
+    API_BASE_URL,
+    OAUTH_REDIRECT_PORT,
+    OAUTH_REDIRECT_URI,
+    OAUTH_SCOPES,
+    TOKEN_FILE,
+)
 
-# Load environment variables
-load_dotenv()
-
-# Get Google OAuth credentials from environment
-GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
-GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 if not GOOGLE_CLIENT_ID:
     print("Error: GOOGLE_CLIENT_ID environment variable is required")
     sys.exit(1)
 
-# API base URL
-# API_BASE_URL = "http://localhost:8000/api"
-API_BASE_URL = "https://metpol-ai.fly.dev/api"
-
-# OAuth configuration
-OAUTH_REDIRECT_PORT = 8080
-OAUTH_REDIRECT_URI = f"http://localhost:{OAUTH_REDIRECT_PORT}"
-OAUTH_SCOPES = ["openid", "email", "profile"]
-
 TOKEN_CACHE = None
-TOKEN_FILE = os.path.expanduser("~/.metpol_admin_token.json")
 
 
 class OAuthCallbackHandler(BaseHTTPRequestHandler):

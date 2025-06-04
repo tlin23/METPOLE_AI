@@ -272,7 +272,6 @@ admin-stats:
 admin-dump-db:
 	python3 backend/server/cli/admin.py dump-db
 
-# Feedback commands
 feedback-list:
 	@python -m backend.server.cli.feedback list
 

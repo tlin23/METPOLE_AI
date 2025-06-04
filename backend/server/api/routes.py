@@ -12,7 +12,7 @@ from datetime import datetime, timedelta, UTC
 from .models import AskRequest, ChunkResult, AskResponse, FeedbackRequest
 from ..retriever.ask import Retriever
 from ..auth import validate_token, require_admin
-from ..database.models import User, Session, Message, Feedback
+from ..database.models import User, Session, Question, Answer, Feedback
 from ..database.connection import get_db_connection
 
 # Create router
@@ -110,16 +110,24 @@ async def ask_question(
         # Generate an answer using OpenAI's GPT model
         answer_result = retriever.generate_answer(request.question, chunks)
 
-        # Log the Q&A pair
-        Message.create(
+        # Get current timestamp for answer
+        answer_timestamp = datetime.now(UTC)
+
+        # Create question and answer
+        question_id = Question.create(
             session_id=session_id,
             user_id=user_info["user_id"],
-            question=request.question,
-            answer=answer_result["answer"],
+            question_text=request.question,
             prompt=answer_result.get("prompt", ""),
             question_timestamp=question_timestamp,
-            answer_timestamp=datetime.now(UTC),
             retrieved_chunks=[chunk.model_dump() for chunk in chunks],
+        )
+
+        Answer.create(
+            question_id=question_id,
+            session_id=session_id,
+            answer_text=answer_result["answer"],
+            answer_timestamp=answer_timestamp,
         )
 
         return AskResponse(
@@ -290,14 +298,15 @@ async def list_messages(
     until: Optional[datetime] = None,
     user_info: Dict[str, Any] = Depends(require_admin),
 ) -> List[Dict[str, Any]]:
-    """List Q&A pairs with optional filtering."""
-    return Message.list_messages(
+    """List all Q&A pairs."""
+    questions = Question.list_questions(
         limit=limit,
         offset=offset,
         user_id=user_id,
         since=since,
         until=until,
     )
+    return questions
 
 
 @router.get("/admin/messages/with-feedback")
@@ -309,14 +318,25 @@ async def list_messages_with_feedback(
     until: Optional[datetime] = None,
     user_info: Dict[str, Any] = Depends(require_admin),
 ) -> List[Dict[str, Any]]:
-    """List Q&A pairs with their feedback (if any)."""
-    return Message.list_messages_with_feedback(
+    """List all Q&A pairs with their feedback."""
+    questions = Question.list_questions(
         limit=limit,
         offset=offset,
         user_id=user_id,
         since=since,
         until=until,
     )
+
+    # Get answers and feedback for each question
+    for question in questions:
+        answer = Answer.get_by_question(question["question_id"])
+        if answer:
+            question["answer"] = answer
+            feedback = Feedback.get(answer["answer_id"])
+            if feedback:
+                question["feedback"] = feedback
+
+    return questions
 
 
 @router.get("/admin/messages/search")
@@ -330,8 +350,8 @@ async def search_messages(
     until: Optional[datetime] = None,
     user_info: Dict[str, Any] = Depends(require_admin),
 ) -> List[Dict[str, Any]]:
-    """Search Q&A pairs by text with optional filtering."""
-    return Message.search_messages(
+    """Search Q&A pairs by text."""
+    questions = Question.search_questions(
         text=text,
         fuzzy=fuzzy,
         limit=limit,
@@ -340,6 +360,7 @@ async def search_messages(
         since=since,
         until=until,
     )
+    return questions
 
 
 @router.get("/admin/users/search")
@@ -368,14 +389,15 @@ async def get_user_messages(
     until: Optional[datetime] = None,
     user_info: Dict[str, Any] = Depends(require_admin),
 ) -> List[Dict[str, Any]]:
-    """Get Q&A pairs for a specific user."""
-    return User.get_user_messages(
-        user_id=user_id,
+    """Get all Q&A pairs for a specific user."""
+    questions = Question.list_questions(
         limit=limit,
         offset=offset,
+        user_id=user_id,
         since=since,
         until=until,
     )
+    return questions
 
 
 @router.get("/admin/stats")
@@ -385,12 +407,86 @@ async def get_stats(
     limit: int = 10,
     user_info: Dict[str, Any] = Depends(require_admin),
 ) -> Dict[str, Any]:
-    """Get message statistics."""
-    return Message.get_stats(
-        since=since,
-        until=until,
-        limit=limit,
-    )
+    """Get Q&A statistics."""
+    conn = get_db_connection()
+    try:
+        where_clause = "WHERE 1=1"
+        params = []
+
+        if since:
+            where_clause += " AND question_timestamp >= ?"
+            params.append(since)
+        if until:
+            where_clause += " AND question_timestamp <= ?"
+            params.append(until)
+
+        # Most common questions
+        cursor = conn.execute(
+            f"""
+            SELECT question_text, COUNT(*) as count
+            FROM questions
+            {where_clause}
+            GROUP BY question_text
+            ORDER BY count DESC
+            LIMIT ?
+            """,
+            params + [limit],
+        )
+        top_questions = [dict(row) for row in cursor.fetchall()]
+
+        # Most common answers
+        cursor = conn.execute(
+            f"""
+            SELECT answer_text, COUNT(*) as count
+            FROM answers
+            {where_clause}
+            GROUP BY answer_text
+            ORDER BY count DESC
+            LIMIT ?
+            """,
+            params + [limit],
+        )
+        top_answers = [dict(row) for row in cursor.fetchall()]
+
+        # Most common retrieved chunks
+        cursor = conn.execute(
+            f"""
+            SELECT json_extract(retrieved_chunks, '$[0].text') as chunk_text,
+                   COUNT(*) as count
+            FROM questions
+            {where_clause}
+            AND retrieved_chunks IS NOT NULL
+            GROUP BY chunk_text
+            ORDER BY count DESC
+            LIMIT ?
+            """,
+            params + [limit],
+        )
+        top_chunks = [dict(row) for row in cursor.fetchall()]
+
+        # Top users by question count
+        cursor = conn.execute(
+            f"""
+            SELECT u.email, COUNT(*) as question_count
+            FROM questions q
+            JOIN users u ON q.user_id = u.user_id
+            {where_clause}
+            GROUP BY q.user_id
+            ORDER BY question_count DESC
+            LIMIT ?
+            """,
+            params + [limit],
+        )
+        top_users = [dict(row) for row in cursor.fetchall()]
+
+        return {
+            "top_questions": top_questions,
+            "top_answers": top_answers,
+            "top_chunks": top_chunks,
+            "top_users": top_users,
+        }
+    finally:
+        conn.close()
 
 
 @router.get("/admin/dump-db")
@@ -401,7 +497,7 @@ async def dump_db(user_info: dict = Depends(require_admin)):
     conn = get_db_connection()
     try:
         result = {}
-        for table in ["users", "sessions", "messages"]:
+        for table in ["users", "sessions", "questions", "answers", "feedbacks"]:
             rows = conn.execute(f"SELECT * FROM {table}").fetchall()
             result[table] = [dict(r) for r in rows]
         return result
@@ -416,23 +512,16 @@ async def create_feedback(
     user_info: Dict[str, Any] = Depends(validate_token),
 ) -> Dict[str, Any]:
     """Create or update feedback for an answer."""
-    try:
-        feedback_id = Feedback.create_or_update(
-            user_id=user_info["user_id"],
-            answer_id=feedback.answer_id,
-            like=feedback.like,
-            suggestion=feedback.suggestion,
-        )
-        return {
-            "success": True,
-            "message": "Feedback saved successfully",
-            "feedback_id": feedback_id,
-        }
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to save feedback: {str(e)}",
-        )
+    # Create feedback text from like and suggestion
+    feedback_text = "Liked" if feedback.like else "Disliked"
+    if feedback.suggestion:
+        feedback_text += f": {feedback.suggestion}"
+
+    feedback_id = Feedback.create_or_update(
+        answer_id=feedback.answer_id,
+        feedback_text=feedback_text,
+    )
+    return {"feedback_id": feedback_id}
 
 
 @router.get("/feedback")
@@ -441,10 +530,10 @@ async def get_feedback(
     user_info: Dict[str, Any] = Depends(validate_token),
 ) -> Dict[str, Any]:
     """Get feedback for an answer."""
-    feedback = Feedback.get(user_id=user_info["user_id"], answer_id=answer_id)
+    feedback = Feedback.get(answer_id)
     if not feedback:
-        return {"success": True, "feedback": None}
-    return {"success": True, "feedback": feedback}
+        raise HTTPException(status_code=404, detail="Feedback not found")
+    return feedback
 
 
 @router.delete("/feedback")
@@ -453,20 +542,28 @@ async def delete_feedback(
     user_info: Dict[str, Any] = Depends(validate_token),
 ) -> Dict[str, Any]:
     """Delete feedback for an answer."""
-    success = Feedback.delete(user_id=user_info["user_id"], answer_id=answer_id)
-    return {
-        "success": success,
-        "message": "Feedback deleted successfully" if success else "No feedback found",
-    }
+    success = Feedback.delete(answer_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Feedback not found")
+    return {"success": True}
 
 
 # Admin feedback endpoints
 @router.get("/admin/feedback")
 async def list_feedback(
-    user_id: Optional[str] = None,
     limit: int = 100,
     offset: int = 0,
+    session_id: Optional[str] = None,
+    since: Optional[datetime] = None,
+    until: Optional[datetime] = None,
     user_info: Dict[str, Any] = Depends(require_admin),
 ) -> List[Dict[str, Any]]:
-    """List all feedback entries, optionally filtered by user_id."""
-    return Feedback.list_feedback(user_id=user_id, limit=limit, offset=offset)
+    """List all feedback entries."""
+    feedbacks = Feedback.list_feedback(
+        limit=limit,
+        offset=offset,
+        session_id=session_id,
+        since=since,
+        until=until,
+    )
+    return feedbacks

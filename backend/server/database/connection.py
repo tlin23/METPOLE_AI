@@ -62,22 +62,33 @@ def init_db():
         """
         )
 
-        # Create Message table
+        # Create Questions table
         conn.execute(
             """
-            CREATE TABLE IF NOT EXISTS messages (
-                message_id TEXT PRIMARY KEY,
+            CREATE TABLE IF NOT EXISTS questions (
+                question_id TEXT PRIMARY KEY,
                 session_id TEXT NOT NULL,
                 user_id TEXT NOT NULL,
-                question TEXT NOT NULL,
-                answer TEXT NOT NULL,
+                question_text TEXT NOT NULL,
                 prompt TEXT NOT NULL,
-                question_timestamp DATETIME NOT NULL,
-                answer_timestamp DATETIME NOT NULL,
-                response_time FLOAT NOT NULL,
-                retrieved_chunks TEXT,
+                created_at DATETIME NOT NULL,
                 FOREIGN KEY (session_id) REFERENCES sessions(session_id),
                 FOREIGN KEY (user_id) REFERENCES users(user_id)
+            )
+        """
+        )
+
+        # Create Answers table
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS answers (
+                answer_id TEXT PRIMARY KEY,
+                question_id TEXT NOT NULL,
+                answer_text TEXT NOT NULL,
+                response_time FLOAT NOT NULL,
+                retrieved_chunks TEXT,
+                created_at DATETIME NOT NULL,
+                FOREIGN KEY (question_id) REFERENCES questions(question_id)
             )
         """
         )
@@ -94,7 +105,7 @@ def init_db():
                 created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users(user_id),
-                FOREIGN KEY (answer_id) REFERENCES messages(message_id),
+                FOREIGN KEY (answer_id) REFERENCES answers(answer_id),
                 UNIQUE(user_id, answer_id)
             )
         """

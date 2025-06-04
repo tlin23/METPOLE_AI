@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import Optional, List, Dict, Any
 from ..connection import get_db_connection
 from ...config import MAX_QUESTIONS_PER_DAY, MAX_QUESTIONS_PER_DAY_ADMIN
-from .message import Message
+from .question import Question
 
 MAX_QUESTIONS_PER_DAY = int(MAX_QUESTIONS_PER_DAY)
 MAX_QUESTIONS_PER_DAY_ADMIN = int(MAX_QUESTIONS_PER_DAY_ADMIN)
@@ -122,7 +122,7 @@ class User:
             cursor = conn.execute(
                 """
                 SELECT u.*,
-                       (SELECT COUNT(*) FROM messages m WHERE m.user_id = u.user_id) as message_count
+                       (SELECT COUNT(*) FROM questions q WHERE q.user_id = u.user_id) as question_count
                 FROM users u
                 WHERE u.email LIKE ?
                 ORDER BY u.email
@@ -142,8 +142,8 @@ class User:
         since: Optional[datetime] = None,
         until: Optional[datetime] = None,
     ) -> List[Dict[str, Any]]:
-        """Get messages for a specific user."""
-        return Message.list_messages(
+        """Get questions for a specific user."""
+        return Question.list_questions(
             limit=limit,
             offset=offset,
             user_id=user_id,

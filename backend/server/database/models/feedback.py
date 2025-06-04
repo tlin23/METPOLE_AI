@@ -2,6 +2,8 @@
 Feedback model for database operations.
 """
 
+import uuid
+from datetime import datetime
 from typing import Optional, List, Dict, Any
 from ..connection import get_db_connection
 
@@ -9,25 +11,22 @@ from ..connection import get_db_connection
 class Feedback:
     @staticmethod
     def create_or_update(
-        user_id: str,
         answer_id: str,
-        like: bool,
-        suggestion: Optional[str] = None,
+        feedback_text: str,
     ) -> str:
-        """Create or update feedback for a user/answer pair."""
+        """Create or update feedback for an answer."""
+        feedback_id = str(uuid.uuid4())
         conn = get_db_connection()
         try:
-            feedback_id = f"fb_{user_id}_{answer_id}"
             conn.execute(
                 """
-                INSERT INTO feedback (feedback_id, user_id, answer_id, like, suggestion, updated_at)
-                VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-                ON CONFLICT(user_id, answer_id) DO UPDATE SET
-                    like = excluded.like,
-                    suggestion = excluded.suggestion,
-                    updated_at = CURRENT_TIMESTAMP
+                INSERT INTO feedback (feedback_id, answer_id, feedback_text, created_at)
+                VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+                ON CONFLICT(answer_id) DO UPDATE SET
+                    feedback_text = excluded.feedback_text,
+                    created_at = CURRENT_TIMESTAMP
             """,
-                (feedback_id, user_id, answer_id, like, suggestion),
+                (feedback_id, answer_id, feedback_text),
             )
             conn.commit()
             return feedback_id
@@ -35,16 +34,20 @@ class Feedback:
             conn.close()
 
     @staticmethod
-    def get(user_id: str, answer_id: str) -> Optional[Dict[str, Any]]:
-        """Get feedback for a user/answer pair."""
+    def get(answer_id: str) -> Optional[Dict[str, Any]]:
+        """Get feedback for an answer."""
         conn = get_db_connection()
         try:
             cursor = conn.execute(
                 """
-                SELECT * FROM feedback
-                WHERE user_id = ? AND answer_id = ?
+                SELECT f.*, a.answer_text, q.question_text, q.user_id, u.email as user_email
+                FROM feedback f
+                JOIN answers a ON f.answer_id = a.answer_id
+                JOIN questions q ON a.question_id = q.question_id
+                LEFT JOIN users u ON q.user_id = u.user_id
+                WHERE f.answer_id = ?
             """,
-                (user_id, answer_id),
+                (answer_id,),
             )
             row = cursor.fetchone()
             return dict(row) if row else None
@@ -52,16 +55,16 @@ class Feedback:
             conn.close()
 
     @staticmethod
-    def delete(user_id: str, answer_id: str) -> bool:
-        """Delete feedback for a user/answer pair."""
+    def delete(answer_id: str) -> bool:
+        """Delete feedback for an answer."""
         conn = get_db_connection()
         try:
             cursor = conn.execute(
                 """
                 DELETE FROM feedback
-                WHERE user_id = ? AND answer_id = ?
+                WHERE answer_id = ?
             """,
-                (user_id, answer_id),
+                (answer_id,),
             )
             conn.commit()
             return cursor.rowcount > 0
@@ -70,19 +73,36 @@ class Feedback:
 
     @staticmethod
     def list_feedback(
-        user_id: Optional[str] = None,
         limit: int = 100,
         offset: int = 0,
+        session_id: Optional[str] = None,
+        since: Optional[datetime] = None,
+        until: Optional[datetime] = None,
     ) -> List[Dict[str, Any]]:
-        """List feedback entries, optionally filtered by user_id."""
+        """List feedback entries with optional filtering."""
         conn = get_db_connection()
         try:
-            query = "SELECT * FROM feedback"
+            query = """
+                SELECT f.*, a.answer_text, q.question_text, q.user_id, u.email as user_email
+                FROM feedback f
+                JOIN answers a ON f.answer_id = a.answer_id
+                JOIN questions q ON a.question_id = q.question_id
+                LEFT JOIN users u ON q.user_id = u.user_id
+                WHERE 1=1
+            """
             params = []
-            if user_id:
-                query += " WHERE user_id = ?"
-                params.append(user_id)
-            query += " ORDER BY created_at DESC LIMIT ? OFFSET ?"
+
+            if session_id:
+                query += " AND a.session_id = ?"
+                params.append(session_id)
+            if since:
+                query += " AND f.created_at >= ?"
+                params.append(since)
+            if until:
+                query += " AND f.created_at <= ?"
+                params.append(until)
+
+            query += " ORDER BY f.created_at DESC LIMIT ? OFFSET ?"
             params.extend([limit, offset])
 
             cursor = conn.execute(query, params)
