@@ -1,7 +1,7 @@
 # Metropole.AI Makefile
 # This file defines common development tasks
 
-.PHONY: help serve serve-prod front test lint format \
+.PHONY: help serve serve-prod front test test-server test-pipeline lint format \
 	clean repo repo-py repo-py-js reset-env \
 	crawl sort parse embed pip-prod-full pip-dev-full pip-dev-fast pip-dev-local \
 	clean-crawl clean-sort clean-parse clean-embed clean-all \
@@ -96,7 +96,15 @@ front:
 
 # Run all tests
 test:
-	PYTHONPATH=backend ./backend/venv/bin/python -m pytest
+	PYTHONPATH=backend ./backend/venv/bin/python -m pytest backend/server/tests backend/data_processing/tests
+
+# Run only server tests
+test-server:
+	PYTHONPATH=backend ./backend/venv/bin/python -m pytest backend/server/tests
+
+# Run only data processing pipeline tests
+test-pipeline:
+	PYTHONPATH=backend ./backend/venv/bin/python -m pytest backend/data_processing/tests
 
 test-qa:
 	python3 backend/scripts/test_qa/ask_sample_questions.py
