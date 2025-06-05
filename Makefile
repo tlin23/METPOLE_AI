@@ -5,11 +5,7 @@
 	clean repo repo-py repo-py-js reset-env \
 	crawl sort parse embed pip-prod-full pip-dev-full pip-dev-fast pip-dev-local \
 	clean-crawl clean-sort clean-parse clean-embed clean-all \
-	admin-status admin-list admin-add admin-remove admin-reset-quota admin-check-quota \
-	admin-messages-list admin-messages-search admin-users-search admin-stats admin-dump-db \
-	feedback-list feedback-list-user feedback-get feedback-stats feedback-stats-since feedback-stats-until feedback-stats-range \
-	feedback-dislikes feedback-dislikes-user feedback-suggestions feedback-suggestions-user
-
+	admin-status admin-list admin-add admin-remove admin-reset-quota admin-check-quota
 # Default URL for crawling
 START_URL := https://www.metropoleballard.com/home
 MAX_PAGES := 50
@@ -46,16 +42,6 @@ help:
 	@echo "  make admin-reset-quota email=... - Reset question quota for a user (replace ... with email)"
 	@echo "  make admin-check-quota email=... - Check question quota for a user (replace ... with email)"
 	@echo ""
-	@echo "Admin Query Commands:"
-	@echo "  make admin-messages-list [limit=100] [offset=0] [user=...] [since=...] [until=...] [json]"
-	@echo "    - List Q&A pairs with optional filtering"
-	@echo "  make admin-messages-search text=... [fuzzy] [limit=100] [offset=0] [user=...] [since=...] [until=...] [json]"
-	@echo "    - Search Q&A pairs by text with optional filtering"
-	@echo "  make admin-users-search query=... [fuzzy] [limit=100] [offset=0] [json]"
-	@echo "    - Search users by email or name"
-	@echo "  make admin-stats [since=...] [until=...] [limit=10] [json]"
-	@echo "    - View Q&A statistics"
-	@echo ""
 	@echo "Pipeline Commands:"
 	@echo "  make crawl       - Crawl web content"
 	@echo "  make sort        - Sort crawled content"
@@ -72,13 +58,6 @@ help:
 	@echo "  make repo-py     - Run repomix on Python files only"
 	@echo "  make repo-py-js  - Run repomix on Python and JavaScript files"
 	@echo "  make reset-env   - Rebuild the virtual environment using Python 3.11"
-	@echo "  make feedback-list - List all feedback"
-	@echo "  make feedback-list-user - List feedback for a specific user"
-	@echo "  make feedback-get - Get feedback for a specific answer"
-	@echo "  make feedback-stats - Get feedback statistics"
-	@echo "  make feedback-stats-since - Get feedback statistics since a specific date"
-	@echo "  make feedback-stats-until - Get feedback statistics until a specific date"
-	@echo "  make feedback-stats-range - Get feedback statistics for a specific date range"
 
 # Run the FastAPI server with hot reload
 serve:
@@ -229,76 +208,3 @@ admin-reset-quota:
 admin-check-quota:
 	@if [ -z "$$email" ]; then echo "Usage: make admin-check-quota email=someone@example.com"; exit 1; fi; \
 	python3 -m backend.server.cli.admin quota check $$email
-
-admin-messages-list:
-	python3 -m backend.server.cli.admin messages list \
-		$(if $(limit),--limit $(limit)) \
-		$(if $(offset),--offset $(offset)) \
-		$(if $(user),--user $(user)) \
-		$(if $(since),--since $(since)) \
-		$(if $(until),--until $(until)) \
-		$(if $(json),--json)
-
-admin-messages-search:
-	@if [ -z "$$text" ]; then echo "Usage: make admin-messages-search text=\"search text\" [fuzzy] [limit=100] [offset=0] [user=...] [since=...] [until=...] [json]"; exit 1; fi; \
-	python3 -m backend.server.cli.admin messages search \
-		--text "$$text" \
-		$(if $(fuzzy),--fuzzy) \
-		$(if $(limit),--limit $(limit)) \
-		$(if $(offset),--offset $(offset)) \
-		$(if $(user),--user $(user)) \
-		$(if $(since),--since $(since)) \
-		$(if $(until),--until $(until)) \
-		$(if $(json),--json)
-
-admin-users-search:
-	@if [ -z "$$query" ]; then echo "Usage: make admin-users-search query=\"search query\" [fuzzy] [limit=100] [offset=0] [json]"; exit 1; fi; \
-	python3 -m backend.server.cli.admin users search \
-		--query "$$query" \
-		$(if $(fuzzy),--fuzzy) \
-		$(if $(limit),--limit $(limit)) \
-		$(if $(offset),--offset $(offset)) \
-		$(if $(json),--json)
-
-admin-stats:
-	python3 -m backend.server.cli.admin stats \
-		$(if $(since),--since $(since)) \
-		$(if $(until),--until $(until)) \
-		$(if $(limit),--limit $(limit)) \
-		$(if $(json),--json)
-
-admin-dump-db:
-	python3 -m backend.server.cli.admin dump-db
-
-feedback-list:
-	@python -m backend.server.cli.feedback list
-
-feedback-list-user:
-	@python -m backend.server.cli.feedback list --user-id $(user_id)
-
-feedback-get:
-	@python -m backend.server.cli.feedback get $(user_id) $(answer_id)
-
-feedback-stats:
-	@python -m backend.server.cli.feedback stats
-
-feedback-stats-since:
-	@python -m backend.server.cli.feedback stats --since $(date)
-
-feedback-stats-until:
-	@python -m backend.server.cli.feedback stats --until $(date)
-
-feedback-stats-range:
-	@python -m backend.server.cli.feedback stats --since $(since) --until $(until)
-
-feedback-dislikes:
-	@python -m backend.server.cli.feedback dislikes
-
-feedback-dislikes-user:
-	@python -m backend.server.cli.feedback dislikes --user-id $(user_id)
-
-feedback-suggestions:
-	@python -m backend.server.cli.feedback suggestions
-
-feedback-suggestions-user:
-	@python -m backend.server.cli.feedback suggestions --user-id $(user_id)
