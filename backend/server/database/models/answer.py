@@ -6,7 +6,7 @@ import json
 import uuid
 from datetime import datetime
 from typing import Optional, Dict, Any, List
-from ..connection import get_db_connection
+from backend.server.database.connection import get_db_connection
 
 
 class Answer:

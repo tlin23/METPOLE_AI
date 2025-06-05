@@ -6,9 +6,9 @@ from chromadb.config import Settings
 from pathlib import Path
 from openai import OpenAI
 from typing import Dict, List, Any
-from .models import RetrievedChunk
+from backend.server.retriever.models import RetrievedChunk
 
-from ..config import (
+from backend.server.app_config import (
     OPENAI_API_KEY,
     CHROMA_DEV_PATH,
     CHROMA_PROD_PATH,

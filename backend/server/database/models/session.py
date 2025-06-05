@@ -4,7 +4,7 @@ Session model for database operations.
 
 import uuid
 from datetime import UTC, datetime
-from ..connection import get_db_connection
+from backend.server.database.connection import get_db_connection
 
 
 class Session:

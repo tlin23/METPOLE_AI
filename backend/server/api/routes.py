@@ -10,12 +10,12 @@ import traceback
 from datetime import datetime, timedelta, UTC
 import time
 
-from .models import AskRequest, AskResponse, FeedbackRequest
-from ..retriever.ask import Retriever
-from ..retriever.models import RetrievedChunk
-from ..auth import validate_token, require_admin
-from ..database.models import User, Session, Question, Answer, Feedback
-from ..database.connection import get_db_connection
+from backend.server.api.models import AskRequest, AskResponse, FeedbackRequest
+from backend.server.retriever.ask import Retriever
+from backend.server.retriever.models import RetrievedChunk
+from backend.server.api.auth import validate_token, require_admin
+from backend.server.database.models import User, Session, Question, Answer, Feedback
+from backend.server.database.connection import get_db_connection
 
 # Create router
 router = APIRouter()
@@ -154,6 +154,46 @@ async def ask_question(
         )
 
 
+# Feedback endpoints
+@router.post("/feedback")
+async def create_feedback(
+    feedback: FeedbackRequest,
+    user_info: Dict[str, Any] = Depends(validate_token),
+) -> Dict[str, Any]:
+    """Create or update feedback for an answer."""
+    feedback_id = Feedback.create_or_update(
+        user_id=user_info["user_id"],
+        answer_id=feedback.answer_id,
+        like=feedback.like,
+        suggestion=feedback.suggestion,
+    )
+    return {"feedback_id": feedback_id}
+
+
+@router.get("/feedback")
+async def get_feedback(
+    answer_id: str,
+    user_info: Dict[str, Any] = Depends(validate_token),
+) -> Dict[str, Any]:
+    """Get feedback for an answer."""
+    feedback = Feedback.get(answer_id, user_info["user_id"])
+    if not feedback:
+        raise HTTPException(status_code=404, detail="Feedback not found")
+    return feedback
+
+
+@router.delete("/feedback")
+async def delete_feedback(
+    answer_id: str,
+    user_info: Dict[str, Any] = Depends(validate_token),
+) -> Dict[str, Any]:
+    """Delete feedback for an answer."""
+    success = Feedback.delete(answer_id, user_info["user_id"])
+    if not success:
+        raise HTTPException(status_code=404, detail="Feedback not found")
+    return {"success": True}
+
+
 # Admin endpoints
 @router.get("/admin/list")
 async def list_admins(
@@ -286,43 +326,3 @@ async def check_quota(
         return dict(row)
     finally:
         conn.close()
-
-
-# Feedback endpoints
-@router.post("/feedback")
-async def create_feedback(
-    feedback: FeedbackRequest,
-    user_info: Dict[str, Any] = Depends(validate_token),
-) -> Dict[str, Any]:
-    """Create or update feedback for an answer."""
-    feedback_id = Feedback.create_or_update(
-        user_id=user_info["user_id"],
-        answer_id=feedback.answer_id,
-        like=feedback.like,
-        suggestion=feedback.suggestion,
-    )
-    return {"feedback_id": feedback_id}
-
-
-@router.get("/feedback")
-async def get_feedback(
-    answer_id: str,
-    user_info: Dict[str, Any] = Depends(validate_token),
-) -> Dict[str, Any]:
-    """Get feedback for an answer."""
-    feedback = Feedback.get(answer_id, user_info["user_id"])
-    if not feedback:
-        raise HTTPException(status_code=404, detail="Feedback not found")
-    return feedback
-
-
-@router.delete("/feedback")
-async def delete_feedback(
-    answer_id: str,
-    user_info: Dict[str, Any] = Depends(validate_token),
-) -> Dict[str, Any]:
-    """Delete feedback for an answer."""
-    success = Feedback.delete(answer_id, user_info["user_id"])
-    if not success:
-        raise HTTPException(status_code=404, detail="Feedback not found")
-    return {"success": True}

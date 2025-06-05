@@ -7,8 +7,7 @@ This module centralizes all environment variables and configuration settings use
 import os
 from pathlib import Path
 from typing import Optional
-from ..data_processing.pipeline.directory_utils import (
-    ALLOWED_EXTENSIONS,
+from backend.data_processing.pipeline.directory_utils import (
     get_step_dir,
 )
 
@@ -25,9 +24,6 @@ OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY")
 
 # Collection name for ChromaDB
 COLLECTION_NAME = "metropole"
-
-# Supported file extensions for the pipeline
-SUPPORTED_EXTENSIONS = ALLOWED_EXTENSIONS
 
 # ChromaDB paths
 CHROMA_DEV_PATH = get_step_dir(DATA_DIR, "embed", production=False)

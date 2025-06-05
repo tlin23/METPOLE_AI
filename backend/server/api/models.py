@@ -4,7 +4,7 @@ API models for the application.
 
 from pydantic import BaseModel
 from typing import List, Optional
-from ..retriever.models import RetrievedChunk
+from backend.server.retriever.models import RetrievedChunk
 
 
 class AskRequest(BaseModel):

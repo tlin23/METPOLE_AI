@@ -4,9 +4,9 @@ User model for database operations.
 
 from datetime import datetime
 from typing import Optional, List, Dict, Any
-from ..connection import get_db_connection
-from ...config import MAX_QUESTIONS_PER_DAY, MAX_QUESTIONS_PER_DAY_ADMIN
-from .question import Question
+from backend.server.database.connection import get_db_connection
+from backend.server.app_config import MAX_QUESTIONS_PER_DAY, MAX_QUESTIONS_PER_DAY_ADMIN
+from backend.server.database.models.question import Question
 
 MAX_QUESTIONS_PER_DAY = int(MAX_QUESTIONS_PER_DAY)
 MAX_QUESTIONS_PER_DAY_ADMIN = int(MAX_QUESTIONS_PER_DAY_ADMIN)

@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import patch, MagicMock
 from fastapi import HTTPException
-from backend.server.auth import validate_token, require_admin
+from backend.server.api.auth import validate_token, require_admin
 
 pytestmark = pytest.mark.asyncio  # Mark all tests in this module as async
 
@@ -19,9 +19,9 @@ def mock_user_info():
 
 
 @pytest.mark.auth
-@patch("backend.server.auth.id_token.verify_oauth2_token")
-@patch("backend.server.auth.User.get")
-@patch("backend.server.auth.User.create_or_update")
+@patch("backend.server.api.auth.id_token.verify_oauth2_token")
+@patch("backend.server.api.auth.User.get")
+@patch("backend.server.api.auth.User.create_or_update")
 async def test_validate_token_success(
     mock_create_or_update,
     mock_get,
@@ -56,7 +56,7 @@ async def test_validate_token_missing_credentials():
 
 
 @pytest.mark.auth
-@patch("backend.server.auth.id_token.verify_oauth2_token")
+@patch("backend.server.api.auth.id_token.verify_oauth2_token")
 async def test_validate_token_invalid(mock_verify_token, mock_token):
     """Test token validation with invalid token."""
     mock_verify_token.side_effect = ValueError("Invalid token")
@@ -68,7 +68,7 @@ async def test_validate_token_invalid(mock_verify_token, mock_token):
 
 
 @pytest.mark.auth
-@patch("backend.server.auth.User.get")
+@patch("backend.server.api.auth.User.get")
 async def test_require_admin_success(mock_get, mock_user_info):
     """Test successful admin requirement check."""
     mock_get.return_value = {"is_admin": True}
@@ -78,7 +78,7 @@ async def test_require_admin_success(mock_get, mock_user_info):
 
 
 @pytest.mark.auth
-@patch("backend.server.auth.User.get")
+@patch("backend.server.api.auth.User.get")
 async def test_require_admin_failure(mock_get, mock_user_info):
     """Test admin requirement check failure."""
     # Mock the user lookup to return a non-admin user
@@ -92,7 +92,7 @@ async def test_require_admin_failure(mock_get, mock_user_info):
 
 
 @pytest.mark.auth
-@patch("backend.server.auth.User.get")
+@patch("backend.server.api.auth.User.get")
 async def test_require_admin_user_not_found(mock_get, mock_user_info):
     """Test admin requirement check when user is not found."""
     # Mock the user lookup to return None (user not found)

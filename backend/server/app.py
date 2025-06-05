@@ -8,8 +8,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
-from .api.routes import router as api_router
-from .database.connection import init_db
+from backend.server.api.routes import router as api_router
+from backend.server.database.connection import init_db
 
 # Load environment variables
 load_dotenv()

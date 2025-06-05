@@ -5,7 +5,7 @@ Question model for database operations.
 import uuid
 from datetime import datetime
 from typing import Optional, List, Dict, Any
-from ..connection import get_db_connection
+from backend.server.database.connection import get_db_connection
 
 
 class Question:
