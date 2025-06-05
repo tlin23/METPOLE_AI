@@ -10,8 +10,9 @@ import traceback
 from datetime import datetime, timedelta, UTC
 import time
 
-from .models import AskRequest, ChunkResult, AskResponse, FeedbackRequest
+from .models import AskRequest, AskResponse, FeedbackRequest
 from ..retriever.ask import Retriever
+from ..retriever.models import RetrievedChunk
 from ..auth import validate_token, require_admin
 from ..database.models import User, Session, Question, Answer, Feedback
 from ..database.connection import get_db_connection
@@ -93,7 +94,7 @@ async def ask_question(
         # Format the results
         chunks = []
         for i in range(len(results["documents"][0])):
-            chunk = ChunkResult(
+            chunk = RetrievedChunk(
                 text=results["documents"][0][i],
                 metadata=(
                     results["metadatas"][0][i]

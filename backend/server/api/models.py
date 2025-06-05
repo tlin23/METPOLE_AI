@@ -3,13 +3,8 @@ API models for the application.
 """
 
 from pydantic import BaseModel
-from typing import List, Optional, Dict, Any
-
-
-class ChunkResult(BaseModel):
-    text: str
-    metadata: Optional[Dict[str, Any]] = None
-    distance: Optional[float] = None
+from typing import List, Optional
+from ..retriever.models import RetrievedChunk
 
 
 class AskRequest(BaseModel):
@@ -19,7 +14,7 @@ class AskRequest(BaseModel):
 
 class AskResponse(BaseModel):
     question: str
-    chunks: List[ChunkResult]
+    chunks: List[RetrievedChunk]
     answer: Optional[str] = None
     is_general_knowledge: Optional[bool] = False
     contains_diy_advice: Optional[bool] = False

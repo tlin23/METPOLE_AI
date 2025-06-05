@@ -6,8 +6,8 @@ from chromadb.config import Settings
 from pathlib import Path
 from openai import OpenAI
 from typing import Dict, List, Any
+from .models import RetrievedChunk
 
-from ..api.models import ChunkResult
 from ..config import (
     OPENAI_API_KEY,
     CHROMA_DEV_PATH,
@@ -86,7 +86,7 @@ class Retriever:
         return results
 
     def generate_answer(
-        self, question: str, chunks: List[ChunkResult], model: str = "gpt-3.5-turbo"
+        self, question: str, chunks: List[RetrievedChunk], model: str = "gpt-3.5-turbo"
     ) -> Dict[str, Any]:
         """Generate an answer to a question using OpenAI's GPT model and retrieved chunks.
 
@@ -155,7 +155,7 @@ class Retriever:
             "prompt": prompt,
         }
 
-    def _prepare_source_info(self, chunks: List[ChunkResult]) -> str:
+    def _prepare_source_info(self, chunks: List[RetrievedChunk]) -> str:
         """Prepare formatted source information from chunks.
 
         Extracts metadata from chunks and formats it into a readable source citation.

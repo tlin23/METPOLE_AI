@@ -3,6 +3,6 @@ API module for the application.
 """
 
 from .routes import router
-from .models import AskRequest, AskResponse, ChunkResult
+from .models import AskRequest, AskResponse
 
-__all__ = ["router", "AskRequest", "AskResponse", "ChunkResult"]
+__all__ = ["router", "AskRequest", "AskResponse"]
