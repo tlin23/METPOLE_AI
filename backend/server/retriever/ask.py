@@ -23,13 +23,6 @@ logger = get_logger("retriever.ask")
 # Load environment variables
 load_dotenv()
 
-# Initialize OpenAI client
-if not OPENAI_API_KEY:
-    raise ValueError("OPENAI_API_KEY environment variable is not set")
-
-# Initialize OpenAI client with proper error handling for proxy settings
-client = OpenAI(api_key=OPENAI_API_KEY)
-
 
 class Retriever:
     """Class for retrieving information from embeddings and generating answers using OpenAI.
@@ -38,7 +31,11 @@ class Retriever:
     and generate answers to user questions using OpenAI's language models.
     """
 
-    def __init__(self, chroma_path: str = None, production: bool = False) -> None:
+    def __init__(
+        self,
+        chroma_path: str = None,
+        production: bool = False,
+    ) -> None:
         """Initialize the retriever with ChromaDB connection.
 
         Sets up connection to the ChromaDB vector database and initializes
@@ -48,6 +45,11 @@ class Retriever:
             chroma_path: Optional override for ChromaDB path
             production: Whether to use production environment. Defaults to False.
         """
+        # Initialize OpenAI client
+        if not OPENAI_API_KEY:
+            raise ValueError("OPENAI_API_KEY environment variable is not set")
+        self.client = OpenAI(api_key=OPENAI_API_KEY)
+
         # Use provided path or default to environment-specific path
         self.chroma_db_path = chroma_path or (
             CHROMA_PROD_PATH if production else CHROMA_DEV_PATH
@@ -86,7 +88,7 @@ class Retriever:
         return results
 
     def generate_answer(
-        self, question: str, chunks: List[RetrievedChunk], model: str = "gpt-3.5-turbo"
+        self, question: str, chunks: List[RetrievedChunk]
     ) -> Dict[str, Any]:
         """Generate an answer to a question using OpenAI's GPT model and retrieved chunks.
 
@@ -97,7 +99,6 @@ class Retriever:
         Args:
             question: The user's question.
             chunks: List of text chunks retrieved from the vector store.
-            model: The OpenAI model to use. Defaults to "gpt-3.5-turbo".
 
         Returns:
             A dictionary containing:
@@ -110,8 +111,8 @@ class Retriever:
         prompt = self._construct_prompt(question, chunks)
 
         # Call the OpenAI API
-        response = client.chat.completions.create(
-            model=model,
+        response = self.client.chat.completions.create(
+            model="gpt-3.5-turbo",
             messages=[
                 {
                     "role": "system",
@@ -190,7 +191,7 @@ class Retriever:
 
         return "; ".join(sources)
 
-    def _construct_prompt(self, question: str, chunks: List[Any]) -> str:
+    def _construct_prompt(self, question: str, chunks: List[RetrievedChunk]) -> str:
         """Construct a prompt for the OpenAI model using the question and retrieved chunks.
 
         Args:
