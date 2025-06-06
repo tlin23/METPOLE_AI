@@ -2,7 +2,7 @@
 # This file defines common development tasks
 
 .PHONY: help serve serve-prod front test test-server test-pipeline lint format \
-	clean repo repo-py repo-py-js reset-env \
+	clean repo repo-py repo-py-js repo-server reset-env \
 	crawl sort parse embed pip-prod-full pip-dev-full pip-dev-fast pip-dev-local \
 	clean-crawl clean-sort clean-parse clean-embed clean-all \
 	admin-status admin-list admin-add admin-remove admin-reset-quota admin-check-quota
@@ -57,6 +57,7 @@ help:
 	@echo "  make repo        - Run repomix on all files except markdown"
 	@echo "  make repo-py     - Run repomix on Python files only"
 	@echo "  make repo-py-js  - Run repomix on Python and JavaScript files"
+	@echo "  make repo-server - Run repomix on server files"
 	@echo "  make reset-env   - Rebuild the virtual environment using Python 3.11"
 
 # Run the FastAPI server with hot reload
@@ -122,6 +123,9 @@ repo-py:
 
 repo-py-js:
 	npx repomix . --include '**/*.py', 'frontend/src'
+
+repo-server:
+	npx repomix backend/server --include '**/*.py'
 
 # Rebuild the virtual environment using Python 3.11
 reset-env:

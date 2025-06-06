@@ -8,7 +8,7 @@ from google.oauth2 import id_token
 from google.auth.transport import requests
 import os
 from typing import Dict, Any
-from ..database.models import User
+from ...database.models import User
 
 # Security scheme for Bearer token
 security = HTTPBearer(auto_error=False)
