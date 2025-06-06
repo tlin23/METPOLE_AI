@@ -4,9 +4,9 @@
 
 ## 1. High-Level Phases
 
-1. **Set Up Test Environment**
-2. **Implement Test Factories/Fixtures**
-3. **Unit Test All Model Logic**
+1. **Set Up Test Environment** DONE
+2. **Implement Test Factories/Fixtures** DONE
+3. **Unit Test All Model Logic** DONE
 4. **Integration Test All API Endpoints**
 5. **Mock All External Services and Auth**
 6. **Enable Code Coverage & Reporting**
