@@ -1,211 +1,218 @@
-# Blueprint: Robust Test Coverage for Server Codebase
+# Step-by-Step Blueprint: Admin SQL Query UI with sqlite-web
 
 ---
 
-## 1. High-Level Phases
+## 1. High-Level Blueprint
 
-1. **Set Up Test Environment** DONE
-2. **Implement Test Factories/Fixtures** DONE
-3. **Unit Test All Model Logic** DONE
-4. **Integration Test All API Endpoints** DONE
-5. **Mock All External Services and Auth** DONE
-6. **Enable Code Coverage & Reporting**
-7. **Iterative Gaps Review and Coverage Expansion**
-8. **Maintain Directory Organization and Developer Ergonomics**
+**Goal:**
+Expose a secure, read-only SQL web UI (sqlite-web) for `app.db`, accessible only to admins, at `/admin/db-query`.
 
----
+### High-Level Steps
 
-## 2. Break Into Chunks
+1. **Preparation**
 
-### PHASE 1: Set Up Test Environment
+   - Review `app.db` schema and ensure no sensitive data.
+   - Choose deployment method for sqlite-web (Docker, systemd, etc.).
 
-- 1.1. Create/verify a separate SQLite test database.
-- 1.2. Ensure schema is initialized and isolation between tests is enforced.
-- 1.3. Add or update `conftest.py` with DB setup/teardown fixtures.
+2. **Deploy sqlite-web**
 
-### PHASE 2: Implement Test Factories/Fixtures
+   - Start sqlite-web in read-only mode.
+   - Bind to `localhost` or a private/internal port.
 
-- 2.1. Write reusable factory functions/fixtures for all models (`User`, `Session`, `Question`, `Answer`, `Feedback`).
-- 2.2. Factories should support linked object creation (e.g., `Answer` auto-creates a `Question` if none provided).
-- 2.3. Place factories in `tests/factories/` or `conftest.py`.
+3. **Set up Authentication/Authorization**
 
-### PHASE 3: Unit Test All Model Logic
+   - Integrate Google OAuth for admin access.
+   - Enforce that only admins can access `/admin/db-query`.
 
-- 3.1. Write tests for each model’s create, update, delete methods.
-- 3.2. Test business logic methods (e.g., `User.increment_question_count`, `Answer.search_answers`).
-- 3.3. Include edge cases: invalid input, quota exceeded, duplicate, not found, etc.
-- 3.4. Assert both return values and DB state.
+4. **Proxy Integration**
 
-### PHASE 4: Integration Test All API Endpoints
+   - Configure reverse proxy (Nginx, FastAPI, or oauth2-proxy) to expose sqlite-web at `/admin/db-query`.
+   - Ensure requests are only forwarded if user is authenticated (and authorized, if desired).
 
-- 4.1. For each API endpoint, write a test hitting the real FastAPI service using `TestClient`.
-- 4.2. Use factories to seed data; assert both API response and DB state.
-- 4.3. Cover success and error paths (bad inputs, missing objects, quota exceeded, etc.).
-- 4.4. Mock only external APIs and authentication.
+5. **Frontend Integration**
 
-### PHASE 5: Mock All External Services and Auth
+   - Add a “DB Query” link to admin menu/route, visible only to admins.
+   - Route to `/admin/db-query` (open in new tab or iframe).
 
-- 5.1. Patch/mimic OpenAI, Google OAuth, and any other non-local service in both unit and integration tests.
-- 5.2. For authentication, inject user/admin context as needed.
+6. **Testing & Validation**
 
-### PHASE 6: Enable Code Coverage & Reporting
-
-- 6.1. Add `pytest-cov` (or similar) to requirements and test runner.
-- 6.2. Run suite with coverage, review reports, and set targets.
-- 6.3. Document coverage generation process in project docs/README.
-
-### PHASE 7: Iterative Gaps Review and Coverage Expansion
-
-- 7.1. Review uncovered code lines/branches; add targeted tests.
-- 7.2. Add regression tests for discovered bugs.
-- 7.3. Ensure new features and bugfixes come with corresponding tests.
-
-### PHASE 8: Maintain Directory Organization and Developer Ergonomics
-
-- 8.1. Keep `tests/integration/`, `tests/unit/`, `tests/factories/`, `conftest.py` clean and organized.
-- 8.2. Add documentation/comments to fixtures and helpers.
-- 8.3. Provide a “how to run” section for the test suite in the README.
+   - Test access flow, query execution, limits, and error handling.
+   - Test security (no unauthorized access, no writes possible).
 
 ---
 
-## 3. Chunks → Small, Safe Steps (2nd Iteration)
+## 2. Iterative Chunk Breakdown
 
-Below, **each prompt can be given directly to a code-generation LLM** to incrementally build the suite in a test-driven, integrated way.
+### Step 1: Preparation
 
----
+- \[1.1] Audit app.db schema for sensitive data (optional, but good practice).
+- \[1.2] Document the absolute path to app.db.
 
-### Step 1: Test Environment Setup
+### Step 2: sqlite-web Deployment
 
-**Prompt 1.1:**
+- \[2.1] Install sqlite-web.
+- \[2.2] Launch sqlite-web in read-only mode, bound to `localhost:8080`, pointed at app.db.
+- \[2.3] Verify sqlite-web is accessible from the server only.
 
-```
-Set up a test database for all server tests using SQLite. Add a fixture in conftest.py that:
-- Creates a fresh test.db before test session
-- Initializes schema from the production schema SQL
-- Cleans (truncates) all tables before each test function
-- Tears down (deletes) test.db after tests finish
-Ensure no tests can ever write to the production DB.
-```
+### Step 3: Authentication/Authorization
 
----
+- \[3.1] Set up Google OAuth proxy (oauth2-proxy) to protect sqlite-web.
+- \[3.2] Configure allowed emails (admin allowlist) in oauth2-proxy.
+- \[3.3] (Optional) Integrate an additional backend check for is_admin (if strict enforcement is desired).
 
-### Step 2: Factory Fixtures
+### Step 4: Proxy Integration
 
-**Prompt 2.1:**
+- \[4.1] Configure Nginx (or FastAPI) to reverse proxy `/admin/db-query` to `localhost:8080`.
+- \[4.2] Test proxying—ensure unauthenticated users are blocked.
 
-```
-Write pytest factory fixtures for User, Session, Question, Answer, and Feedback models.
-- Each factory should accept parameters for key fields.
-- Support creating objects with linked dependencies (e.g., Answer factory should auto-create a Question if none provided).
-- Factories should be reusable in both unit and integration tests.
-Place these factories in tests/factories/ or conftest.py.
-```
+### Step 5: Frontend Integration
 
----
+- \[5.1] Add “DB Query” link/route in frontend, visible only to admins.
+- \[5.2] Route opens `/admin/db-query` in new tab or iframe.
 
-### Step 3: Unit Test Models
+### Step 6: Testing & Validation
 
-**Prompt 3.1:**
-
-```
-For each model (User, Session, Question, Answer, Feedback), write unit tests in tests/unit/ that:
-- Cover create, update, get, list, search, and delete methods.
-- Use factory fixtures for setup.
-- Test normal operations and edge cases (e.g., duplicate keys, foreign key constraints, quota logic).
-- Assert both the method’s return values and actual DB state.
-```
+- \[6.1] Manual test: only admins can access.
+- \[6.2] Manual test: SELECT queries work, writes are blocked, export works.
+- \[6.3] Security test: try direct access, non-admin access, and boundary queries.
 
 ---
 
-### Step 4: Integration Test API Endpoints
+## 3. Small, Atomic Steps
 
-**Prompt 4.1:**
+### 1. Preparation
 
-```
-For each API endpoint (e.g., /api/ask, /api/feedback), write integration tests in tests/integration/ that:
-- Use FastAPI TestClient to hit endpoints with real HTTP requests.
-- Use factories to create prerequisite data (e.g., users, sessions).
-- Mock authentication to inject user/admin as needed.
-- Mock all external APIs (e.g., OpenAI) using patching or fixtures.
-- Assert response status code, payload, and side-effects in the database.
-- Cover both success and error cases for each endpoint.
-```
+- **1.1.1:** List all tables and columns in app.db.
+- **1.1.2:** Check for PII or secrets; report findings.
+- **1.2.1:** Record the absolute path to app.db for deployment config.
+
+### 2. sqlite-web Deployment
+
+- **2.1.1:** Add sqlite-web to your deployment scripts or Dockerfile.
+- **2.2.1:** Write a startup command for sqlite-web in read-only mode.
+- **2.2.2:** Test sqlite-web via curl/localhost.
+- **2.3.1:** Ensure firewall restricts direct access to sqlite-web.
+
+### 3. Authentication/Authorization
+
+- **3.1.1:** Deploy oauth2-proxy on your server.
+- **3.1.2:** Configure Google OAuth credentials.
+- **3.2.1:** Add admin email allowlist to oauth2-proxy.
+- **3.3.1:** (Optional) Write a minimal FastAPI route to check is_admin before proxying.
+
+### 4. Proxy Integration
+
+- **4.1.1:** Update Nginx config: route `/admin/db-query` to localhost:8080.
+- **4.2.1:** Reload Nginx, confirm routing works.
+- **4.2.2:** Attempt access as unauthenticated user (should fail).
+- **4.2.3:** Attempt access as admin (should succeed).
+
+### 5. Frontend Integration
+
+- **5.1.1:** Add a new menu entry “DB Query” in admin UI components.
+- **5.1.2:** Hide/show based on is_admin flag.
+- **5.2.1:** On click, open `/admin/db-query` in new tab (safer than iframe).
+- **5.2.2:** Document usage for admins.
+
+### 6. Testing & Validation
+
+- **6.1.1:** Log in as admin; verify access to sqlite-web.
+- **6.1.2:** Log in as non-admin; verify access is blocked.
+- **6.2.1:** Run sample SELECT queries; export results as CSV/JSON.
+- **6.2.2:** Attempt INSERT/UPDATE; verify failure.
+- **6.3.1:** Attempt to bypass auth; ensure failure.
+- **6.3.2:** Verify 500-row query limit.
 
 ---
 
-### Step 5: Mocking External Services and Auth
+## 4. Code Generation LLM Prompts
 
-**Prompt 5.1:**
+Each section below is ready to use as a prompt for a code-generation LLM (e.g., Cursor, GPT-4o, etc.).
+Each is marked as a code block (`text`).
 
-```
-Write test fixtures or context managers to globally patch external services:
-- Patch OpenAI API so no real network calls are made, returning canned responses.
-- Patch Google OAuth and any other third-party auth so tests can easily set user context.
-- Document where and how these mocks should be applied for both unit and integration tests.
+---
+
+### Prompt 1: Install and Configure sqlite-web
+
+```text
+Install sqlite-web in our server environment (via pip or Docker as appropriate).
+Write a script or Docker Compose entry to run sqlite-web in read-only mode, pointing to our app.db (absolute path: /path/to/app.db).
+Make sure it only listens on localhost:8080.
+Test that you can access the UI from localhost via a browser, but it is not accessible from external IPs.
 ```
 
 ---
 
-### Step 6: Code Coverage Reporting
+### Prompt 2: Deploy and Configure oauth2-proxy
 
-**Prompt 6.1:**
-
-```
-Integrate pytest-cov (or similar) into the test runner.
-- Ensure a coverage report is generated with each test run.
-- Set up an easy command (e.g., make test or pytest --cov=server) to generate a report.
-- Output coverage summaries and highlight uncovered lines/branches.
-- Add instructions to the README.
+```text
+Set up oauth2-proxy on the server to protect sqlite-web with Google OAuth.
+- Use our Google OAuth credentials.
+- Configure allowed emails to match our admin list.
+- Route oauth2-proxy to forward authenticated traffic to sqlite-web at localhost:8080.
+Test the login flow end-to-end (unauthenticated, non-admin, and admin user cases).
 ```
 
 ---
 
-### Step 7: Closing Gaps and Regression Coverage
+### Prompt 3: (Optional) Backend is_admin Check Proxy
 
-**Prompt 7.1:**
-
-```
-After running the test suite, examine the code coverage report.
-- Identify any uncovered lines, branches, or error handling code.
-- Write targeted tests for these areas in either unit or integration test directories.
-- Add regression tests for any bugs fixed during implementation.
-- Ensure that any new feature or fix includes appropriate tests before merging.
-```
-
----
-
-### Step 8: Documentation and Maintenance
-
-**Prompt 8.1:**
-
-```
-Document the testing strategy and developer workflow:
-- Update the README or a dedicated TESTING.md with instructions for running tests, adding tests, and interpreting coverage.
-- Document the structure of tests, factories, and fixtures.
-- Add comments to tricky fixtures and any test helper utilities for maintainability.
+```text
+Implement a minimal FastAPI route at /admin/db-query-proxy.
+This route should:
+- Require Google OAuth authentication (reuse existing middleware).
+- Query the users table to check is_admin for the current user.
+- If admin, proxy the request to sqlite-web at localhost:8080.
+- If not admin, return 403 Forbidden.
+Update Nginx or the frontend to use /admin/db-query-proxy as the sqlite-web access endpoint.
 ```
 
 ---
 
-## 4. Review and Finalize Steps
+### Prompt 4: Nginx Reverse Proxy Config
 
-- Each prompt can be tackled as an atomic PR or codegen job.
-- Prompts build on each other—first tests will depend on test DB, then factories, then models, then endpoints, etc.
-- Early and frequent testing ensures all new code is integrated and tested as soon as it is written.
-- No code is orphaned; every piece is wired into the test suite and validated.
-- Maintainability, readability, and clear organization are enforced at every step.
+```text
+Update the Nginx config to reverse proxy all requests to /admin/db-query to localhost:8080 (sqlite-web).
+- Ensure it is only accessible via HTTPS.
+- Confirm that only authenticated/admin users can access.
+- Test with curl and browser.
+```
 
 ---
 
-## 5. Summary Table (For Implementation Prompts)
+### Prompt 5: Frontend Admin Menu Integration
 
-| Step | Goal                   | Output                                    | Prompt Ref |
-| ---- | ---------------------- | ----------------------------------------- | ---------- |
-| 1    | Test DB ready          | Isolated test DB, conftest.py fixture     | 1.1        |
-| 2    | Factory fixtures       | User, Session, Question, Answer, Feedback | 2.1        |
-| 3    | Model unit tests       | CRUD, logic, edge cases                   | 3.1        |
-| 4    | API integration tests  | Full API + DB + mocks, all endpoints      | 4.1        |
-| 5    | Mock external services | OpenAI & auth globally mocked             | 5.1        |
-| 6    | Code coverage reports  | pytest-cov integration & docs             | 6.1        |
-| 7    | Gaps closed            | Tests for uncovered lines & regressions   | 7.1        |
-| 8    | Docs & workflow        | Developer/testing workflow docs           | 8.1        |
+```text
+Add a new menu entry called “DB Query” to the admin navigation in the frontend.
+- Only display the menu item if the logged-in user has is_admin=true.
+- When clicked, open /admin/db-query in a new browser tab.
+Write basic Cypress or Playwright tests to confirm the menu item only appears for admins.
+```
+
+---
+
+### Prompt 6: Security and Validation Testing
+
+```text
+Perform manual and automated tests to confirm:
+- Only authenticated admins can access the DB Query UI.
+- Non-admins and unauthenticated users are blocked at every layer.
+- SELECT queries work, but INSERT/UPDATE/DELETE are blocked.
+- Query results are capped at 500 rows per page.
+- Export to CSV and JSON works.
+- Direct access to sqlite-web (localhost:8080) is firewalled from outside.
+Document all test results and any necessary fixes.
+```
+
+---
+
+### Prompt 7: Documentation
+
+```text
+Write a section in the admin documentation explaining:
+- What the DB Query tool is for
+- How to access it
+- Limits (read-only, 500 row cap)
+- Who to contact for access or questions
+- Troubleshooting common issues (login, query errors)
+```
