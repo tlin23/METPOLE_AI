@@ -4,6 +4,7 @@ Admin API routes for the application.
 
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List, Dict, Any
+import uuid
 
 from backend.server.api.admin.auth import validate_token, require_admin
 from backend.server.database.models import User
@@ -53,15 +54,15 @@ async def add_admin(
         row = cursor.fetchone()
 
         if not row:
-            # User doesn't exist, create them
-            # Use the actual user_id from the token
+            # User doesn't exist, create them with a new user_id
+            new_user_id = str(uuid.uuid4())
             cursor = conn.execute(
                 """
                 INSERT INTO users (user_id, email, is_admin, question_count, last_question_reset)
                 VALUES (?, ?, 1, 0, date('now'))
                 RETURNING user_id, email
                 """,
-                (user_info["user_id"], email),
+                (new_user_id, email),
             )
             row = cursor.fetchone()
         else:

@@ -53,9 +53,20 @@ def answer_factory(question_factory):
 
 @pytest.fixture
 def feedback_factory(user_factory, answer_factory):
-    def make_feedback(user_id=None, answer_id=None, like=True, suggestion=None):
+    def make_feedback(
+        user_id=None, answer_id=None, like=True, suggestion=None, return_full=False
+    ):
         user_id = user_id or user_factory()
         answer_id = answer_id or answer_factory()
-        return Feedback.create_or_update(user_id, answer_id, like, suggestion)
+        feedback_id = Feedback.create_or_update(user_id, answer_id, like, suggestion)
+        if return_full:
+            return {
+                "feedback_id": feedback_id,
+                "answer_id": answer_id,
+                "user_id": user_id,
+                "like": like,
+                "suggestion": suggestion,
+            }
+        return feedback_id
 
     return make_feedback
