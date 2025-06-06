@@ -80,7 +80,7 @@ test:
 
 # Run only server tests
 test-server:
-	PYTHONPATH=backend ./backend/venv/bin/python -m pytest backend/server/tests
+	PYTHONPATH=backend ./backend/venv/bin/python -m pytest backend/server/tests --cov=backend.server --cov-report=term-missing --cov-report=html --cov-fail-under=90
 
 # Run only data processing pipeline tests
 test-pipeline:
