@@ -29,6 +29,40 @@ services:
     depends_on:
       - backend
 
+  oauth2-proxy:
+    image: bitnami/oauth2-proxy:latest
+    command:
+      - --upstream=http://sqlite-web:8081
+      - --http-address=0.0.0.0:4180
+    ports:
+      - "4180:4180"
+    environment:
+      - OAUTH2_PROXY_PROVIDER=google
+      - OAUTH2_PROXY_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - OAUTH2_PROXY_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - OAUTH2_PROXY_COOKIE_SECRET=${OAUTH2_PROXY_COOKIE_SECRET}
+      - OAUTH2_PROXY_EMAIL_DOMAINS=*
+      - OAUTH2_PROXY_SKIP_AUTH_REGEX=^/oauth2/.*
+      - OAUTH2_PROXY_PASS_ACCESS_TOKEN=true
+      - OAUTH2_PROXY_SET_XAUTHREQUEST=true
+      - OAUTH2_PROXY_PASS_AUTHORIZATION_HEADER=true
+      - OAUTH2_PROXY_SKIP_PROVIDER_BUTTON=true
+      - OAUTH2_PROXY_ALLOWED_EMAILS=${ADMIN_EMAILS}
+    depends_on:
+      - sqlite-web
+
+  sqlite-web:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    command: sqlite_web --read-only --host 0.0.0.0 --port 8081 /app/backend/server/data/app.db
+    volumes:
+      - metpol-sqlite:/app/backend/server/data
+    expose:
+      - "8081"
+    depends_on:
+      - backend
+
 volumes:
   metpol-sqlite:
   metpol-db:

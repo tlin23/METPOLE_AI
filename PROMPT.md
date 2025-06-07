@@ -9,17 +9,17 @@ Expose a secure, read-only SQL web UI (sqlite-web) for `app.db`, accessible only
 
 ### High-Level Steps
 
-1. **Preparation**
+1. **Preparation** DONE
 
    - Review `app.db` schema and ensure no sensitive data.
    - Choose deployment method for sqlite-web (Docker, systemd, etc.).
 
-2. **Deploy sqlite-web**
+2. **Deploy sqlite-web** DONE
 
    - Start sqlite-web in read-only mode.
    - Bind to `localhost` or a private/internal port.
 
-3. **Set up Authentication/Authorization**
+3. **Set up Authentication/Authorization** DONE
 
    - Integrate Google OAuth for admin access.
    - Enforce that only admins can access `/admin/db-query`.
