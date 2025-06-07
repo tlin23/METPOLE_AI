@@ -140,28 +140,20 @@ def mock_auth_headers():
 
 
 @pytest.fixture
-def mock_admin_user():
-    """Create a mock admin user for testing."""
+def admin_user():
+    """Create an admin user for testing."""
     from backend.server.database.models import User
 
     user_id = MOCK_ADMIN_USER_INFO["sub"]
-    User.create_or_update(user_id, MOCK_ADMIN_USER_INFO["email"], is_admin=True)
-    user = User.get(user_id)
-    if not user["is_admin"]:
-        conn = get_test_db_connection()
-        try:
-            conn.execute("UPDATE users SET is_admin = 1 WHERE user_id = ?", (user_id,))
-            conn.commit()
-        finally:
-            conn.close()
+    User.create_or_update(user_id, MOCK_ADMIN_USER_INFO["email"])
     return user_id
 
 
 @pytest.fixture
-def mock_regular_user():
-    """Create a mock regular user for testing."""
+def regular_user():
+    """Create a regular user for testing."""
     from backend.server.database.models import User
 
     user_id = MOCK_REGULAR_USER_INFO["sub"]
-    User.create_or_update(user_id, MOCK_REGULAR_USER_INFO["email"], is_admin=False)
+    User.create_or_update(user_id, MOCK_REGULAR_USER_INFO["email"])
     return user_id

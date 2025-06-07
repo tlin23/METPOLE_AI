@@ -19,7 +19,7 @@ Expose a secure, read-only SQL web UI (sqlite-web) for `app.db`, accessible only
    - Start sqlite-web in read-only mode.
    - Bind to `localhost` or a private/internal port.
 
-3. **Set up Authentication/Authorization** DONE
+3. **Set up Authentication/Authorization**
 
    - Integrate Google OAuth for admin access.
    - Enforce that only admins can access `/admin/db-query`.
@@ -31,7 +31,7 @@ Expose a secure, read-only SQL web UI (sqlite-web) for `app.db`, accessible only
 
 5. **Frontend Integration**
 
-   - Add a “DB Query” link to admin menu/route, visible only to admins.
+   - Add a "DB Query" link to admin menu/route, visible only to admins.
    - Route to `/admin/db-query` (open in new tab or iframe).
 
 6. **Testing & Validation**
@@ -67,7 +67,7 @@ Expose a secure, read-only SQL web UI (sqlite-web) for `app.db`, accessible only
 
 ### Step 5: Frontend Integration
 
-- \[5.1] Add “DB Query” link/route in frontend, visible only to admins.
+- \[5.1] Add "DB Query" link/route in frontend, visible only to admins.
 - \[5.2] Route opens `/admin/db-query` in new tab or iframe.
 
 ### Step 6: Testing & Validation
@@ -109,7 +109,7 @@ Expose a secure, read-only SQL web UI (sqlite-web) for `app.db`, accessible only
 
 ### 5. Frontend Integration
 
-- **5.1.1:** Add a new menu entry “DB Query” in admin UI components.
+- **5.1.1:** Add a new menu entry "DB Query" in admin UI components.
 - **5.1.2:** Hide/show based on is_admin flag.
 - **5.2.1:** On click, open `/admin/db-query` in new tab (safer than iframe).
 - **5.2.2:** Document usage for admins.
@@ -183,7 +183,7 @@ Update the Nginx config to reverse proxy all requests to /admin/db-query to loca
 ### Prompt 5: Frontend Admin Menu Integration
 
 ```text
-Add a new menu entry called “DB Query” to the admin navigation in the frontend.
+Add a new menu entry called "DB Query" to the admin navigation in the frontend.
 - Only display the menu item if the logged-in user has is_admin=true.
 - When clicked, open /admin/db-query in a new browser tab.
 Write basic Cypress or Playwright tests to confirm the menu item only appears for admins.

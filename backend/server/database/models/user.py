@@ -5,28 +5,26 @@ User model for database operations.
 from datetime import datetime
 from typing import Optional, List, Dict, Any
 from backend.server.database.connection import get_db_connection
-from backend.server.app_config import MAX_QUESTIONS_PER_DAY, MAX_QUESTIONS_PER_DAY_ADMIN
+from backend.server.app_config import MAX_QUESTIONS_PER_DAY
 from backend.server.database.models.question import Question
 
 MAX_QUESTIONS_PER_DAY = int(MAX_QUESTIONS_PER_DAY)
-MAX_QUESTIONS_PER_DAY_ADMIN = int(MAX_QUESTIONS_PER_DAY_ADMIN)
 
 
 class User:
     @staticmethod
-    def create_or_update(user_id: str, email: str, is_admin: bool = False) -> None:
+    def create_or_update(user_id: str, email: str) -> None:
         """Create or update a user."""
         conn = get_db_connection()
         try:
             conn.execute(
                 """
-                INSERT INTO users (user_id, email, is_admin, question_count, last_question_reset)
-                VALUES (?, ?, ?, 0, date('now'))
+                INSERT INTO users (user_id, email, question_count, last_question_reset)
+                VALUES (?, ?, 0, date('now'))
                 ON CONFLICT(user_id) DO UPDATE SET
-                    email = excluded.email,
-                    is_admin = excluded.is_admin
+                    email = excluded.email
             """,
-                (user_id, email, is_admin),
+                (user_id, email),
             )
             conn.commit()
         finally:
@@ -61,10 +59,10 @@ class User:
                 (user_id,),
             )
 
-            # Get current count and quota limit
+            # Get current count
             cursor = conn.execute(
                 """
-                SELECT question_count, is_admin
+                SELECT question_count
                 FROM users
                 WHERE user_id = ?
             """,
@@ -77,14 +75,9 @@ class User:
                 return 0
 
             question_count = row["question_count"]
-            max_quota = (
-                MAX_QUESTIONS_PER_DAY_ADMIN
-                if row["is_admin"]
-                else MAX_QUESTIONS_PER_DAY
-            )
 
             # Only increment if under quota
-            if question_count < max_quota:
+            if question_count < MAX_QUESTIONS_PER_DAY:
                 conn.execute(
                     """
                     UPDATE users
@@ -96,7 +89,7 @@ class User:
                 question_count += 1
 
             conn.commit()
-            return max(0, max_quota - question_count)
+            return max(0, MAX_QUESTIONS_PER_DAY - question_count)
         except Exception:
             conn.rollback()
             raise

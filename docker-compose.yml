@@ -15,7 +15,7 @@ services:
       - PRODUCTION=false
       - ENABLE_DB_DUMP=True
       - METROPOLE_DB_PATH=/app/backend/server/data/app.db
-      - MAX_QUESTIONS_PER_DAY=30
+      - MAX_QUESTIONS_PER_DAY=50
       - MAX_QUESTIONS_PER_DAY_ADMIN=300
 
   frontend:

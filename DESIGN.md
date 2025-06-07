@@ -4,7 +4,7 @@
 
 ## 1. Overview
 
-Provide a web-based SQL query and data inspection UI for the app’s SQLite database (`app.db`).
+Provide a web-based SQL query and data inspection UI for the app's SQLite database (`app.db`).
 This tool should be accessible only to admin users, support both free-form SQL and predefined queries, and allow CSV/JSON export—all while enforcing read-only access.
 
 ---
@@ -23,12 +23,11 @@ This tool should be accessible only to admin users, support both free-form SQL a
 - **Result size limit**: Maximum 500 rows returned per query.
 - **Authentication**: Only allow Google OAuth authenticated users.
 
-  - Preferably restrict to your admin allowlist or those with `is_admin=True` in your database.
+  - Restrict access to specific Google Workspace/allowed email list via oauth2-proxy.
 
 - **Authorization**:
-
-  - If feasible, enforce only admins (from your `users` table) can access.
-  - Otherwise, restrict access to a specific Google Workspace/allowed email list.
+  - Access is controlled via oauth2-proxy's allowed email list.
+  - No additional backend checks needed.
 
 ### 2.2 Non-Functional
 
@@ -61,14 +60,12 @@ This tool should be accessible only to admin users, support both free-form SQL a
 ### 3.3 Integration
 
 - Set up a **reverse proxy** (Nginx, Caddy, or via FastAPI) on `/admin/db-query` to route traffic to sqlite-web.
-
-  - Enforce authentication and authorization in the proxy layer.
-  - Option A (Simple): Use [oauth2-proxy](https://oauth2-proxy.github.io/oauth2-proxy/) for Google OAuth, configured for allowed emails.
-  - Option B (Strict): Use your backend to double-check `is_admin` in your `users` table before proxying.
+  - Use [oauth2-proxy](https://oauth2-proxy.github.io/oauth2-proxy/) for Google OAuth, configured for allowed emails.
+  - No additional backend authorization checks needed.
 
 ### 3.4 Frontend
 
-- Add a new “DB Query” link to the admin menu/sidebar in your app frontend (only visible to admins).
+- Add a new "DB Query" link to the admin menu/sidebar in your app frontend (only visible to admins).
 - Clicking the link opens `/admin/db-query` (either as a new tab or embedded iframe).
 
 ---
@@ -76,7 +73,7 @@ This tool should be accessible only to admin users, support both free-form SQL a
 ## 4. Data Handling Details
 
 - **Read-only mode**: sqlite-web should be started with `--read-only`.
-- **Row limit**: sqlite-web’s max results per page set to 500 (either via config/flag, or documented for admin users).
+- **Row limit**: sqlite-web's max results per page set to 500 (either via config/flag, or documented for admin users).
 - **Exports**: sqlite-web supports CSV, JSON, XLSX for results; no data ever leaves unless explicitly exported by an admin.
 - **Session handling**: Only authenticated (and if possible, authorized) sessions can see or interact with sqlite-web.
 - **No sensitive data**: All columns are deemed safe for admin viewing.
@@ -89,7 +86,7 @@ This tool should be accessible only to admin users, support both free-form SQL a
 - **Unauthorized access**:
 
   - If unauthenticated: redirect to Google login.
-  - If authenticated but not admin (if strict mode): display “Access Denied”.
+  - If authenticated but not admin (if strict mode): display "Access Denied".
 
 - **Server errors (e.g., db locked, connection lost)**: Standard sqlite-web error page, with clear message for the admin.
 - **Over-limit queries**: If more than 500 rows requested, results should be truncated and a notice shown (sqlite-web default).
@@ -129,7 +126,7 @@ This tool should be accessible only to admin users, support both free-form SQL a
 
 - Attempt to bypass auth by direct access to sqlite-web port (should be blocked by firewall).
 - Attempt cross-origin access—verify CORS protections.
-- Attempt “write” queries—confirm failure.
+- Attempt "write" queries—confirm failure.
 - Verify no sensitive session tokens or cookies are leaked between main app and sqlite-web.
 
 ### 6.3 Automated Testing

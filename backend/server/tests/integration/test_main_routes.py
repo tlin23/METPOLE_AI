@@ -19,8 +19,7 @@ def test_health_check(client):
     data = response.json()
     assert "status" in data
     assert "system" in data
-    assert "has_admins" in data["system"]
-    assert "admin_count" in data["system"]
+    assert data["system"]["status"] == "operational"
 
 
 def test_ask_question_unauthorized(client):
@@ -33,7 +32,7 @@ def test_ask_question_unauthorized(client):
 
 
 @pytest.mark.usefixtures("mock_google_auth")
-def test_ask_question_success(client, mock_auth_headers, mock_regular_user):
+def test_ask_question_success(client, mock_auth_headers, regular_user):
     """Test successfully asking a question returns answer and metadata."""
     response = client.post(
         "/api/ask",
@@ -50,9 +49,7 @@ def test_ask_question_success(client, mock_auth_headers, mock_regular_user):
 
 
 @pytest.mark.usefixtures("mock_google_auth")
-def test_ask_question_quota_exceeded(
-    client, mock_auth_headers, mock_regular_user, clean_db
-):
+def test_ask_question_quota_exceeded(client, mock_auth_headers, regular_user, clean_db):
     """Test asking a question when quota is exceeded returns 429."""
     # Set up user with max questions
     from backend.server.app_config import MAX_QUESTIONS_PER_DAY
@@ -65,7 +62,7 @@ def test_ask_question_quota_exceeded(
             SET question_count = ?
             WHERE user_id = ?
             """,
-            (MAX_QUESTIONS_PER_DAY, mock_regular_user),
+            (MAX_QUESTIONS_PER_DAY, regular_user),
         )
         conn.commit()
     finally:
@@ -95,7 +92,7 @@ def test_create_feedback_unauthorized(client):
 
 @pytest.mark.usefixtures("mock_google_auth")
 def test_create_feedback_success(
-    client, mock_auth_headers, mock_regular_user, answer_factory
+    client, mock_auth_headers, regular_user, answer_factory
 ):
     """Test successfully creating feedback returns feedback ID."""
     answer_id = answer_factory()
@@ -117,10 +114,10 @@ def test_get_feedback_unauthorized(client):
 
 @pytest.mark.usefixtures("mock_google_auth")
 def test_get_feedback_success(
-    client, mock_auth_headers, mock_regular_user, feedback_factory
+    client, mock_auth_headers, regular_user, feedback_factory
 ):
     """Test successfully getting feedback returns feedback data."""
-    feedback = feedback_factory(user_id=mock_regular_user, return_full=True)
+    feedback = feedback_factory(user_id=regular_user, return_full=True)
     response = client.get(
         f"/api/feedback?answer_id={feedback['answer_id']}",
         headers=mock_auth_headers,
@@ -133,7 +130,7 @@ def test_get_feedback_success(
 
 
 @pytest.mark.usefixtures("mock_google_auth")
-def test_get_feedback_not_found(client, mock_auth_headers, mock_regular_user):
+def test_get_feedback_not_found(client, mock_auth_headers, regular_user):
     """Test getting non-existent feedback returns 404."""
     response = client.get(
         "/api/feedback?answer_id=non-existent",
@@ -150,10 +147,10 @@ def test_delete_feedback_unauthorized(client):
 
 @pytest.mark.usefixtures("mock_google_auth")
 def test_delete_feedback_success(
-    client, mock_auth_headers, mock_regular_user, feedback_factory
+    client, mock_auth_headers, regular_user, feedback_factory
 ):
     """Test successfully deleting feedback returns success."""
-    feedback = feedback_factory(user_id=mock_regular_user, return_full=True)
+    feedback = feedback_factory(user_id=regular_user, return_full=True)
     response = client.delete(
         f"/api/feedback?answer_id={feedback['answer_id']}",
         headers=mock_auth_headers,
@@ -164,7 +161,7 @@ def test_delete_feedback_success(
 
 
 @pytest.mark.usefixtures("mock_google_auth")
-def test_delete_feedback_not_found(client, mock_auth_headers, mock_regular_user):
+def test_delete_feedback_not_found(client, mock_auth_headers, regular_user):
     """Test deleting non-existent feedback returns 404."""
     response = client.delete(
         "/api/feedback?answer_id=non-existent",

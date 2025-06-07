@@ -13,10 +13,8 @@ import time
 from backend.server.api.models.models import AskRequest, AskResponse, FeedbackRequest
 from backend.server.retriever.ask import Retriever
 from backend.server.retriever.models import RetrievedChunk
-from backend.server.api.admin.auth import validate_token
+from backend.server.api.auth import validate_token
 from backend.server.database.models import User, Session, Question, Answer, Feedback
-from backend.server.database.connection import get_db_connection
-from backend.server.api.admin.admin_routes import router as admin_router
 
 # Create router
 router = APIRouter()
@@ -28,25 +26,15 @@ retriever = Retriever(production=os.getenv("PRODUCTION", "false").lower() == "tr
 @router.get("/health")
 async def health_check():
     """
-    Health check endpoint to verify the server is running and check system status.
-    Returns information about the system state, including admin existence.
+    Health check endpoint to verify the server is running.
+    Returns basic system status.
     """
-    conn = get_db_connection()
-    try:
-        # Check if any admins exist
-        cursor = conn.execute(
-            "SELECT COUNT(*) as admin_count FROM users WHERE is_admin = 1"
-        )
-        admin_count = cursor.fetchone()["admin_count"]
-
-        return JSONResponse(
-            content={
-                "status": "ok",
-                "system": {"has_admins": admin_count > 0, "admin_count": admin_count},
-            }
-        )
-    finally:
-        conn.close()
+    return JSONResponse(
+        content={
+            "status": "ok",
+            "system": {"status": "operational"},
+        }
+    )
 
 
 @router.post("/ask", response_model=AskResponse)
@@ -193,7 +181,3 @@ async def delete_feedback(
     if not success:
         raise HTTPException(status_code=404, detail="Feedback not found")
     return {"success": True}
-
-
-# Include admin router
-router.include_router(admin_router)

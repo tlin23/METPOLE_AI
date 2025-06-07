@@ -3,22 +3,22 @@ from backend.server.database.models import User, Question, Answer, Feedback
 # USER MODEL TESTS
 
 
-def test_user_create_and_get(user_factory):
-    """Test creating a user and retrieving it."""
-    user_id = user_factory(email="alice@example.com", is_admin=True)
+def test_create_user(user_factory):
+    """Test creating a user."""
+    user_id = user_factory(email="alice@example.com")
     user = User.get(user_id)
     assert user is not None
     assert user["email"] == "alice@example.com"
-    assert user["is_admin"] == 1
+    assert user["question_count"] == 0
 
 
-def test_user_update(user_factory):
-    """Test updating a user's email and admin status."""
-    user_id = user_factory(email="bob@example.com", is_admin=False)
-    User.create_or_update(user_id, "bob2@example.com", True)
+def test_update_user(user_factory):
+    """Test updating a user."""
+    user_id = user_factory(email="bob@example.com")
+    User.create_or_update(user_id, "bob.updated@example.com")
     user = User.get(user_id)
-    assert user["email"] == "bob2@example.com"
-    assert user["is_admin"] == 1
+    assert user is not None
+    assert user["email"] == "bob.updated@example.com"
 
 
 def test_user_increment_question_count(user_factory):

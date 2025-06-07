@@ -5,7 +5,7 @@ import pytest
 from google.oauth2 import id_token
 from backend.server.retriever.ask import Retriever
 from backend.server.retriever.models import RetrievedChunk
-from backend.server.api.admin.auth import validate_token
+from backend.server.api.auth import validate_token
 from fastapi import HTTPException
 from fastapi.security import HTTPAuthorizationCredentials
 
@@ -97,17 +97,16 @@ async def test_auth_middleware_with_mock(mock_google_auth):
     assert "Missing authentication credentials" in str(exc_info.value.detail)
 
 
-def test_mock_users(mock_admin_user, mock_regular_user):
-    """Test that mock user creation works correctly."""
+def test_mock_users(admin_user, regular_user):
+    """Test that mock users are created correctly."""
     from backend.server.database.models import User
 
-    # Check admin user
-    admin = User.get(mock_admin_user)
+    # Test admin user
+    admin = User.get(admin_user)
     assert admin is not None
     assert admin["email"] == "admin@example.com"
-    assert admin["is_admin"] == 1
-    # Check regular user
-    regular = User.get(mock_regular_user)
+
+    # Test regular user
+    regular = User.get(regular_user)
     assert regular is not None
     assert regular["email"] == "user@example.com"
-    assert regular["is_admin"] == 0

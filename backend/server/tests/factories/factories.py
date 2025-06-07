@@ -5,10 +5,10 @@ from backend.server.database.models import User, Session, Question, Answer, Feed
 
 @pytest.fixture
 def user_factory():
-    def make_user(email=None, is_admin=False):
+    def make_user(email=None):
         user_id = str(uuid.uuid4())
         email = email or f"user_{user_id[:8]}@example.com"
-        User.create_or_update(user_id, email, is_admin)
+        User.create_or_update(user_id, email)
         return user_id
 
     return make_user

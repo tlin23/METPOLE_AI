@@ -8,7 +8,7 @@ from google.oauth2 import id_token
 from google.auth.transport import requests
 import os
 from typing import Dict, Any
-from ...database.models import User
+from ..database.models import User
 
 # Security scheme for Bearer token
 security = HTTPBearer(auto_error=False)
@@ -49,36 +49,11 @@ async def validate_token(
         user_id = idinfo["sub"]
         email = idinfo["email"]
 
-        # Get existing user to preserve admin status
-        existing_user = User.get(user_id)
-        is_admin = existing_user["is_admin"] if existing_user else False
-
         # Create or update user in database
-        User.create_or_update(user_id, email, is_admin=is_admin)
+        User.create_or_update(user_id, email)
 
         return {"user_id": user_id, "email": email}
     except ValueError as e:
         raise HTTPException(
             status_code=401, detail=f"Invalid authentication credentials: {str(e)}"
         )
-
-
-async def require_admin(
-    user_info: Dict[str, Any] = Depends(validate_token),
-) -> Dict[str, Any]:
-    """
-    Check if user has admin privileges.
-
-    Args:
-        user_info: User info from validate_token
-
-    Returns:
-        User info if admin
-
-    Raises:
-        HTTPException: If user is not an admin
-    """
-    user = User.get(user_info["user_id"])
-    if not user or not user["is_admin"]:
-        raise HTTPException(status_code=403, detail="Admin privileges required")
-    return user_info

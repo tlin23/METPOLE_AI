@@ -2,7 +2,6 @@
 CREATE TABLE IF NOT EXISTS users (
     user_id TEXT PRIMARY KEY,
     email TEXT NOT NULL UNIQUE,
-    is_admin BOOLEAN NOT NULL DEFAULT 0,
     question_count INTEGER NOT NULL DEFAULT 0,
     last_question_reset DATE NOT NULL
 );
