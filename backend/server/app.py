@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
 from backend.server.api.main.main_routes import router as api_router
+from backend.server.api.admin.admin_routes import router as admin_router
 from backend.server.database.connection import init_db
 
 # Load environment variables
@@ -46,6 +47,7 @@ service.add_middleware(
 
 # Include API routes
 service.include_router(api_router, prefix="/api")
+service.include_router(admin_router, prefix="/admin")
 
 if __name__ == "__main__":
     uvicorn.run("backend.server.app:service", host="127.0.0.1", port=8000, reload=True)

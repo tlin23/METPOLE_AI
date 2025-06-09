@@ -18,6 +18,9 @@ GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 if not GOOGLE_CLIENT_ID:
     raise ValueError("GOOGLE_CLIENT_ID environment variable is required")
 
+# Get admin emails from environment
+ADMIN_EMAILS = os.getenv("ADMIN_EMAILS").split(",")
+
 
 async def validate_token(
     credentials: HTTPAuthorizationCredentials = Depends(security),
@@ -29,7 +32,7 @@ async def validate_token(
         credentials: HTTP Authorization credentials containing the token
 
     Returns:
-        Dict containing user info (sub, email)
+        Dict containing user info (sub, email, is_admin)
 
     Raises:
         HTTPException: If token is invalid or missing
@@ -52,7 +55,10 @@ async def validate_token(
         # Create or update user in database
         User.create_or_update(user_id, email)
 
-        return {"user_id": user_id, "email": email}
+        # Check if user is admin
+        is_admin = email in ADMIN_EMAILS
+
+        return {"user_id": user_id, "email": email, "is_admin": is_admin}
     except ValueError as e:
         raise HTTPException(
             status_code=401, detail=f"Invalid authentication credentials: {str(e)}"
