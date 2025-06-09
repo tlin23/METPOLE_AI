@@ -4,9 +4,11 @@ import os
 import sqlite3
 from pathlib import Path
 import pytest
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
+from fastapi.testclient import TestClient
 from openai.types.chat import ChatCompletion, ChatCompletionMessage
 from openai.types.chat.chat_completion import Choice
+from backend.server.app import service
 
 from backend.server.tests.factories.factories import (
     user_factory,  # noqa: F401
@@ -99,6 +101,19 @@ def clean_db():
 
 
 @pytest.fixture(autouse=True)
+def setup_test_env():
+    """Set up test environment variables."""
+    # Set admin emails for testing
+    os.environ["ADMIN_EMAILS"] = "admin@example.com"
+    # Set Google client ID for testing
+    os.environ["GOOGLE_CLIENT_ID"] = "mock-client-id"
+    yield
+    # Clean up
+    os.environ.pop("ADMIN_EMAILS", None)
+    os.environ.pop("GOOGLE_CLIENT_ID", None)
+
+
+@pytest.fixture(autouse=True)
 def mock_openai():
     """Mock OpenAI API calls to return predefined responses."""
     with patch("openai.OpenAI") as mock_client_global, patch(
@@ -157,3 +172,45 @@ def regular_user():
     user_id = MOCK_REGULAR_USER_INFO["sub"]
     User.create_or_update(user_id, MOCK_REGULAR_USER_INFO["email"])
     return user_id
+
+
+@pytest.fixture
+def client():
+    """Create a test client for the FastAPI application."""
+    return TestClient(service)
+
+
+@pytest.fixture(scope="session")
+def nginx_server():
+    """Mock Nginx server that proxies to OAuth2 Proxy."""
+    # Create a mock response that simulates OAuth2 Proxy behavior
+    mock_oauth_response = MagicMock()
+    mock_oauth_response.status_code = 302
+    mock_oauth_response.headers = {
+        "Location": "http://localhost:3000/",
+        "x-auth-request-user": "test@example.com",
+        "x-auth-request-email": "test@example.com",
+        "x-auth-request-access-token": "mock-token",
+    }
+    mock_oauth_response.cookies = {"oauth2_proxy": {"secure": True, "samesite": "lax"}}
+
+    # Create a mock response for admin routes
+    mock_admin_response = MagicMock()
+    mock_admin_response.status_code = 401
+    mock_admin_response.headers = {}
+    mock_admin_response.cookies = {}
+
+    def mock_get(url, *args, **kwargs):
+        if url.startswith("http://localhost:3000/oauth2/"):
+            return mock_oauth_response
+        elif url.startswith("http://localhost:3000/admin/"):
+            return mock_admin_response
+        # For any other routes, return a 404
+        mock_404_response = MagicMock()
+        mock_404_response.status_code = 404
+        mock_404_response.headers = {}
+        mock_404_response.cookies = {}
+        return mock_404_response
+
+    with patch("requests.get", side_effect=mock_get) as mock:
+        yield mock

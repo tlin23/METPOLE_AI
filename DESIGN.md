@@ -1,170 +1,161 @@
-# Developer Specification: Admin SQL Query UI using sqlite-web
+# OAuth Flexible Routing & Config Design Specification
+
+## Overview
+
+This document specifies a robust, environment-agnostic OAuth routing and configuration strategy for your full-stack application. The design ensures local development, Docker Compose, and cloud deployment (Fly.io) use the same code and routing logic, with all differences driven by environment variables or config files. This guarantees fast iteration, reliable local testing, and seamless deployment.
 
 ---
 
-## 1. Overview
+## 1. Objectives
 
-Provide a web-based SQL query and data inspection UI for the app's SQLite database (`app.db`).
-This tool should be accessible only to admin users, support both free-form SQL and predefined queries, and allow CSV/JSON export—all while enforcing read-only access.
-
----
-
-## 2. Requirements
-
-### 2.1 Functional
-
-- **Web UI for querying app.db**, exposed at `/admin/db-query` on the main app domain.
-- **Free-form SQL**: Allow any `SELECT` query.
-- **Predefined queries & entity browsers** for Users, Sessions, Questions, Answers, Feedback.
-- **Full-text/content search** for any table.
-- **Paginated results** and filters for predefined queries.
-- **Export/Download**: Results can be downloaded as CSV/JSON.
-- **Read-only**: Absolutely no insert/update/delete or schema changes.
-- **Result size limit**: Maximum 500 rows returned per query.
-- **Authentication**: Only allow Google OAuth authenticated users.
-
-  - Restrict access to specific Google Workspace/allowed email list via oauth2-proxy.
-
-- **Authorization**:
-  - Access is controlled via oauth2-proxy's allowed email list.
-  - No additional backend checks needed.
-
-### 2.2 Non-Functional
-
-- **Performance**: Query UI must not block or degrade app performance; long-running queries should timeout or be paginated.
-- **Security**:
-
-  - Never expose the database file publicly.
-  - No write access, ever.
-  - All admin traffic over HTTPS.
-  - Ensure session/cookie isolation (since same domain).
-
-- **Simplicity**: Default sqlite-web UI is sufficient—no need for rebranding.
+- **Unify OAuth configuration across all environments** (local, Docker Compose, cloud) via environment variables or config files.
+- **Standardize redirect URIs** such that local and Docker use the same callback paths whenever possible.
+- **Minimize code branching**: All differences handled in configuration, not code logic.
+- **Enable rapid local development** with a stack that mirrors Docker/cloud as closely as possible.
+- **Ensure confidence in cloud deployment** by having identical auth logic tested locally and in Docker Compose.
 
 ---
 
-## 3. Architecture Choices
+## 2. Architecture Choices
 
-### 3.1 Tool Selection
+### 2.1 Stack
 
-- Use [sqlite-web](https://github.com/coleifer/sqlite-web) as the query UI.
+- **Frontend** (React or similar)
+- **Backend** (FastAPI or similar)
+- **OAuth2 Proxy** (e.g., for Google sign-in)
+- **Nginx** (reverse proxy & SPA fallback)
+- **Docker Compose** for integrated local/cloud stack
 
-  - Launched in `--read-only` mode.
-  - Pointed at the same `app.db` used by the backend.
+### 2.2 Routing & Network
 
-### 3.2 Deployment
+- All external traffic (local, Docker, or cloud) enters through Nginx (port 3000).
+- Nginx proxies requests to frontend (React), backend (API), and OAuth2 Proxy as appropriate.
+- All OAuth redirects and callbacks route through Nginx at predictable endpoints (e.g., `/oauth2/callback`).
+- Internal service names are never exposed to the browser/client—only Nginx-facing ports are exposed (mapped to localhost or cloud domain).
 
-- Run sqlite-web as a separate process (e.g., Docker container or systemd service).
-- Expose on `localhost` or an internal port (e.g., `127.0.0.1:8080`).
+---
 
-### 3.3 Integration
+## 3. Environment & Config Management
 
-- Set up a **reverse proxy** (Nginx, Caddy, or via FastAPI) on `/admin/db-query` to route traffic to sqlite-web.
-  - Use [oauth2-proxy](https://oauth2-proxy.github.io/oauth2-proxy/) for Google OAuth, configured for allowed emails.
-  - No additional backend authorization checks needed.
+### 3.1 Environment Variables (Sample Keys)
 
-### 3.4 Frontend
+| Variable             | Purpose                            | Example (Local/Docker)                                                         | Example (Cloud/Fly.io)                                                         |
+| -------------------- | ---------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
+| OAUTH_CLIENT_ID      | Google OAuth client ID             | abc123-local.apps.googleusercontent.com                                        | xyz456-flyio.apps.googleusercontent.com                                        |
+| OAUTH_CLIENT_SECRET  | Google OAuth client secret         | \*\*\*                                                                         | \*\*\*                                                                         |
+| OAUTH_REDIRECT_URI   | OAuth callback URI                 | [http://localhost:3000/oauth2/callback](http://localhost:3000/oauth2/callback) | [https://myapp.fly.dev/oauth2/callback](https://myapp.fly.dev/oauth2/callback) |
+| BASE_URL             | App public base URL                | [http://localhost:3000](http://localhost:3000)                                 | [https://myapp.fly.dev](https://myapp.fly.dev)                                 |
+| ALLOWED_CORS_ORIGINS | Comma-separated allowed origins    | [http://localhost:3000](http://localhost:3000)                                 | [https://myapp.fly.dev](https://myapp.fly.dev)                                 |
+| FRONTEND_URL         | Used in backend for CORS/callbacks | [http://localhost:3000](http://localhost:3000)                                 | [https://myapp.fly.dev](https://myapp.fly.dev)                                 |
+| BACKEND_URL          | API base URL                       | [http://localhost:8000](http://localhost:8000)                                 | [https://myapp.fly.dev/api](https://myapp.fly.dev/api)                         |
+| OAUTH2_PROXY_URL     | OAuth2 Proxy URL                   | [http://localhost:4180](http://localhost:4180)                                 | [http://oauth2-proxy:4180](http://oauth2-proxy:4180)                           |
+| ...                  |                                    |                                                                                |                                                                                |
 
-- Add a new "DB Query" link to the admin menu/sidebar in your app frontend (only visible to admins).
-- Clicking the link opens `/admin/db-query` (either as a new tab or embedded iframe).
+- Each environment (.env.local, .env.docker, .env.flyio) sets these values appropriately.
+- Use Docker Compose `env_file` to load the right env file for each environment.
+
+### 3.2 Nginx & OAuth2 Proxy Config
+
+- Template Nginx and OAuth2 Proxy config files to use environment variables.
+- Optionally, use [envsubst](https://github.com/a8m/envsubst) for variable interpolation if templating is needed.
+- Service hostnames in Nginx always point to Docker service names in Compose, and to localhost when running locally (with ports matching frontend/backend/OAuth2 proxy ports).
+
+### 3.3 Google OAuth Redirect URIs
+
+- Register all possible redirect URIs with Google:
+
+  - `http://localhost:3000/oauth2/callback` (local/dev, Docker Compose)
+  - `https://myapp.fly.dev/oauth2/callback` (cloud)
+
+- Use the _same_ callback URI in both local and Docker when possible (always use `localhost:3000` as the entrypoint in both scenarios).
+- Minimize the number of redirects for clarity.
 
 ---
 
 ## 4. Data Handling Details
 
-- **Read-only mode**: sqlite-web should be started with `--read-only`.
-- **Row limit**: sqlite-web's max results per page set to 500 (either via config/flag, or documented for admin users).
-- **Exports**: sqlite-web supports CSV, JSON, XLSX for results; no data ever leaves unless explicitly exported by an admin.
-- **Session handling**: Only authenticated (and if possible, authorized) sessions can see or interact with sqlite-web.
-- **No sensitive data**: All columns are deemed safe for admin viewing.
+- OAuth tokens and user session info are passed securely via HTTP cookies (with `Secure` flag in prod/cloud).
+- Callback endpoints are only exposed via Nginx (not direct container ports), reducing attack surface.
+- CORS policies are set from environment variables, with production using strict settings and local allowing localhost origins.
+- All sensitive data is never committed—only stored in local `.env` files or cloud secret managers.
 
 ---
 
 ## 5. Error Handling Strategies
 
-- **Invalid queries**: sqlite-web will display SQL errors in the UI. No stack traces or backend logs are exposed.
-- **Unauthorized access**:
-
-  - If unauthenticated: redirect to Google login.
-  - If authenticated but not admin (if strict mode): display "Access Denied".
-
-- **Server errors (e.g., db locked, connection lost)**: Standard sqlite-web error page, with clear message for the admin.
-- **Over-limit queries**: If more than 500 rows requested, results should be truncated and a notice shown (sqlite-web default).
+- All config loads have default fallbacks and raise meaningful errors if a required variable is missing (fail fast, log clearly).
+- Nginx returns 502/503 for misrouted traffic; backend logs and alerts on OAuth callback errors.
+- Frontend and backend handle auth errors gracefully, prompting users to re-authenticate or report config errors.
+- On bad OAuth redirect/callback, log the incoming request, error, and environment config for easy debugging.
+- In dev/local, verbose error logs are enabled; in prod/cloud, sensitive error info is only logged (not shown to users).
 
 ---
 
 ## 6. Testing Plan
 
-### 6.1 Manual Testing
+### 6.1 Manual Testing Matrix
 
-- **Authentication**
+| Test Scenario                       | Local (`make`/npm) | Docker Compose | Fly.io |
+| ----------------------------------- | :----------------: | :------------: | :----: |
+| Login flow (Google)                 |         ✔️         |       ✔️       |   ✔️   |
+| Auth callback redirect              |         ✔️         |       ✔️       |   ✔️   |
+| Access protected backend API        |         ✔️         |       ✔️       |   ✔️   |
+| Session persistence                 |         ✔️         |       ✔️       |   ✔️   |
+| CORS/Origin errors                  |         ✔️         |       ✔️       |   ✔️   |
+| Nginx proxying to all services      |         ✔️         |       ✔️       |   ✔️   |
+| OAuth2 Proxy works as reverse-proxy |         ✔️         |       ✔️       |   ✔️   |
 
-  - Unauthenticated users are redirected to login.
-  - Authenticated non-admins cannot access (if in strict mode).
-  - Admins can access and use all features.
+### 6.2 Automated Tests
 
-- **Query Execution**
+- Add backend tests for endpoints requiring auth (mock OAuth for fast test runs).
+- Add e2e (Cypress/Playwright) tests for login, auth callback, and CORS failure handling.
+- Add integration tests for Nginx/OAuth2 Proxy (smoke test in Docker Compose: login and access protected resource).
+- Add CI/CD check that `.env.example` is in sync with deployed config keys.
 
-  - Free-form `SELECT` queries work as expected.
-  - INSERT/UPDATE/DELETE and PRAGMA statements are blocked.
-  - Predefined queries (via sqlite-web UI) list entities as expected.
+### 6.3 Troubleshooting Checklist
 
-- **Result Limit**
+- If OAuth callback fails, verify:
 
-  - Large SELECTs are truncated at 500 rows, with clear messaging.
+  - The requested redirect URI is present in Google OAuth console
+  - The env file matches the current environment
+  - The Docker Compose and Nginx configs are using the intended `.env` file
+  - All services are running on the expected ports/hostnames
 
-- **Export**
-
-  - Download results as CSV and JSON.
-
-- **Error Handling**
-
-  - SQL errors are handled gracefully in the UI.
-  - Database unavailable errors are shown with a clear message.
-
-### 6.2 Security Testing
-
-- Attempt to bypass auth by direct access to sqlite-web port (should be blocked by firewall).
-- Attempt cross-origin access—verify CORS protections.
-- Attempt "write" queries—confirm failure.
-- Verify no sensitive session tokens or cookies are leaked between main app and sqlite-web.
-
-### 6.3 Automated Testing
-
-- Integration test for reverse proxy:
-
-  - Only allow traffic with a valid Google-authenticated session.
-  - Optionally: mock or test the `is_admin` DB check.
-
-- (Optional) E2E test with a headless browser to verify end-to-end flow.
+- Use logs from backend, OAuth2 Proxy, and Nginx to isolate routing errors.
 
 ---
 
-## 7. Operations
+## 7. Deliverables
 
-- **Startup**:
+- Standardized `.env.example` file listing all required env vars for every environment.
+- Updated Nginx and OAuth2 Proxy config templates with env-driven values.
+- Readme/quickstart describing how to:
 
-  - `sqlite-web --read-only --host 127.0.0.1 --port 8080 /path/to/app.db`
+  - Run locally (no Docker, just backend/frontend)
+  - Run via Docker Compose
+  - Deploy to Fly.io
+  - Register/update Google OAuth redirect URIs
 
-- **Reverse Proxy**:
-
-  - Nginx (or FastAPI) proxies `/admin/db-query` to `localhost:8080`.
-
-- **Oauth2-proxy**:
-
-  - Handles Google sign-in, email allowlist matches your admin users.
-
-- **App Documentation**:
-
-  - Provide instructions for admins, including usage notes and result limits.
+- Test suite covering local and Docker Compose login/callback flow.
 
 ---
 
-## 8. References
+## 8. Implementation Notes
 
-- [sqlite-web GitHub](https://github.com/coleifer/sqlite-web)
-- [oauth2-proxy Documentation](https://oauth2-proxy.github.io/oauth2-proxy/)
+- Use `make` or npm scripts for fast local startup, and `docker-compose` for production-like integration tests.
+- Keep service ports and callback paths _identical_ in local and Docker Compose when possible (always use `localhost:3000` for local and Compose, with port mapping if needed).
+- Regularly audit and prune unused redirect URIs from Google OAuth console for security and maintainability.
+- Document how to rotate OAuth client secrets and update configs in all environments.
 
 ---
 
-**Hand this spec directly to your developer for immediate implementation.**
+## 9. References
+
+- [Twelve-Factor App Config Best Practices](https://12factor.net/config)
+- [Docker Compose env_file docs](https://docs.docker.com/compose/environment-variables/env-file/)
+- [Google OAuth Redirect URIs Guide](https://developers.google.com/identity/protocols/oauth2)
+- [OAuth2 Proxy Configuration](https://oauth2-proxy.github.io/oauth2-proxy/docs/configuration/overview/)
+
+---
+
+# END OF SPEC

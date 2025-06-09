@@ -1,218 +1,219 @@
-# Step-by-Step Blueprint: Admin SQL Query UI with sqlite-web
+# OAuth Config Refactor: Step-by-Step Implementation Blueprint
+
+## Purpose
+
+This blueprint will guide a developer (or codegen LLM) through incrementally refactoring and standardizing OAuth routing and config for local, Docker, and cloud environments. All steps are designed to be testable, atomic, and safe, with a focus on early validation.
 
 ---
 
-## 1. High-Level Blueprint
+## High-Level Project Phases
 
-**Goal:**
-Expose a secure, read-only SQL web UI (sqlite-web) for `app.db`, accessible only to admins, at `/admin/db-query`.
+1. **Config Audit & Baseline Tests** DONE
+2. **Env Variable Refactor (Code & Infra)**
+3. **Nginx & OAuth2 Proxy Env Templating**
+4. **Frontend/Backend Config Standardization**
+5. **Unified `.env` Management**
+6. **Manual & Automated End-to-End Testing**
+7. **Documentation & Cleanup**
 
-### High-Level Steps
-
-1. **Preparation** DONE
-
-   - Review `app.db` schema and ensure no sensitive data.
-   - Choose deployment method for sqlite-web (Docker, systemd, etc.).
-
-2. **Deploy sqlite-web** DONE
-
-   - Start sqlite-web in read-only mode.
-   - Bind to `localhost` or a private/internal port.
-
-3. **Set up Authentication/Authorization** DONE
-
-   - Integrate Google OAuth for admin access.
-   - Enforce that only admins can access `/admin/db-query`.
-
-4. **Proxy Integration** DONE
-
-   - Configure reverse proxy (Nginx, FastAPI, or oauth2-proxy) to expose sqlite-web at `/admin/db-query`.
-   - Ensure requests are only forwarded if user is authenticated (and authorized, if desired).
-
-5. **Frontend Integration** DONE
-
-   - Add a "DB Query" link to admin menu/route, visible only to admins.
-   - Route to `/admin/db-query` (open in new tab or iframe).
-
-6. **Testing & Validation**
-
-   - Test access flow, query execution, limits, and error handling.
-   - Test security (no unauthorized access, no writes possible).
+Each phase is split into small, iterative chunks below.
 
 ---
 
-## 2. Iterative Chunk Breakdown
+## Phase 1: Config Audit & Baseline Tests
 
-### Step 1: Preparation
+### Step 1.1: Audit Existing OAuth & Routing Config
 
-- \[1.1] Audit app.db schema for sensitive data (optional, but good practice).
-- \[1.2] Document the absolute path to app.db.
+- Locate all hardcoded OAuth client IDs, secrets, redirect URIs, CORS origins, and URLs in backend, frontend, Nginx, and OAuth2 Proxy configs.
+- List every spot where a setting is hardcoded or not set via env/config file.
+- Document current redirect URIs registered with Google OAuth.
 
-### Step 2: sqlite-web Deployment
+### Step 1.2: Write Baseline Tests for Auth Flow
 
-- \[2.1] Install sqlite-web.
-- \[2.2] Launch sqlite-web in read-only mode, bound to `localhost:8080`, pointed at app.db.
-- \[2.3] Verify sqlite-web is accessible from the server only.
+- Implement (or expand) integration tests that cover:
 
-### Step 3: Authentication/Authorization
+  - Login button triggers OAuth flow.
+  - OAuth callback endpoint is reachable and returns correct result.
+  - API returns correct error for unauthorized access.
+  - Nginx and proxy routes behave as expected for protected and unprotected routes.
 
-- \[3.1] Set up Google OAuth proxy (oauth2-proxy) to protect sqlite-web.
-- \[3.2] Configure allowed emails (admin allowlist) in oauth2-proxy.
-- \[3.3] (Optional) Integrate an additional backend check for is_admin (if strict enforcement is desired).
+### Step 1.3: Snapshot Current `.env` and Service Configs
 
-### Step 4: Proxy Integration
-
-- \[4.1] Configure Nginx (or FastAPI) to reverse proxy `/admin/db-query` to `localhost:8080`.
-- \[4.2] Test proxying—ensure unauthenticated users are blocked.
-
-### Step 5: Frontend Integration
-
-- \[5.1] Add "DB Query" link/route in frontend, visible only to admins.
-- \[5.2] Route opens `/admin/db-query` in new tab or iframe.
-
-### Step 6: Testing & Validation
-
-- \[6.1] Manual test: only admins can access.
-- \[6.2] Manual test: SELECT queries work, writes are blocked, export works.
-- \[6.3] Security test: try direct access, non-admin access, and boundary queries.
+- Save copies of current `.env` files, Nginx config, Docker Compose config, OAuth2 Proxy config for comparison.
 
 ---
 
-## 3. Small, Atomic Steps
+## Phase 2: Env Variable Refactor (Code & Infra)
 
-### 1. Preparation
+### Step 2.1: Replace All Hardcoded Config with Env Vars in Backend
 
-- **1.1.1:** List all tables and columns in app.db.
-- **1.1.2:** Check for PII or secrets; report findings.
-- **1.2.1:** Record the absolute path to app.db for deployment config.
+- Refactor backend code to source all sensitive or environment-specific settings from env vars (with sensible defaults for dev, but fail fast for missing prod values).
+- Keys: `OAUTH_CLIENT_ID`, `OAUTH_CLIENT_SECRET`, `OAUTH_REDIRECT_URI`, `FRONTEND_URL`, `BACKEND_URL`, `ALLOWED_CORS_ORIGINS`.
 
-### 2. sqlite-web Deployment
+### Step 2.2: Replace All Hardcoded Config with Env Vars in Frontend
 
-- **2.1.1:** Add sqlite-web to your deployment scripts or Dockerfile.
-- **2.2.1:** Write a startup command for sqlite-web in read-only mode.
-- **2.2.2:** Test sqlite-web via curl/localhost.
-- **2.3.1:** Ensure firewall restricts direct access to sqlite-web.
+- Refactor frontend config to accept base URL, OAuth endpoints, etc, from env or build-time vars (`VITE_*` or similar).
 
-### 3. Authentication/Authorization
+### Step 2.3: Identify All Nginx & OAuth2 Proxy Static Settings
 
-- **3.1.1:** Deploy oauth2-proxy on your server.
-- **3.1.2:** Configure Google OAuth credentials.
-- **3.2.1:** Add admin email allowlist to oauth2-proxy.
-- **3.3.1:** (Optional) Write a minimal FastAPI route to check is_admin before proxying.
-
-### 4. Proxy Integration
-
-- **4.1.1:** Update Nginx config: route `/admin/db-query` to localhost:8080.
-- **4.2.1:** Reload Nginx, confirm routing works.
-- **4.2.2:** Attempt access as unauthenticated user (should fail).
-- **4.2.3:** Attempt access as admin (should succeed).
-
-### 5. Frontend Integration
-
-- **5.1.1:** Add a new menu entry "DB Query" in admin UI components.
-- **5.1.2:** Hide/show based on is_admin flag.
-- **5.2.1:** On click, open `/admin/db-query` in new tab (safer than iframe).
-- **5.2.2:** Document usage for admins.
-
-### 6. Testing & Validation
-
-- **6.1.1:** Log in as admin; verify access to sqlite-web.
-- **6.1.2:** Log in as non-admin; verify access is blocked.
-- **6.2.1:** Run sample SELECT queries; export results as CSV/JSON.
-- **6.2.2:** Attempt INSERT/UPDATE; verify failure.
-- **6.3.1:** Attempt to bypass auth; ensure failure.
-- **6.3.2:** Verify 500-row query limit.
+- Document all static hostnames/ports in `nginx.conf` and `oauth2-proxy` configs.
 
 ---
 
-## 4. Code Generation LLM Prompts
+## Phase 3: Nginx & OAuth2 Proxy Env Templating
 
-Each section below is ready to use as a prompt for a code-generation LLM (e.g., Cursor, GPT-4o, etc.).
-Each is marked as a code block (`text`).
+### Step 3.1: Template Nginx Config for Env-driven Routing
+
+- Modify `nginx.conf` to interpolate proxy targets (backend, frontend, oauth2-proxy) using environment variables or Compose `env_file`.
+- Use `envsubst` or Docker Compose templating if needed.
+
+### Step 3.2: Template OAuth2 Proxy Config for Env-driven Settings
+
+- Ensure client ID, secret, redirect URIs, and backend/frontend targets are all settable via env.
+
+### Step 3.3: Docker Compose: Pass Env Vars to All Services
+
+- Use Docker Compose `env_file`/`environment` blocks to inject correct variables into backend, frontend, nginx, and oauth2-proxy.
+- Confirm that `docker-compose up` and local startup both work with the new pattern.
 
 ---
 
-### Prompt 1: Install and Configure sqlite-web
+## Phase 4: Frontend/Backend Config Standardization
+
+### Step 4.1: Standardize Callback URIs & Ports
+
+- Ensure all services use the same public callback (e.g., `http://localhost:3000/oauth2/callback`) for both local and Docker Compose, with only the domain/port changing for production/cloud.
+- Register all needed callback URIs in the Google OAuth console (local, Docker, cloud).
+
+### Step 4.2: Standardize Service Health & Error Handling
+
+- Add health check endpoints to backend and OAuth2 Proxy.
+- Make sure bad callback/cors errors are logged and surfaced in all environments.
+
+### Step 4.3: Validate CORS/Origin Config
+
+- Test that frontend can access backend API only from allowed origins, in each environment.
+- Write tests that verify CORS errors are returned for disallowed origins.
+
+---
+
+## Phase 5: Unified `.env` Management
+
+### Step 5.1: Create/Update `.env.example` Template
+
+- List all necessary env vars for each service and environment in a single, canonical `.env.example`.
+
+### Step 5.2: Update Docker Compose for Unified `.env` Usage
+
+- Ensure all Compose services read from the same or environment-specific `.env` files.
+
+### Step 5.3: Automate `.env` Validation
+
+- Add a CI step or dev script that checks `.env` files for missing or extra keys versus `.env.example`.
+
+---
+
+## Phase 6: Manual & Automated End-to-End Testing
+
+### Step 6.1: Manual Testing Matrix
+
+- For each environment (local, Docker, cloud):
+
+  - Run the full login/auth flow.
+  - Confirm protected API access.
+  - Simulate misconfigured env and verify error reporting.
+
+### Step 6.2: Automated Auth Flow Tests
+
+- Use Playwright/Cypress or similar to script the login, callback, and protected resource access flow in all environments.
+- Write regression tests for key error paths (missing env, CORS failure, bad redirect).
+
+### Step 6.3: Integration Smoke Test for Nginx & OAuth2 Proxy
+
+- Build a simple script or test to hit `/oauth2/callback` and `/admin/` routes via Nginx in Docker Compose and verify expected response codes and redirects.
+
+---
+
+## Phase 7: Documentation & Cleanup
+
+### Step 7.1: Update README / Quickstart
+
+- Add instructions for:
+
+  - Local startup (`make serve`, etc.)
+  - Docker Compose startup and env setup
+  - Registering/updating Google OAuth redirect URIs
+  - Troubleshooting common auth/routing errors
+
+### Step 7.2: Remove Legacy/Unused Config
+
+- Clean up obsolete redirects, unused env vars, and old Nginx or Compose configs.
+
+### Step 7.3: Final Security & Code Review
+
+- Audit that secrets/config are not committed and that sensitive settings are only passed via env.
+- Review Dockerfiles/Compose for best practices.
+
+---
+
+# LLM Code Generation Prompts (Chunked)
+
+---
+
+## Prompt 1: Audit & Baseline
 
 ```text
-Install sqlite-web in our server environment (via pip or Docker as appropriate).
-Write a script or Docker Compose entry to run sqlite-web in read-only mode, pointing to our app.db (absolute path: /path/to/app.db).
-Make sure it only listens on localhost:8080.
-Test that you can access the UI from localhost via a browser, but it is not accessible from external IPs.
+You are refactoring a full-stack app to use env-based OAuth config. Locate all hardcoded OAuth config (client ID, secret, redirect URI, CORS origins) in backend, frontend, nginx, and oauth2-proxy. List their locations and current values. Output a table summarizing the findings.
+```
+
+## Prompt 2: Replace Backend Hardcoding
+
+```text
+Refactor the backend (FastAPI) codebase to source all OAuth client IDs, secrets, redirect URIs, and CORS origins from environment variables. Add default values only for dev, and fail fast in prod if missing. Write a test to confirm these settings are loaded at app startup.
+```
+
+## Prompt 3: Replace Frontend Hardcoding
+
+```text
+Update frontend config/build (e.g., React Vite or Create React App) to read all OAuth, backend URL, and CORS-related settings from environment variables or build-time config. Provide a test page or component to display current env config for validation.
+```
+
+## Prompt 4: Nginx & OAuth2 Proxy Templating
+
+```text
+Modify nginx.conf and oauth2-proxy config so that all hostnames, ports, client IDs/secrets, and callback URIs are driven by environment variables or Compose env_file. Use envsubst or Docker Compose templating. Add a script to validate that all required envs are present at container startup.
+```
+
+## Prompt 5: Docker Compose Env Injection
+
+```text
+Update docker-compose.yml so all services (backend, frontend, nginx, oauth2-proxy) receive their config via unified .env files. Validate that both local and Docker Compose startup inject the same environment variables, and that ports/hostnames match expected values.
+```
+
+## Prompt 6: Callback URI & Registration
+
+```text
+Standardize all OAuth callback and redirect URIs so that local and Docker Compose both use http://localhost:3000/oauth2/callback, and production uses https://<your-app>.fly.dev/oauth2/callback. Output a checklist for updating Google OAuth with all URIs in use.
+```
+
+## Prompt 7: Health, CORS, and Error Handling
+
+```text
+Add/verify health check endpoints on backend and oauth2-proxy. Ensure all CORS and OAuth callback errors are logged (with env context) and returned clearly to users. Write integration tests for auth errors and CORS errors in all environments.
+```
+
+## Prompt 8: Unified .env Management
+
+```text
+Create a .env.example listing all env variables needed for backend, frontend, nginx, and oauth2-proxy. Add a validation script or CI job to check real .env files match the example. Write a test to verify config loading fails if required variables are missing.
+```
+
+## Prompt 9: Manual/E2E Testing and Docs
+
+```text
+Write manual test instructions and e2e test cases (Cypress/Playwright) for the full login/auth flow in local, Docker Compose, and cloud. Update the README to describe local and Docker Compose setup, Google OAuth registration, troubleshooting, and expected login behaviors.
 ```
 
 ---
 
-### Prompt 2: Deploy and Configure oauth2-proxy
-
-```text
-Set up oauth2-proxy on the server to protect sqlite-web with Google OAuth.
-- Use our Google OAuth credentials.
-- Configure allowed emails to match our admin list.
-- Route oauth2-proxy to forward authenticated traffic to sqlite-web at localhost:8080.
-Test the login flow end-to-end (unauthenticated, non-admin, and admin user cases).
-```
-
----
-
-### Prompt 3: (Optional) Backend is_admin Check Proxy
-
-```text
-Implement a minimal FastAPI route at /admin/db-query-proxy.
-This route should:
-- Require Google OAuth authentication (reuse existing middleware).
-- Query the users table to check is_admin for the current user.
-- If admin, proxy the request to sqlite-web at localhost:8080.
-- If not admin, return 403 Forbidden.
-Update Nginx or the frontend to use /admin/db-query-proxy as the sqlite-web access endpoint.
-```
-
----
-
-### Prompt 4: Nginx Reverse Proxy Config
-
-```text
-Update the Nginx config to reverse proxy all requests to /admin/db-query to localhost:8080 (sqlite-web).
-- Ensure it is only accessible via HTTPS.
-- Confirm that only authenticated/admin users can access.
-- Test with curl and browser.
-```
-
----
-
-### Prompt 5: Frontend Admin Menu Integration
-
-```text
-Add a new menu entry called "DB Query" to the admin navigation in the frontend.
-- Only display the menu item if the logged-in user has is_admin=true.
-- When clicked, open /admin/db-query in a new browser tab.
-Write basic Cypress or Playwright tests to confirm the menu item only appears for admins.
-```
-
----
-
-### Prompt 6: Security and Validation Testing
-
-```text
-Perform manual and automated tests to confirm:
-- Only authenticated admins can access the DB Query UI.
-- Non-admins and unauthenticated users are blocked at every layer.
-- SELECT queries work, but INSERT/UPDATE/DELETE are blocked.
-- Query results are capped at 500 rows per page.
-- Export to CSV and JSON works.
-- Direct access to sqlite-web (localhost:8080) is firewalled from outside.
-Document all test results and any necessary fixes.
-```
-
----
-
-### Prompt 7: Documentation
-
-```text
-Write a section in the admin documentation explaining:
-- What the DB Query tool is for
-- How to access it
-- Limits (read-only, 500 row cap)
-- Who to contact for access or questions
-- Troubleshooting common issues (login, query errors)
-```
+# END OF BLUEPRINT & PROMPTS

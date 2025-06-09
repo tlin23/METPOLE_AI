@@ -1,215 +1,170 @@
-# Modular Backend Refactor — Developer Specification
-
-## Project Objective
-
-Refactor the backend codebase to achieve **modularity, testability, and maintainability**.
-Separate concerns into distinct layers (API, CLI, Services, DB), standardize error handling, and improve test coverage to enable rapid, safe iteration and clearer code.
+# Developer Specification: Admin SQL Query UI using sqlite-web
 
 ---
 
-## Requirements
+## 1. Overview
 
-### Functional Requirements
-
-1. **Modularization**
-
-   - All business logic must reside in a new `services/` layer, separated from API and CLI entry points.
-   - All database access (CRUD, queries) must be in a new `db/` layer.
-   - API routes (`routes.py`) and CLI scripts (`admin.py`, `feedback.py`, etc.) should be thin, delegating work to the service layer.
-
-2. **CLI Split**
-
-   - Split current `admin.py` into “access management” and “database CRUD.”
-   - Feedback commands should move into CRUD CLI.
-   - Each CLI command should only call service functions (never DB or models directly).
-
-3. **Standardization**
-
-   - Error handling should be consistent across API and CLI, using app-specific exceptions.
-   - All service and DB functions must be fully tested.
-
-4. **Testing**
-
-   - Full suite of tests (unit, integration, regression) covering API, CLI, services, and DB.
-   - Baseline tests must be written to capture current behavior before refactoring.
-
-### Non-Functional Requirements
-
-- **Readability:**
-  Code should be self-explanatory, modular, and follow Python best practices.
-- **Maintainability:**
-  All new modules must be testable in isolation.
-- **Extensibility:**
-  Future business logic changes should affect only the service layer.
-- **Atomicity:**
-  All migration steps must be atomic and verifiable by tests.
+Provide a web-based SQL query and data inspection UI for the app's SQLite database (`app.db`).
+This tool should be accessible only to admin users, support both free-form SQL and predefined queries, and allow CSV/JSON export—all while enforcing read-only access.
 
 ---
 
-## Architecture Overview
+## 2. Requirements
 
-### Layered Design
+### 2.1 Functional
 
-- **API Layer** (`routes.py`)
+- **Web UI for querying app.db**, exposed at `/admin/db-query` on the main app domain.
+- **Free-form SQL**: Allow any `SELECT` query.
+- **Predefined queries & entity browsers** for Users, Sessions, Questions, Answers, Feedback.
+- **Full-text/content search** for any table.
+- **Paginated results** and filters for predefined queries.
+- **Export/Download**: Results can be downloaded as CSV/JSON.
+- **Read-only**: Absolutely no insert/update/delete or schema changes.
+- **Result size limit**: Maximum 500 rows returned per query.
+- **Authentication**: Only allow Google OAuth authenticated users.
 
-  - Defines FastAPI endpoints and request/response schemas.
-  - No business logic or DB access.
-  - Calls into the `services/` layer for all operations.
-  - Handles and formats exceptions from services.
+  - Restrict access to specific Google Workspace/allowed email list via oauth2-proxy.
 
-- **CLI Layer** (`admin.py`, `feedback.py`, future CLI scripts)
+- **Authorization**:
+  - Access is controlled via oauth2-proxy's allowed email list.
+  - No additional backend checks needed.
 
-  - Handles argument parsing, user output.
-  - No business logic or DB access.
-  - Calls `services/` for all operations.
-  - Handles and formats exceptions from services.
+### 2.2 Non-Functional
 
-- **Service Layer** (`services/`)
+- **Performance**: Query UI must not block or degrade app performance; long-running queries should timeout or be paginated.
+- **Security**:
 
-  - Contains all business logic, validation, and orchestration.
-  - Calls into `db/` for data access.
-  - Raises only app-specific exceptions for known errors.
-  - Structured by domain: e.g., `QuestionService`, `AnswerService`, `SessionService`, `FeedbackService`, `AccessService`.
+  - Never expose the database file publicly.
+  - No write access, ever.
+  - All admin traffic over HTTPS.
+  - Ensure session/cookie isolation (since same domain).
 
-- **DB Layer** (`db/`)
-
-  - Handles all raw data persistence and queries.
-  - No business logic.
-  - Structured as repositories or DAOs, each responsible for one entity/table.
-
----
-
-### Directory Structure
-
-```
-backend/server/
-  api/
-    routes.py
-    models.py
-  cli/
-    admin.py
-    feedback.py
-    access.py       # New for access management CLI
-    db_crud.py      # New for CRUD CLI commands
-  services/
-    __init__.py
-    question_service.py
-    answer_service.py
-    session_service.py
-    feedback_service.py
-    access_service.py
-    # ...other services as needed
-  db/
-    __init__.py
-    repositories.py
-    models/         # ORM/data models (as needed)
-  exceptions.py     # App-specific exception hierarchy
-  tests/
-    test_routes.py
-    test_admin_cli.py
-    test_feedback_cli.py
-    test_services.py
-    test_repositories.py
-    # ...other test files
-```
+- **Simplicity**: Default sqlite-web UI is sufficient—no need for rebranding.
 
 ---
 
-## Data Handling & Flow
+## 3. Architecture Choices
 
-- **Data access** is only allowed through the `db/` layer.
-- **Business rules and cross-table logic** live in `services/`.
-- **API and CLI** call only service methods.
-- **No direct access** to models or DB from routes or CLI scripts.
+### 3.1 Tool Selection
 
-### Data Lifecycles
+- Use [sqlite-web](https://github.com/coleifer/sqlite-web) as the query UI.
 
-- Create, read, update, delete (CRUD) for each entity is implemented in repositories.
-- Services enforce invariants (e.g., every question must have an answer, every feedback links to an answer).
-- Deleting a question must cascade delete its answer and feedback (enforced in service, delegated to repository).
-- Soft deletes are not used; all deletes are hard (per requirements).
+  - Launched in `--read-only` mode.
+  - Pointed at the same `app.db` used by the backend.
 
----
+### 3.2 Deployment
 
-## Error Handling
+- Run sqlite-web as a separate process (e.g., Docker container or systemd service).
+- Expose on `localhost` or an internal port (e.g., `127.0.0.1:8080`).
 
-- All errors raised in `services/` should be subclasses of `AppException` (defined in `exceptions.py`).
-- Example exceptions:
+### 3.3 Integration
 
-  - `NotFoundException`
-  - `ValidationException`
-  - `AccessDeniedException`
+- Set up a **reverse proxy** (Nginx, Caddy, or via FastAPI) on `/admin/db-query` to route traffic to sqlite-web.
+  - Use [oauth2-proxy](https://oauth2-proxy.github.io/oauth2-proxy/) for Google OAuth, configured for allowed emails.
+  - No additional backend authorization checks needed.
 
-- **API**: Catch these exceptions and return clear, standardized JSON error responses.
-- **CLI**: Catch these exceptions and print human-readable error messages.
+### 3.4 Frontend
+
+- Add a new "DB Query" link to the admin menu/sidebar in your app frontend (only visible to admins).
+- Clicking the link opens `/admin/db-query` (either as a new tab or embedded iframe).
 
 ---
 
-## Testing Strategy
+## 4. Data Handling Details
 
-1. **Baseline Testing**
-
-   - Before refactor, write comprehensive tests for all current API and CLI behaviors.
-
-2. **Unit Testing**
-
-   - Each function/method in services and repositories must have direct unit tests.
-   - Use mocking to isolate dependencies.
-
-3. **Integration Testing**
-
-   - End-to-end tests that verify full workflow through API and CLI layers, touching actual service and DB code.
-
-4. **Regression/Edge Testing**
-
-   - Ensure all previously supported edge cases are covered after each stage.
-   - Add regression tests for all bug fixes and migration issues.
-
-5. **Continuous Testing**
-
-   - All stages of the migration must pass tests before moving forward.
-   - Use CI for automated test runs.
+- **Read-only mode**: sqlite-web should be started with `--read-only`.
+- **Row limit**: sqlite-web's max results per page set to 500 (either via config/flag, or documented for admin users).
+- **Exports**: sqlite-web supports CSV, JSON, XLSX for results; no data ever leaves unless explicitly exported by an admin.
+- **Session handling**: Only authenticated (and if possible, authorized) sessions can see or interact with sqlite-web.
+- **No sensitive data**: All columns are deemed safe for admin viewing.
 
 ---
 
-## Migration and Implementation Process
+## 5. Error Handling Strategies
 
-Follow this iterative, atomic approach:
+- **Invalid queries**: sqlite-web will display SQL errors in the UI. No stack traces or backend logs are exposed.
+- **Unauthorized access**:
 
-1. **Write baseline tests for API and CLI.**
-2. **Set up `services/` and `db/` directories with interfaces and stubs.**
-3. **Move all database access logic into the `db/` layer, test thoroughly.**
-4. **Migrate all business logic into service modules, test each.**
-5. **Refactor API endpoints to call only service methods.**
-6. **Refactor CLI commands to call only service methods.**
-7. **Implement and enforce standardized error handling.**
-8. **Expand and unify all tests (unit, integration, regression).**
-9. **Remove any legacy code not needed in the new structure.**
-10. **Final QA: Ensure all modules are integrated and all tests pass.**
+  - If unauthenticated: redirect to Google login.
+  - If authenticated but not admin (if strict mode): display "Access Denied".
+
+- **Server errors (e.g., db locked, connection lost)**: Standard sqlite-web error page, with clear message for the admin.
+- **Over-limit queries**: If more than 500 rows requested, results should be truncated and a notice shown (sqlite-web default).
 
 ---
 
-## Best Practices and Conventions
+## 6. Testing Plan
 
-- **Domain-driven:**
-  Services and repositories are organized by business domain/entity.
-- **Thin entrypoints:**
-  API and CLI layers should do no more than parameter parsing and error formatting.
-- **Test first:**
-  All migration is test-driven; no code is left untested.
-- **Consistent error responses:**
-  No leaking of raw exceptions—only app-specific, user-friendly errors.
-- **Documentation:**
-  Each service and repository should be documented with clear docstrings.
+### 6.1 Manual Testing
+
+- **Authentication**
+
+  - Unauthenticated users are redirected to login.
+  - Authenticated non-admins cannot access (if in strict mode).
+  - Admins can access and use all features.
+
+- **Query Execution**
+
+  - Free-form `SELECT` queries work as expected.
+  - INSERT/UPDATE/DELETE and PRAGMA statements are blocked.
+  - Predefined queries (via sqlite-web UI) list entities as expected.
+
+- **Result Limit**
+
+  - Large SELECTs are truncated at 500 rows, with clear messaging.
+
+- **Export**
+
+  - Download results as CSV and JSON.
+
+- **Error Handling**
+
+  - SQL errors are handled gracefully in the UI.
+  - Database unavailable errors are shown with a clear message.
+
+### 6.2 Security Testing
+
+- Attempt to bypass auth by direct access to sqlite-web port (should be blocked by firewall).
+- Attempt cross-origin access—verify CORS protections.
+- Attempt "write" queries—confirm failure.
+- Verify no sensitive session tokens or cookies are leaked between main app and sqlite-web.
+
+### 6.3 Automated Testing
+
+- Integration test for reverse proxy:
+
+  - Only allow traffic with a valid Google-authenticated session.
+  - Optionally: mock or test the `is_admin` DB check.
+
+- (Optional) E2E test with a headless browser to verify end-to-end flow.
 
 ---
 
-## Deliverables
+## 7. Operations
 
-- New `services/` and `db/` modules, fully tested.
-- Updated `api/` and `cli/` modules, thinned out and delegating to services.
-- Exception handling and formatting, consistent across all interfaces.
-- Comprehensive tests for all modules, with all legacy tests passing.
-- Clean, modular, and maintainable backend ready for future feature growth.
+- **Startup**:
+
+  - `sqlite-web --read-only --host 127.0.0.1 --port 8080 /path/to/app.db`
+
+- **Reverse Proxy**:
+
+  - Nginx (or FastAPI) proxies `/admin/db-query` to `localhost:8080`.
+
+- **Oauth2-proxy**:
+
+  - Handles Google sign-in, email allowlist matches your admin users.
+
+- **App Documentation**:
+
+  - Provide instructions for admins, including usage notes and result limits.
 
 ---
+
+## 8. References
+
+- [sqlite-web GitHub](https://github.com/coleifer/sqlite-web)
+- [oauth2-proxy Documentation](https://oauth2-proxy.github.io/oauth2-proxy/)
+
+---
+
+**Hand this spec directly to your developer for immediate implementation.**

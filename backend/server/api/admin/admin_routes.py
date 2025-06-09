@@ -11,6 +11,25 @@ import os
 router = APIRouter()
 
 
+@router.get("/health")
+async def admin_health(user_info: dict = Depends(validate_token)):
+    """
+    Admin health check endpoint that verifies admin access and system status.
+    Returns 200 if user is authorized and system is healthy.
+    """
+    # Check if user is admin (email is in allowed list)
+    if not user_info.get("is_admin", False):
+        raise HTTPException(
+            status_code=403,
+            detail="Only administrators can access the admin interface",
+        )
+    return {
+        "status": "ok",
+        "message": "Admin access verified",
+        "system": {"status": "operational", "admin_access": True},
+    }
+
+
 # SQLite Web proxy route
 @router.get("/db-query{path:path}")
 async def proxy_sqlite_web(

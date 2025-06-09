@@ -56,7 +56,10 @@ async def validate_token(
         User.create_or_update(user_id, email)
 
         # Check if user is admin
-        is_admin = email in ADMIN_EMAILS
+        admin_emails = [
+            e.strip() for e in os.environ.get("ADMIN_EMAILS").split(",") if e.strip()
+        ]
+        is_admin = email in admin_emails
 
         return {"user_id": user_id, "email": email, "is_admin": is_admin}
     except ValueError as e:
