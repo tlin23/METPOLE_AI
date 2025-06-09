@@ -19,17 +19,17 @@ Expose a secure, read-only SQL web UI (sqlite-web) for `app.db`, accessible only
    - Start sqlite-web in read-only mode.
    - Bind to `localhost` or a private/internal port.
 
-3. **Set up Authentication/Authorization**
+3. **Set up Authentication/Authorization** DONE
 
    - Integrate Google OAuth for admin access.
    - Enforce that only admins can access `/admin/db-query`.
 
-4. **Proxy Integration**
+4. **Proxy Integration** DONE
 
    - Configure reverse proxy (Nginx, FastAPI, or oauth2-proxy) to expose sqlite-web at `/admin/db-query`.
    - Ensure requests are only forwarded if user is authenticated (and authorized, if desired).
 
-5. **Frontend Integration**
+5. **Frontend Integration** DONE
 
    - Add a "DB Query" link to admin menu/route, visible only to admins.
    - Route to `/admin/db-query` (open in new tab or iframe).

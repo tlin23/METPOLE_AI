@@ -4,6 +4,7 @@ import { GoogleOAuthProvider } from "@react-oauth/google";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import Login from "./components/Login";
 import Feedback from "./components/Feedback";
+import AdminMenu from "./components/AdminMenu";
 import "./App.css";
 import styles from "./App.styles.js";
 
@@ -153,6 +154,7 @@ function ChatApp() {
           <button onClick={handleReset} style={styles.resetButton}>
             Start Over
           </button>
+          <AdminMenu />
           <button onClick={logout} style={styles.logoutButton}>
             Sign Out
           </button>

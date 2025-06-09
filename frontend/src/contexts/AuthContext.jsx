@@ -10,7 +10,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token) {
-      setUser({ token });
+      fetchAndSetUser(token);
     }
   }, []);
 
@@ -47,9 +47,24 @@ export const AuthProvider = ({ children }) => {
     };
   }, []);
 
+  const fetchAndSetUser = async (token) => {
+    try {
+      // Set token in localStorage
+      localStorage.setItem("token", token);
+      // Call backend to get user info (including is_admin)
+      const res = await axios.get("/admin/me", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setUser({ token, ...res.data });
+    } catch (error) {
+      console.error("Error fetching user info:", error);
+      setUser(null);
+      localStorage.removeItem("token");
+    }
+  };
+
   const login = (token) => {
-    localStorage.setItem("token", token);
-    setUser({ token });
+    fetchAndSetUser(token);
   };
 
   const logout = () => {

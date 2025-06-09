@@ -17,7 +17,7 @@ export default defineConfig(({ mode }) => {
           target: env.VITE_BACKEND_URL,
           changeOrigin: true,
         },
-        "/admin/db-query": {
+        "/admin": {
           target: env.VITE_BACKEND_URL,
           changeOrigin: true,
           ws: false,
