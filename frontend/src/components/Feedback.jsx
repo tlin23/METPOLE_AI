@@ -23,7 +23,9 @@ const Feedback = ({ answerId }) => {
 
   const fetchFeedback = async () => {
     try {
-      const response = await axios.get(`/api/feedback?answer_id=${answerId}`);
+      const response = await axios.get(
+        `${import.meta.env.VITE_BACKEND_URL}/api/feedback?answer_id=${answerId}`
+      );
       if (response.data) {
         setFeedback(response.data);
         setSuggestion(response.data.suggestion || "");
@@ -43,7 +45,9 @@ const Feedback = ({ answerId }) => {
       if (feedback?.like === true) {
         // Clicking again deletes feedback
         const response = await axios.delete(
-          `/api/feedback?answer_id=${answerId}`
+          `${
+            import.meta.env.VITE_BACKEND_URL
+          }/api/feedback?answer_id=${answerId}`
         );
         if (response.data.success) {
           setFeedback(null);
@@ -51,11 +55,14 @@ const Feedback = ({ answerId }) => {
           setMessage("Feedback deleted");
         }
       } else {
-        const response = await axios.post("/api/feedback", {
-          answer_id: answerId,
-          like: true,
-          suggestion: null,
-        });
+        const response = await axios.post(
+          `${import.meta.env.VITE_BACKEND_URL}/api/feedback`,
+          {
+            answer_id: answerId,
+            like: true,
+            suggestion: null,
+          }
+        );
         if (response.data.feedback_id) {
           setFeedback({ like: true, suggestion: null });
           setMessage("Feedback saved successfully");
@@ -76,7 +83,9 @@ const Feedback = ({ answerId }) => {
       if (feedback?.like === false) {
         // Clicking again deletes feedback
         const response = await axios.delete(
-          `/api/feedback?answer_id=${answerId}`
+          `${
+            import.meta.env.VITE_BACKEND_URL
+          }/api/feedback?answer_id=${answerId}`
         );
         if (response.data.success) {
           setFeedback(null);
@@ -84,11 +93,14 @@ const Feedback = ({ answerId }) => {
           setMessage("Feedback deleted");
         }
       } else {
-        const response = await axios.post("/api/feedback", {
-          answer_id: answerId,
-          like: false,
-          suggestion: null,
-        });
+        const response = await axios.post(
+          `${import.meta.env.VITE_BACKEND_URL}/api/feedback`,
+          {
+            answer_id: answerId,
+            like: false,
+            suggestion: null,
+          }
+        );
         if (response.data.feedback_id) {
           setFeedback({ like: false, suggestion: null });
           setMessage("Feedback saved successfully");
@@ -106,11 +118,14 @@ const Feedback = ({ answerId }) => {
     setIsSubmitting(true);
     setMessage("");
     try {
-      const response = await axios.post("/api/feedback", {
-        answer_id: answerId,
-        like: false,
-        suggestion,
-      });
+      const response = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/api/feedback`,
+        {
+          answer_id: answerId,
+          like: false,
+          suggestion,
+        }
+      );
       if (response.data.feedback_id) {
         setFeedback({ like: false, suggestion });
         setMessage("Feedback updated with suggestion");

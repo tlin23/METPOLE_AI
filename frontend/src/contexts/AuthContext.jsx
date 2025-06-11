@@ -52,9 +52,12 @@ export const AuthProvider = ({ children }) => {
       // Set token in localStorage
       localStorage.setItem("token", token);
       // Call backend to get user info (including is_admin)
-      const res = await axios.get("/admin/me", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await axios.get(
+        `${import.meta.env.VITE_BACKEND_URL}/admin/me`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       setUser({ token, ...res.data });
     } catch (error) {
       console.error("Error fetching user info:", error);
