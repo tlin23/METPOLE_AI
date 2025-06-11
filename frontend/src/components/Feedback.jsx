@@ -62,7 +62,7 @@ const Feedback = ({ answerId }) => {
         }
       }
     } catch (error) {
-      console.error("Error saving/deleting feedback:", error);
+      console.error("Error saving/deleting feedback:", error, error.response);
       setMessage("Failed to save/delete feedback");
     } finally {
       setIsSubmitting(false);
@@ -95,7 +95,7 @@ const Feedback = ({ answerId }) => {
         }
       }
     } catch (error) {
-      console.error("Error saving/deleting feedback:", error);
+      console.error("Error saving/deleting feedback:", error, error.response);
       setMessage("Failed to save/delete feedback");
     } finally {
       setIsSubmitting(false);
@@ -127,6 +127,15 @@ const Feedback = ({ answerId }) => {
   const showSubmit =
     feedback?.like === false &&
     suggestion.trim() !== (feedback.suggestion || "");
+
+  console.log(
+    "feedback:",
+    feedback,
+    "message:",
+    message,
+    "suggestion:",
+    suggestion
+  );
 
   return (
     <div>
