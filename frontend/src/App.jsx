@@ -9,7 +9,7 @@ import "./App.css";
 import styles from "./App.styles.js";
 
 // Get Google Client ID from environment
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_OAUTH_CLIENT_ID;
 
 function ChatApp() {
   const { user, logout } = useAuth();
