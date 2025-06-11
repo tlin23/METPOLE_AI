@@ -40,7 +40,7 @@ services:
       - --pass-access-token=true
       - --skip-provider-button=true
       - --skip-auth-regex=^/oauth2/.*
-      - --redirect-url=http://localhost:3000/oauth2/callback
+      - --redirect-url=${OAUTH2_PROXY_CALLBACK_URL}
     ports:
       - "4180:4180"
     environment:
@@ -50,6 +50,7 @@ services:
       - OAUTH2_PROXY_COOKIE_SECRET=${OAUTH2_PROXY_COOKIE_SECRET}
       - OAUTH2_PROXY_EMAIL_DOMAINS=*
       - OAUTH2_PROXY_ALLOWED_EMAILS=${ADMIN_EMAILS}
+      - OAUTH2_PROXY_CALLBACK_URL=${OAUTH2_PROXY_CALLBACK_URL}
     depends_on:
       - sqlite-web
 

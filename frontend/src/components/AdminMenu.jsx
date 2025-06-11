@@ -11,7 +11,7 @@ const AdminMenu = () => {
 
   return (
     <a
-      href={`${import.meta.env.VITE_BACKEND_URL}/admin/db-query`}
+      href={`${import.meta.env.VITE_FRONTEND_URL}/admin/db-query`}
       target="_blank"
       rel="noopener noreferrer"
       style={styles.menuItem}

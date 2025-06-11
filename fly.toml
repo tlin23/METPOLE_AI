@@ -59,6 +59,8 @@ primary_region = 'sea'
   OAUTH2_PROXY_PASS_ACCESS_TOKEN = "true"
   OAUTH2_PROXY_SKIP_PROVIDER_BUTTON = "true"
   OAUTH2_PROXY_SKIP_AUTH_REGEX = "^/oauth2/.*"
+  OAUTH2_PROXY_CALLBACK_URL=${OAUTH2_PROXY_CALLBACK_URL}
+
 
 [mounts]
   source = "chroma_data"
