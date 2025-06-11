@@ -31,7 +31,7 @@ services:
   oauth2-proxy:
     image: bitnami/oauth2-proxy:latest
     command:
-      - --upstream=http://sqlite-web:8081/
+      - --upstream=http://sqlite-web:8080/
       - --http-address=0.0.0.0:4180
       - --cookie-secure=true
       - --cookie-samesite=lax
@@ -54,14 +54,12 @@ services:
       - sqlite-web
 
   sqlite-web:
-    build:
-      context: .
-      dockerfile: backend/Dockerfile
-    command: sqlite_web --read-only --host 0.0.0.0 --port 8081 /app/backend/server/data/app.db
+    image: coleifer/sqlite-web:latest
+    command: sqlite_web --host 0.0.0.0 --port 8080 /app/backend/server/data/app.db
     volumes:
       - metpol-sqlite:/app/backend/server/data
     expose:
-      - "8081"
+      - "8080"
     depends_on:
       - backend
 
