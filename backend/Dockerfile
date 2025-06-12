@@ -11,8 +11,12 @@ COPY backend/requirements.txt .
 # Install backend dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Expose backend port
-EXPOSE 8000
+# Expose ports
+EXPOSE 8000 8080
 
-# Run the FastAPI server
-CMD ["uvicorn", "backend.server.app:service", "--host", "0.0.0.0", "--port", "8000"]
+# Create startup script
+COPY backend/start.sh /app/start.sh
+RUN chmod +x /app/start.sh
+
+# Run both services
+CMD ["/app/start.sh"]

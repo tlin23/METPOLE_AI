@@ -66,7 +66,7 @@ function ChatApp() {
 
     try {
       const response = await axios.post(
-        `${import.meta.env.VITE_FRONTEND_URL}/api/ask`,
+        `${import.meta.env.VITE_BACKEND_URL}/api/ask`,
         {
           question: userMessage.text,
           top_k: 5,

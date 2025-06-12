@@ -25,55 +25,20 @@ services:
       dockerfile: Dockerfile
     env_file:
       - ./frontend/.env.production
+    ports:
+      - "3000:3000"
     depends_on:
       - backend
-
-  oauth2-proxy:
-    image: bitnami/oauth2-proxy:latest
-    command:
-      - --upstream=http://sqlite-web:8080/
-      - --http-address=0.0.0.0:4180
-      - --cookie-secure=true
-      - --cookie-samesite=lax
-      - --set-xauthrequest=true
-      - --pass-authorization-header=true
-      - --pass-access-token=true
-      - --skip-provider-button=true
-      - --skip-auth-regex=^/oauth2/.*
-      - --redirect-url=${OAUTH2_PROXY_CALLBACK_URL}
-    ports:
-      - "4180:4180"
-    environment:
-      - OAUTH2_PROXY_PROVIDER=google
-      - OAUTH2_PROXY_CLIENT_ID=${GOOGLE_CLIENT_ID}
-      - OAUTH2_PROXY_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
-      - OAUTH2_PROXY_COOKIE_SECRET=${OAUTH2_PROXY_COOKIE_SECRET}
-      - OAUTH2_PROXY_EMAIL_DOMAINS=*
-      - OAUTH2_PROXY_ALLOWED_EMAILS=${ADMIN_EMAILS}
-      - OAUTH2_PROXY_CALLBACK_URL=${OAUTH2_PROXY_CALLBACK_URL}
-    depends_on:
-      - sqlite-web
 
   sqlite-web:
     image: coleifer/sqlite-web:latest
     command: sqlite_web --host 0.0.0.0 --port 8080 /app/backend/server/data/app.db
     volumes:
       - metpol-sqlite:/app/backend/server/data
-    expose:
-      - "8080"
+    ports:
+      - "8080:8080"
     depends_on:
       - backend
-
-  nginx:
-    image: nginx:1.25
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-    depends_on:
-      - frontend
-      - oauth2-proxy
-    restart: unless-stopped
 
 volumes:
   metpol-sqlite:

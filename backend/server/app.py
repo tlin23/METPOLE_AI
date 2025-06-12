@@ -36,9 +36,8 @@ service.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",  # Local dev (Vite)
-        "http://localhost:3000",  # Docker
-        "https://metpole-ai.vercel.app",  # Your Vercel frontend
-        "http://localhost:8080",  # OAuth CLI redirect
+        "http://localhost:3000",  # Local dev (Docker)
+        "https://metpole-ai.vercel.app",  # Production frontend
     ],
     allow_credentials=True,
     allow_methods=["*"],

@@ -24,9 +24,7 @@ const Feedback = ({ answerId }) => {
   const fetchFeedback = async () => {
     try {
       const response = await axios.get(
-        `${
-          import.meta.env.VITE_FRONTEND_URL
-        }/api/feedback?answer_id=${answerId}`
+        `${import.meta.env.VITE_BACKEND_URL}/api/feedback?answer_id=${answerId}`
       );
       if (response.data) {
         setFeedback(response.data);
@@ -48,7 +46,7 @@ const Feedback = ({ answerId }) => {
         // Clicking again deletes feedback
         const response = await axios.delete(
           `${
-            import.meta.env.VITE_FRONTEND_URL
+            import.meta.env.VITE_BACKEND_URL
           }/api/feedback?answer_id=${answerId}`
         );
         if (response.data.success) {
@@ -58,7 +56,7 @@ const Feedback = ({ answerId }) => {
         }
       } else {
         const response = await axios.post(
-          `${import.meta.env.VITE_FRONTEND_URL}/api/feedback`,
+          `${import.meta.env.VITE_BACKEND_URL}/api/feedback`,
           {
             answer_id: answerId,
             like: true,
@@ -86,7 +84,7 @@ const Feedback = ({ answerId }) => {
         // Clicking again deletes feedback
         const response = await axios.delete(
           `${
-            import.meta.env.VITE_FRONTEND_URL
+            import.meta.env.VITE_BACKEND_URL
           }/api/feedback?answer_id=${answerId}`
         );
         if (response.data.success) {
@@ -96,7 +94,7 @@ const Feedback = ({ answerId }) => {
         }
       } else {
         const response = await axios.post(
-          `${import.meta.env.VITE_FRONTEND_URL}/api/feedback`,
+          `${import.meta.env.VITE_BACKEND_URL}/api/feedback`,
           {
             answer_id: answerId,
             like: false,
@@ -121,7 +119,7 @@ const Feedback = ({ answerId }) => {
     setMessage("");
     try {
       const response = await axios.post(
-        `${import.meta.env.VITE_FRONTEND_URL}/api/feedback`,
+        `${import.meta.env.VITE_BACKEND_URL}/api/feedback`,
         {
           answer_id: answerId,
           like: false,
