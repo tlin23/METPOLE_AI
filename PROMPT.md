@@ -1,305 +1,277 @@
-# MetPol AI Split-Service Deployment: Implementation Blueprint
+# Step-by-Step Project Blueprint: DESIGN.md
+
+> **NOTE:** The frontend is developed and deployed separately (not behind Nginx), e.g., to Vercel/Netlify. Nginx only proxies backend and db endpoints.
+
+## PHASE 1: Foundation & Infrastructure
+
+### 1.1. Repository Structure & Base Services
+
+- [ ] Confirm project directory structure for `backend`, `frontend`, `nginx`, and Docker.
+- [ ] Set up and test Docker Compose with these services: `backend`, `sqlite-web`, `nginx` (use placeholder apps as needed).
+- [ ] The frontend is developed and deployed separately (e.g., Vercel/Netlify), not served by Nginx.
+
+### 1.2. Nginx Reverse Proxy Baseline
+
+- [ ] Write an initial Nginx config that:
+  - Proxies `/api/*` to FastAPI (backend)
+  - Proxies `/db/*` to sqlite-web (DB admin)
+- [ ] Nginx does **not** serve or proxy the frontend. The frontend is expected to be deployed on its own domain.
+- [ ] Enable required proxy headers (`Host`, `X-Forwarded-Proto`, etc.)
+
+### 1.3. Environment Management
+
+- [ ] Set up `.env` files for dev and prod; all secrets and config via env vars.
+- [ ] Implement Docker volume for persistent SQLite storage.
+- [ ] Document all required env vars (Google OAuth, DB path, admin email, etc.).
 
 ---
 
-## 1. High-Level Project Plan
+## PHASE 2: Authentication & Security
 
-1. **Remove monolithic artifacts**
-2. **Decouple frontend and backend deployment**
-3. **Update API URLs and environment variables**
-4. **Harden backend service (CORS, error handling, security)**
-5. **Document and streamline sqlite-web admin workflow**
-6. **Test and validate split deployment (locally and in staging/prod)**
+### 2.1. Google OAuth Flow (Frontend)
 
----
+- [ ] Implement Google OAuth login/logout in React frontend.
+- [ ] On success: save ID token, attach as `Authorization: Bearer ...` on all API requests.
+- [ ] Handle token refresh and expired/invalid tokens (with re-login UX).
 
-## 2. Blueprint: Iterative Implementation Chunks
+### 2.2. Backend Auth Middleware
 
-### 2.1. Remove Monolithic & Proxy Artifacts
+- [ ] FastAPI expects `Authorization: Bearer <Google ID token>` on protected routes.
+- [ ] Middleware verifies token (via Google) and extracts user info, admin status.
+- [ ] All endpoints (except `/api/health`) require auth.
 
-#### Chunk A: Remove Nginx and Docker Compose for Production
+### 2.3. Admin RBAC & Env
 
-- Remove any production Nginx configs
-- Remove monolithic Docker Compose files and proxy code
-- Ensure backend and frontend run independently
+- [ ] Backend checks admin status via `email in ADMIN_EMAILS` (from env).
+- [ ] Protect `/api/admin/*` endpoints, return 403 if not admin.
 
-#### Chunk B: Clean Backend Startup
+### 2.4. SQLite-web Security
 
-- Ensure backend only starts the API server and sqlite-web
-- Remove any code that serves static frontend or attempts SPA routing
-
----
-
-### 2.2. Decouple Frontend & Backend
-
-#### Chunk C: Update API URLs and Environment Variables
-
-- Update backend API URLs in the frontend (use `.env` and/or config)
-- Remove assumptions of same-origin (localhost, etc.)
-- Configure proper CORS settings in backend
-
-#### Chunk D: Deployment Pipeline Separation
-
-- Deploy backend to Fly.io (API only)
-- Deploy frontend to Vercel (SPA only)
-- Document the deployment process for both
+- [ ] Restrict `/db/*` in Nginx via either:
+  - Internal-only access (Option A: preferred)
+  - HTTP basic auth (Option B: fallback)
+- [ ] Validate restriction with manual test.
 
 ---
 
-### 2.3. Secure & Document sqlite-web Admin Workflow
+## PHASE 3: Core API & Data Flow
 
-#### Chunk E: Harden sqlite-web Access
+### 3.1. FastAPI API Routes
 
-- Ensure sqlite-web is not exposed to public internet (remove proxy routes)
-- Add admin documentation for using `flyctl proxy` and `flyctl ssh console` for access
+- [ ] Implement `/api/health` (public), `/api/ask`, `/api/feedback`, `/api/admin/*`.
+- [ ] All data models (Pydantic) match OpenAPI and business logic.
+- [ ] RBAC and error handling per DESIGN.md.
 
----
+### 3.2. SQLite Models & Persistence
 
-### 2.4. End-to-End Testing & CI
+- [ ] Implement DB schema (users, questions, answers, feedback, etc.).
+- [ ] All DB reads/writes via secure, transactional code.
+- [ ] Scripts for migrations/schema updates.
 
-#### Chunk F: Comprehensive Testing
+### 3.3. Connect All Components
 
-- Add/expand API endpoint unit and integration tests
-- Add E2E tests for frontend-backend API interactions (mocked and staging)
-- Test sqlite-web access via SSH/proxy
-
-#### Chunk G: Final Docs & Developer Onboarding
-
-- Document new architecture, environment, and dev/admin workflows
-- Clean up README and deployment guides
+- [ ] End-to-end flow: user logs in, asks a question, receives response, can give feedback, admin can view analytics, etc.
 
 ---
 
-## 3. Micro-Steps for Each Chunk
+## PHASE 4: Error Handling, Logging, and Testing
 
-### Chunk A: Remove Nginx and Docker Compose for Production
+### 4.1. Error Handling
 
-#### 1. Identify and remove all Nginx config files related to API/frontend proxying.
+- [ ] Frontend: handles OAuth errors, API errors, 401/403, rate limits, etc.
+- [ ] Backend: returns clear JSON errors, logs all critical errors, quota/rate limit, etc.
+- [ ] Nginx: configured to block/401 unauthorized `/db`, return 502/504 on backend/DB failures.
 
-#### 2. Remove `nginx.conf` and related references in Dockerfiles and project scripts.
+### 4.2. Testing
 
-#### 3. Remove or refactor `docker-compose.yml` to exclude Nginx, and ensure backend/frontend services run independently.
+- [ ] Unit tests for all core backend functions (token validation, API logic).
+- [ ] Integration tests: E2E login, ask, feedback, admin flows.
+- [ ] Security tests: invalid/expired tokens, regular user blocks, admin-only access.
+- [ ] Manual tests: DB admin locked down, production traffic is secure.
+- [ ] Load tests (optional): backend and DB stress.
 
----
+### 4.3. CI Pipeline
 
-### Chunk B: Clean Backend Startup
-
-#### 1. Audit backend entrypoints (e.g., `main.py`, `app.py`) for any SPA/static serving logic—remove if found.
-
-#### 2. Ensure only FastAPI and sqlite-web run as services.
-
-#### 3. Double-check that `/api/*`, `/admin/*` are the only publicly routable endpoints.
-
----
-
-### Chunk C: Update API URLs and Environment Variables
-
-#### 1. Update `.env.production` in `frontend/` to point to the Fly.io backend API URL.
-
-#### 2. Refactor any frontend code that uses a hardcoded backend URL.
-
-#### 3. Audit and update backend CORS settings to allow requests from Vercel deployment.
+- [ ] Set up CI: lint, unit + integration tests, Docker build check.
 
 ---
 
-### Chunk D: Deployment Pipeline Separation
+## PHASE 5: Production Readiness
 
-#### 1. Write clear deployment scripts/docs for backend (Fly.io) and frontend (Vercel) individually.
+### 5.1. CORS & HTTPS
 
-#### 2. Remove any shared build scripts; each should be fully self-contained.
+- [ ] Strict CORS on FastAPI (production domains only).
+- [ ] HTTPS (via Fly.io or Nginx) in production.
 
-#### 3. Test each deployment pipeline (push to main, auto-deploy, etc.).
+### 5.2. Secrets & Environment Parity
 
----
+- [ ] All configuration via environment variables.
+- [ ] Document and test prod/dev switching.
 
-### Chunk E: Harden sqlite-web Access
+### 5.3. Deployment
 
-#### 1. Remove any Nginx or proxy config that exposes sqlite-web to the public.
-
-#### 2. Add admin-only documentation for:
-
-- Using `flyctl ssh console` for direct shell access
-- Using `flyctl proxy 8081` for secure, local sqlite-web UI
-- Example commands for both
-
----
-
-### Chunk F: Comprehensive Testing
-
-#### 1. Add/verify API tests (unit, integration) for all endpoints.
-
-#### 2. Add E2E tests simulating frontend requests to backend.
-
-#### 3. Manually test sqlite-web access via SSH tunnel.
-
-#### 4. Add automated CI workflows to block merge on test failure.
+- [ ] Only expose Nginx’s port (e.g., 8080 or 443/80) to the outside world.
+- [ ] The backend and sqlite-web are only accessible through Nginx reverse proxy.
+- [ ] The frontend is deployed separately and communicates with backend and db endpoints via the public Nginx URL.
+- [ ] Persistent DB volume.
+- [ ] Fly.io or Docker Compose ready to deploy.
 
 ---
 
-### Chunk G: Final Docs & Developer Onboarding
+# From Blueprint to Implementation: Iterative Chunks
 
-#### 1. Update README to reflect split-architecture, dev, and admin setup.
+## Chunk Breakdown (Each builds on the last)
 
-#### 2. Provide usage and troubleshooting docs for both frontend and backend developers.
+### Chunk 1: Docker + Directory Scaffold
 
-#### 3. Ensure deployment, rollback, and admin guides are clear.
+- Initialize directories and Docker Compose with placeholder services: `backend`, `sqlite-web`, `nginx`.
+- The frontend is not part of Docker Compose; it is developed and deployed separately.
+- Add persistent volume mapping for the database.
 
----
+### Chunk 2: Nginx Reverse Proxy Routing
 
-## 4. Cursor/Code-Gen LLM Prompt Series
+- Write `nginx.conf.template` that proxies `/api/*` to backend:8000, `/db/*` to sqlite-web:8081.
+- Do **not** proxy or serve the frontend in Nginx.
+- Add config to pass proxy headers.
+- Update Docker Compose to build Nginx with correct config.
 
-Below are implementation-ready, **step-by-step prompts** to drive each stage of the migration and refactor.
-**Each step is self-contained and includes all context needed for incremental, testable progress.**
+### Chunk 3: Frontend Google OAuth
 
----
+- Set up React Google OAuth library (in separately deployed frontend).
+- On login, store Google ID token.
+- Add `Authorization: Bearer ...` to all API calls to `/api/*`.
+- Handle logout and expired tokens.
 
-### **Prompt 1: Remove Monolithic Nginx and Docker Compose**
+### Chunk 4: Backend Auth Middleware
 
-```text
-**Task:**
-Remove all Nginx and Docker Compose configs and dependencies from the repository for production deployments.
+- Implement FastAPI middleware that checks for `Authorization: Bearer ...`.
+- Validate token with Google API, extract user/email.
+- Check admin status from env.
+- Protect `/api/admin/*` endpoints.
 
-**Context:**
-- Nginx and Docker Compose were previously used for monolithic/local orchestration and API/frontend proxying.
-- In split deployment, these are no longer required.
+### Chunk 5: Secure SQLite-web
 
-**Instructions:**
-- Delete any `nginx.conf`, `nginx.conf.template`, or similar files from the root or backend directories.
-- Remove Nginx-related sections from `docker-compose.yml` and ensure only backend and frontend services are defined (if Docker Compose is still used for local dev).
-- Update backend and frontend Dockerfiles to remove any references to Nginx.
-- Remove all references to Nginx and monolithic proxying from documentation and README.
-- Commit all changes and run all tests to ensure nothing is broken.
-```
+- Add HTTP basic auth (or IP allowlist) to `/db/*` route in Nginx, test restriction.
 
----
+### Chunk 6: API Endpoints & Data Models
 
-### **Prompt 2: Audit and Clean Backend Startup (No SPA/Static Serving)**
+- Build `/api/health`, `/api/ask`, `/api/feedback`, `/api/admin/*` routes and Pydantic models.
 
-```text
-**Task:**
-Ensure the backend does NOT attempt to serve the frontend app, static files, or act as a proxy for frontend routes.
+### Chunk 7: Database Models & Schema
 
-**Context:**
-- All frontend assets are served by Vercel; backend is API-only.
-- Remove any FastAPI static route handlers or fallback logic serving frontend builds.
+- Define SQLite schema, implement model code for users, questions, answers, feedback.
 
-**Instructions:**
-- Search backend entrypoints (`main.py`, `app.py`, `server/`) for any code serving static files or the frontend build.
-- Remove these routes and confirm `/api/*`, `/admin/*`, and sqlite-web remain the only active endpoints.
-- Add a test to ensure 404 is returned for non-existent routes.
-- Commit changes and ensure all API and auth tests pass.
-```
+### Chunk 8: End-to-End Happy Path
 
----
+- Connect all: login → ask question → store answer → give feedback → admin query.
 
-### **Prompt 3: Update Frontend API URL and CORS**
+### Chunk 9: Error Handling & Logging
 
-```text
-**Task:**
-Point the frontend to the production backend API URL, and configure backend CORS appropriately.
+- Implement clear errors, frontend error UX, backend logging.
 
-**Context:**
-- Frontend and backend now live on separate domains.
-- API requests must use the full Fly.io backend URL.
+### Chunk 10: Testing & CI
 
-**Instructions:**
-- Update `frontend/.env.production` to set the backend URL (e.g., `VITE_BACKEND_URL=https://metpol-ai.fly.dev`).
-- Refactor all frontend API calls to use this environment variable.
-- In backend (FastAPI), add or update CORS middleware to allow requests from your Vercel frontend domain.
-- Add or update tests to verify CORS headers are present.
-- Commit and test.
-```
+- Add unit, integration, security, and manual tests. Set up CI for checks and Docker build.
+
+### Chunk 11: Production Prep
+
+- Harden CORS, secrets, HTTPS, and ensure all config/envs are production-ready.
 
 ---
 
-### **Prompt 4: Document and Test Backend sqlite-web Admin Access**
+# Granular Step Breakdown (Smallest Steps, Ready for LLM Prompts)
 
-```text
-**Task:**
-Document the secure workflow for accessing sqlite-web, and ensure it is never exposed to the public internet.
+For each chunk, here is how to break into “prompt-sized” steps:
 
-**Context:**
-- Only admins/developers should access sqlite-web via SSH/proxy.
+## Chunk 1: Docker + Directory Scaffold
 
-**Instructions:**
-- Remove any proxy or public exposure of sqlite-web in configs.
-- Add documentation for using:
-    - `flyctl ssh console -a <app-name>`
-    - `flyctl proxy 8081`
-    - `http://localhost:8081` for access
-- Add a test/verification step to confirm sqlite-web is not accessible publicly.
-- Commit and document.
-```
+- Create `backend/`, `frontend/`, `nginx/` directories.
+- Write initial `docker-compose.yml` with three services: `backend` (FastAPI, expose 8000), `sqlite-web` (expose 8081), `nginx` (reverse proxy, expose 8080).
+- Mount a persistent volume for SQLite DB at `/data/app.db` for sqlite-web and backend.
+- Use placeholder Dockerfiles/images for now.
+- **Note:** The frontend is developed and deployed separately (not in Compose).
+
+## Chunk 2: Nginx Reverse Proxy Routing
+
+- Write `nginx.conf.template` that:
+  - Proxies `/api/*` to backend:8000
+  - Proxies `/db/*` to sqlite-web:8081
+  - Passes Host and X-Forwarded-Proto headers
+- Do **not** proxy or serve the frontend in Nginx.
+- Update docker-compose.yml to build Nginx using this config.
+- Test with curl to verify routing works for all endpoints.
+
+## Chunk 3: Google OAuth Login (Frontend)
+
+- Set up Google OAuth in the React frontend (deployed separately):
+  - Implement login/logout button using Google Identity Services
+  - On success, save ID token in memory/state
+  - Attach Authorization: Bearer <ID token> to all fetch/XHR requests to /api/\*
+  - Handle token expiration, prompt user to re-login if 401/403 returned
+
+## Chunk 4: Backend Auth Middleware
+
+- In FastAPI backend, implement a dependency/middleware that:
+  - Extracts Authorization: Bearer <Google ID token> from incoming requests
+  - Verifies the token with Google (use google.oauth2)
+  - Extracts user info and email; checks if user is admin via ADMIN_EMAILS env var
+  - Deny access to /api/admin/\* if not admin
+  - Add logging for failed auth attempts
+
+## Chunk 5: Secure SQLite-web
+
+- Configure nginx.conf.template so that /db/\* is protected with HTTP basic auth using .htpasswd, or use IP restriction.
+- Update docker-compose.yml to mount .htpasswd into nginx container if using basic auth.
+- Test manual access: unauthorized users cannot load /db, authorized users can.
+
+## Chunk 6: API Endpoints & Models
+
+- Implement the following in FastAPI:
+  - /api/health (public)
+  - /api/ask (protected, returns dummy answer)
+  - /api/feedback (protected, stores feedback)
+  - /api/admin/me (admin only, returns email/is_admin)
+- Define all request/response models using Pydantic.
+- Write basic unit tests for each endpoint.
+
+## Chunk 7: Database Models & Schema
+
+- Write the SQLite schema for users, questions, answers, feedback tables.
+- Implement Python model code to CRUD each table.
+- Add migration/upgrade scripts.
+- Write unit tests for each DB model method.
+
+## Chunk 8: End-to-End Happy Path
+
+- In frontend, login and send `ask` request, display answer
+- Submit feedback, admin verifies in `/api/admin` endpoint
+
+## Chunk 9: Error Handling & Logging
+
+- In frontend, show clear error for 401/403, prompt re-login
+- In backend, log failed auth attempts, return structured error JSON
+- In Nginx, configure 401/403 for `/db/*`
+
+## Chunk 10: Testing & CI
+
+- Write basic pytest unit tests for backend models and API
+- Add integration test for login → ask → feedback flow
+- Add security tests (invalid token, non-admin to admin route)
+- Configure GitHub Actions for lint/test/build
+
+## Chunk 11: Production Prep
+
+- Harden CORS for prod domains
+- Enforce HTTPS in Nginx/fly.toml
+- Move all secrets to env vars
+- Document prod/dev configuration
 
 ---
 
-### **Prompt 5: Split Deployment Pipelines**
+# Cursor/LLM-Ready Prompt Series
 
-```text
-**Task:**
-Establish independent deployment pipelines for backend (Fly.io) and frontend (Vercel).
-
-**Context:**
-- Each service must be independently deployable and updateable.
-
-**Instructions:**
-- Write or update deployment scripts and documentation for backend (Fly.io) and frontend (Vercel).
-- Remove any pipeline steps that build or deploy both together.
-- Verify that pushing to main triggers the appropriate deploy for each.
-- Commit and test deployment to both staging and production.
-```
+Below are prompts you can feed an LLM for incremental, test-driven implementation. (Use one at a time per chunk, check in working code before proceeding.)
 
 ---
 
-### **Prompt 6: Comprehensive Testing**
-
-```text
-**Task:**
-Add and verify test coverage for API endpoints, auth, and E2E integration (frontend-backend).
-
-**Context:**
-- Ensure system is robust and all changes are validated.
-
-**Instructions:**
-- Write/expand unit and integration tests for all backend endpoints, including error and edge cases.
-- Add or update E2E tests simulating frontend requests to backend.
-- Ensure sqlite-web is only accessible via secure methods.
-- Add CI checks to block deployment on failure.
-- Document how to run all tests locally and in CI.
-- Commit and validate.
-```
-
----
-
-### **Prompt 7: Final Documentation and Developer Onboarding**
-
-```text
-**Task:**
-Update documentation to reflect the new split architecture and workflows.
-
-**Context:**
-- New contributors and admins should be able to onboard quickly.
-
-**Instructions:**
-- Update README, setup guides, and admin docs to:
-    - Explain the split-service model
-    - Detail deployment for both frontend and backend
-    - Provide usage and troubleshooting for both developers and admins
-    - Include steps for secure sqlite-web access
-- Remove outdated documentation for monolithic deployment.
-- Commit all doc changes.
-```
-
----
-
-## 5. Final Checklist
-
-- [ ] All monolithic/proxy configs removed
-- [ ] Backend and frontend cleanly separated
-- [ ] Secure, documented sqlite-web admin workflow
-- [ ] Robust testing and CI/CD
-- [ ] Up-to-date documentation
-
----
-
-**This blueprint and prompt set ensures incremental, safe, and test-driven progress from monolith to robust split-service architecture.**
+## Prompt 1: Scaffold Docker + Directory
