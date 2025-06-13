@@ -3,14 +3,20 @@ API routes for the application.
 """
 
 from fastapi import APIRouter, HTTPException, Depends
-from fastapi.responses import JSONResponse
 import os
 from typing import Dict, Any
 import traceback
 from datetime import datetime, timedelta, UTC
 import time
 
-from backend.server.api.models.models import AskRequest, AskResponse, FeedbackRequest
+from backend.server.api.models.models import (
+    AskRequest,
+    AskResponse,
+    FeedbackRequest,
+    FeedbackResponse,
+    HealthResponse,
+    StandardResponse,
+)
 from backend.server.retriever.ask import Retriever
 from backend.server.retriever.models import RetrievedChunk
 from backend.server.api.auth import validate_token
@@ -23,18 +29,13 @@ router = APIRouter()
 retriever = Retriever(production=os.getenv("PRODUCTION", "false").lower() == "true")
 
 
-@router.get("/health")
+@router.get("/health", response_model=HealthResponse)
 async def health_check():
     """
     Health check endpoint to verify the server is running.
     Returns basic system status.
     """
-    return JSONResponse(
-        content={
-            "status": "ok",
-            "system": {"status": "operational"},
-        }
-    )
+    return HealthResponse(status="ok", system={"status": "operational"})
 
 
 @router.post("/ask", response_model=AskResponse)
@@ -144,40 +145,42 @@ async def ask_question(
 
 
 # Feedback endpoints
-@router.post("/feedback")
+@router.post("/feedback", response_model=FeedbackResponse)
 async def create_feedback(
     feedback: FeedbackRequest,
     user_info: Dict[str, Any] = Depends(validate_token),
-) -> Dict[str, Any]:
+) -> FeedbackResponse:
     """Create or update feedback for an answer."""
-    feedback_id = Feedback.create_or_update(
+    Feedback.create_or_update(
         user_id=user_info["user_id"],
         answer_id=feedback.answer_id,
         like=feedback.like,
         suggestion=feedback.suggestion,
     )
-    return {"feedback_id": feedback_id}
+    # Get the created feedback back from DB
+    feedback_data = Feedback.get(feedback.answer_id, user_info["user_id"])
+    return FeedbackResponse(**feedback_data)
 
 
-@router.get("/feedback")
+@router.get("/feedback", response_model=FeedbackResponse)
 async def get_feedback(
     answer_id: str,
     user_info: Dict[str, Any] = Depends(validate_token),
-) -> Dict[str, Any]:
+) -> FeedbackResponse:
     """Get feedback for an answer."""
     feedback = Feedback.get(answer_id, user_info["user_id"])
     if not feedback:
         raise HTTPException(status_code=404, detail="Feedback not found")
-    return feedback
+    return FeedbackResponse(**feedback)
 
 
-@router.delete("/feedback")
+@router.delete("/feedback", response_model=StandardResponse)
 async def delete_feedback(
     answer_id: str,
     user_info: Dict[str, Any] = Depends(validate_token),
-) -> Dict[str, Any]:
+) -> StandardResponse:
     """Delete feedback for an answer."""
     success = Feedback.delete(answer_id, user_info["user_id"])
     if not success:
         raise HTTPException(status_code=404, detail="Feedback not found")
-    return {"success": True}
+    return StandardResponse(success=True, message="Feedback deleted successfully")

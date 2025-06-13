@@ -3,7 +3,7 @@ API models for the application.
 """
 
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from backend.server.retriever.models import RetrievedChunk
 
 
@@ -30,3 +30,26 @@ class FeedbackRequest(BaseModel):
     answer_id: str
     like: bool
     suggestion: Optional[str] = None
+
+
+class FeedbackResponse(BaseModel):
+    feedback_id: str
+    answer_id: str
+    like: bool
+    suggestion: Optional[str] = None
+    created_at: str
+
+
+class HealthResponse(BaseModel):
+    status: str
+    system: Dict[str, Any]
+
+
+class AdminMeResponse(BaseModel):
+    email: str
+    is_admin: bool
+
+
+class StandardResponse(BaseModel):
+    success: bool
+    message: str

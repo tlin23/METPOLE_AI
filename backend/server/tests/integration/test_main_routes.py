@@ -94,7 +94,7 @@ def test_create_feedback_unauthorized(client):
 def test_create_feedback_success(
     client, mock_auth_headers, regular_user, answer_factory
 ):
-    """Test successfully creating feedback returns feedback ID."""
+    """Test successfully creating feedback returns feedback data."""
     answer_id = answer_factory()
     response = client.post(
         "/api/feedback",
@@ -104,6 +104,10 @@ def test_create_feedback_success(
     assert response.status_code == 200
     data = response.json()
     assert "feedback_id" in data
+    assert data["answer_id"] == answer_id
+    assert data["like"] is True
+    assert data["suggestion"] == "Great answer!"
+    assert "created_at" in data
 
 
 def test_get_feedback_unauthorized(client):
