@@ -30,6 +30,8 @@ coverage.xml
 
 # Environment variables
 .env
+.env.*
+frontend/.env.*
 
 # Virtual Environment
 venv/
