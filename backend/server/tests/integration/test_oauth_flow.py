@@ -10,10 +10,13 @@ def test_oauth_callback_endpoint(nginx_server):
 
 
 def test_protected_route_unauthorized(client):
-    """Test that protected routes return 401 without auth."""
-    response = client.post("/api/ask", json={"question": "test question", "top_k": 5})
+    """Test accessing protected route without authorization."""
+    response = client.post("/api/ask", json={"question": "test"})
     assert response.status_code == 401
-    assert "Missing authentication credentials" in response.json()["detail"]
+    # Updated to use our new structured error format
+    assert response.json()["success"] is False
+    assert "authentication" in response.json()["message"].lower()
+    assert response.json()["error_code"] == 401
 
 
 @pytest.mark.usefixtures("mock_google_auth")
@@ -71,4 +74,7 @@ def test_invalid_token(client):
         headers={"Authorization": "Bearer invalid-token"},
     )
     assert response.status_code == 401
-    assert "Invalid authentication credentials" in response.json()["detail"]
+    # Updated to use our new structured error format
+    assert response.json()["success"] is False
+    assert "authentication" in response.json()["message"].lower()
+    assert response.json()["error_code"] == 401

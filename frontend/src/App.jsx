@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import Login from "./components/Login";
 import Feedback from "./components/Feedback";
 import AdminMenu from "./components/AdminMenu";
+import ErrorNotification from "./components/ErrorNotification";
 import "./App.css";
 import styles from "./App.styles.js";
 
@@ -18,6 +19,7 @@ function ChatApp() {
   const [isLoading, setIsLoading] = useState(false);
   const [inputFocused, setInputFocused] = useState(false);
   const [showSourceInfo, setShowSourceInfo] = useState(false);
+  const [currentError, setCurrentError] = useState(null);
   const messagesEndRef = useRef(null);
 
   // Welcome message
@@ -47,11 +49,12 @@ function ChatApp() {
   const handleReset = () => {
     setMessages([welcomeMessage]);
     setInputValue("");
+    setCurrentError(null);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!inputValue.trim()) return;
+    if (!inputValue.trim() || isLoading) return;
 
     const userMessage = {
       id: Date.now().toString(),
@@ -63,6 +66,7 @@ function ChatApp() {
     setMessages((prevMessages) => [...prevMessages, userMessage]);
     setInputValue("");
     setIsLoading(true);
+    setCurrentError(null); // Clear any existing errors
 
     try {
       const response = await axios.post(
@@ -89,6 +93,7 @@ function ChatApp() {
           },
         ]);
       } else {
+        // Handle backend success=false responses
         setMessages((prevMessages) => [
           ...prevMessages,
           {
@@ -103,23 +108,39 @@ function ChatApp() {
         ]);
       }
     } catch (error) {
-      console.error("API error:", error.response?.data || error.message);
-      let errorMsg =
-        "Sorry, there was an error processing your request. Please try again.";
-      if (
-        error.response?.status === 429 &&
-        error.response?.data?.detail?.message
-      ) {
-        errorMsg = error.response.data.detail.message;
+      console.error("API error:", error);
+
+      // Set error for notification instead of chat message
+      const errorDetails = {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message,
+      };
+
+      setCurrentError(errorDetails);
+
+      // For critical errors that don't auto-logout, still show a bot message
+      if (error.response?.status !== 401 && error.response?.status !== 403) {
+        let errorMsg =
+          "Sorry, there was an error processing your request. Please try again.";
+
+        // Rate limit gets special handling
+        if (error.response?.status === 429) {
+          errorMsg =
+            error.response?.data?.detail?.message ||
+            error.response?.data?.message ||
+            "You've reached your daily limit. Please try again tomorrow.";
+        }
+
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          {
+            id: Date.now().toString(),
+            text: errorMsg,
+            sender: "bot",
+          },
+        ]);
       }
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        {
-          id: Date.now().toString(),
-          text: errorMsg,
-          sender: "bot",
-        },
-      ]);
     } finally {
       setIsLoading(false);
     }
@@ -136,6 +157,13 @@ function ChatApp() {
 
   return (
     <div style={styles.container}>
+      {/* Error Notification */}
+      <ErrorNotification
+        error={currentError}
+        onDismiss={() => setCurrentError(null)}
+        duration={currentError?.status === 429 ? 8000 : 5000} // Longer for rate limits
+      />
+
       {/* App Header */}
       <header style={styles.header}>
         <h1 style={styles.headerTitle}>Metropole.AI</h1>

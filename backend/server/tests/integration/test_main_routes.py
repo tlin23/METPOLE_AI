@@ -3,7 +3,7 @@
 import pytest
 from fastapi.testclient import TestClient
 from backend.server.app import service
-from backend.server.tests.conftest import get_test_db_connection
+from unittest.mock import patch
 
 
 @pytest.fixture
@@ -49,36 +49,26 @@ def test_ask_question_success(client, mock_auth_headers, regular_user):
 
 
 @pytest.mark.usefixtures("mock_google_auth")
-def test_ask_question_quota_exceeded(client, mock_auth_headers, regular_user, clean_db):
-    """Test asking a question when quota is exceeded returns 429."""
-    # Set up user with max questions
-    from backend.server.app_config import MAX_QUESTIONS_PER_DAY
-
-    conn = get_test_db_connection()
-    try:
-        conn.execute(
-            """
-            UPDATE users
-            SET question_count = ?
-            WHERE user_id = ?
-            """,
-            (MAX_QUESTIONS_PER_DAY, regular_user),
+def test_ask_question_quota_exceeded(client, mock_google_auth):
+    """Test the ask endpoint returns 429 when quota is exceeded."""
+    with patch(
+        "backend.server.database.models.User.increment_question_count"
+    ) as mock_quota:
+        mock_quota.return_value = 0  # No quota remaining
+        response = client.post(
+            "/api/ask",
+            json={"question": "What is AI?"},
+            headers={"Authorization": "Bearer mock_token"},
         )
-        conn.commit()
-    finally:
-        conn.close()
 
-    response = client.post(
-        "/api/ask",
-        json={"question": "What is AI?", "top_k": 3},
-        headers=mock_auth_headers,
-    )
     assert response.status_code == 429
     data = response.json()
-    assert "detail" in data
-    assert "message" in data["detail"]
-    assert "quota_remaining" in data["detail"]
-    assert "reset_time" in data["detail"]
+    # Updated to use our new structured error format
+    assert data["success"] is False
+    assert "daily question limit" in data["message"]
+    assert data["error_code"] == 429
+    assert "quota_remaining" in data
+    assert "reset_time" in data
 
 
 def test_create_feedback_unauthorized(client):
