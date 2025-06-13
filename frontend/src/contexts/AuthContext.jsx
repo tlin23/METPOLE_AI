@@ -29,11 +29,11 @@ export const AuthProvider = ({ children }) => {
       }
     );
 
-    // Add response interceptor to handle 401s
+    // Add response interceptor to handle 401s and 403s
     const responseInterceptor = axios.interceptors.response.use(
       (response) => response,
       (error) => {
-        if (error.response?.status === 401) {
+        if (error.response?.status === 401 || error.response?.status === 403) {
           setUser(null);
           localStorage.removeItem("token");
         }
