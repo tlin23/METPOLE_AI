@@ -4,10 +4,10 @@ services:
       context: .
       dockerfile: backend/Dockerfile
     volumes:
-      - metpol-sqlite:/app/backend/server/data
+      - metpol-sqlite:/data
       - metpol-db:/app/backend/data/prod/chroma_db
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
@@ -15,30 +15,31 @@ services:
       - ADMIN_EMAILS=${ADMIN_EMAILS}
       - PRODUCTION=false
       - ENABLE_DB_DUMP=True
-      - METROPOLE_DB_PATH=/app/backend/server/data/app.db
+      - METROPOLE_DB_PATH=/data/app.db
       - MAX_QUESTIONS_PER_DAY=50
       - MAX_QUESTIONS_PER_DAY_ADMIN=300
 
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    env_file:
-      - ./frontend/.env.production
-    ports:
-      - "3000:3000"
+  sqlite-web:
+    image: coleifer/sqlite-web:latest
+    command: sqlite_web --host 0.0.0.0 --port 8081 /data/app.db
+    volumes:
+      - metpol-sqlite:/data
+    expose:
+      - "8081"
     depends_on:
       - backend
 
-  sqlite-web:
-    image: coleifer/sqlite-web:latest
-    command: sqlite_web --host 0.0.0.0 --port 8080 /app/backend/server/data/app.db
-    volumes:
-      - metpol-sqlite:/app/backend/server/data
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
     ports:
       - "8080:8080"
     depends_on:
       - backend
+      - sqlite-web
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
 
 volumes:
   metpol-sqlite:
