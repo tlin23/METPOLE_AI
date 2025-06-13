@@ -185,7 +185,19 @@ async def create_feedback(
         # Get the created feedback back from DB
         feedback_data = Feedback.get(feedback.answer_id, user_info["user_id"])
         logger.debug(f"Feedback stored successfully for user {user_email}")
-        return FeedbackResponse(**feedback_data)
+        if feedback_data:
+            return FeedbackResponse(**feedback_data)
+        else:
+            # If we can't retrieve the feedback, return a basic response
+            return FeedbackResponse(
+                feedback_id="unknown",
+                user_id=user_info["user_id"],
+                answer_id=feedback.answer_id,
+                like=feedback.like,
+                suggestion=feedback.suggestion,
+                created_at="unknown",
+                updated_at="unknown",
+            )
     except Exception as e:
         logger.error(f"Error storing feedback for user {user_email}: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to store feedback")
