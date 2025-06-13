@@ -6,52 +6,92 @@
 app = "metpol-ai"
 primary_region = "sea"
 
+[build]
+dockerfile = "backend/Dockerfile"
+
+# Configure HTTP service with HTTPS support
 [[services]]
-  internal_port = 8000
   protocol = "tcp"
+  internal_port = 8080  # Nginx port
 
   [[services.ports]]
     port = 80
     handlers = ["http"]
+    # Force HTTPS redirect for security
+    force_https = true
 
   [[services.ports]]
     port = 443
     handlers = ["tls", "http"]
 
-  [[services]]
-    internal_port = 8080
-    protocol = "tcp"
-
-    [[services.ports]]
-      port = 8080
-      handlers = ["http"]
-
-  auto_stop_machines = true
-  auto_start_machines = true
-  min_machines_running = 0
-  processes = ["app"]
-
+  # Health checks
   [[services.tcp_checks]]
     interval = "15s"
     timeout = "2s"
-    grace_period = "1s"
+    grace_period = "5s"
+    restart_limit = 0
 
+  [[services.http_checks]]
+    interval = "10s"
+    timeout = "2s"
+    grace_period = "5s"
+    method = "get"
+    path = "/health"
+    protocol = "http"
+    restart_limit = 0
+
+# Machine configuration
 [[vm]]
   memory = '1gb'
   cpu_kind = 'shared'
   cpus = 1
 
-[env]
-  INDEX_DIR = "/data/chroma_db"
-  PRODUCTION = "true"
-  ENABLE_DB_DUMP = "True"
-  METROPOLE_DB_PATH = "/data/app.db"
-  MAX_QUESTIONS_PER_DAY = 50
-  MAX_QUESTIONS_PER_DAY_ADMIN = 300
+# Auto start/stop configuration for cost optimization
+auto_stop_machines = true
+auto_start_machines = true
+min_machines_running = 0
 
+# Production environment variables (secrets should be set via flyctl)
+[env]
+  # Core application settings
+  PRODUCTION = "true"
+  LOG_LEVEL = "INFO"
+
+  # Database and storage paths
+  INDEX_DIR = "/data/chroma_db"
+  METROPOLE_DB_PATH = "/data/app.db"
+  ENABLE_DB_DUMP = "True"
+
+  # Rate limiting
+  MAX_QUESTIONS_PER_DAY = "50"
+  MAX_QUESTIONS_PER_DAY_ADMIN = "300"
+
+  # Production CORS (strict)
+  CORS_ALLOWED_ORIGINS = "https://metpole-ai.vercel.app"
+
+# Mount persistent volume for database and vector store
 [mounts]
   source = "chroma_data"
   destination = "/data"
 
-[build]
-dockerfile = "backend/Dockerfile"
+# ===========================================================================
+# SECRETS MANAGEMENT INSTRUCTIONS
+# ===========================================================================
+#
+# The following secrets must be set using flyctl for production:
+#
+# flyctl secrets set OPENAI_API_KEY=sk-your-actual-key
+# flyctl secrets set GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
+# flyctl secrets set GOOGLE_CLIENT_SECRET=your-google-client-secret
+# flyctl secrets set ADMIN_EMAILS=admin@example.com,admin2@example.com
+# flyctl secrets set DB_ADMIN_USERNAME=admin
+# flyctl secrets set DB_ADMIN_PASSWORD=secure-production-password
+#
+# To view current secrets:
+# flyctl secrets list
+#
+# To rotate secrets:
+# flyctl secrets set SECRET_NAME=new-value
+# flyctl deploy (to restart with new secrets)
+#
+# ===========================================================================

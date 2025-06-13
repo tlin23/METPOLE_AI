@@ -2,6 +2,7 @@
 FastAPI application server.
 """
 
+import os
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
@@ -19,8 +20,9 @@ from backend.server.database.connection import init_db
 load_dotenv()
 
 # Configure logging
+log_level = os.getenv("LOG_LEVEL", "INFO").upper()
 logging.basicConfig(
-    level=logging.INFO,
+    level=getattr(logging, log_level),
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[logging.StreamHandler(), logging.FileHandler("/tmp/app.log", mode="a")],
 )
@@ -71,9 +73,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 @service.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
     """Handle HTTP exceptions with structured responses."""
-    logger.warning(
-        f"HTTP {exc.status_code} for {request.method} {request.url}: {exc.detail}"
-    )
+    logger.warning(f"HTTP {exc.status_code} for {request.method} {request.url}: {exc.detail}")
 
     return JSONResponse(
         status_code=exc.status_code,
@@ -90,17 +90,50 @@ async def http_exception_handler(request: Request, exc: HTTPException):
     )
 
 
-# ✅ Add CORS middleware
+# ✅ Environment-based CORS configuration for production readiness
+def get_cors_origins():
+    """Get CORS origins from environment variables."""
+    # Get allowed origins from environment
+    cors_origins_env = os.getenv("CORS_ALLOWED_ORIGINS", "")
+
+    if cors_origins_env:
+        # Parse comma-separated origins from environment
+        origins = [origin.strip() for origin in cors_origins_env.split(",") if origin.strip()]
+        logger.info(f"Using CORS origins from environment: {origins}")
+        return origins
+
+    # Default origins for development/fallback
+    is_production = os.getenv("PRODUCTION", "false").lower() == "true"
+
+    if is_production:
+        # Strict production origins - only known production domains
+        default_origins = [
+            "https://metpole-ai.vercel.app",  # Production frontend
+        ]
+        logger.warning("Production mode: Using strict CORS origins")
+    else:
+        # Development origins
+        default_origins = [
+            "http://localhost:5173",  # Local dev (Vite)
+            "http://localhost:3000",  # Local dev (Docker/Create React App)
+            "http://127.0.0.1:5173",  # Alternative localhost
+            "http://127.0.0.1:3000",  # Alternative localhost
+            "https://metpole-ai.vercel.app",  # Production frontend for testing
+        ]
+        logger.info("Development mode: Using permissive CORS origins")
+
+    return default_origins
+
+
+cors_origins = get_cors_origins()
+
 service.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",  # Local dev (Vite)
-        "http://localhost:3000",  # Local dev (Docker)
-        "https://metpole-ai.vercel.app",  # Production frontend
-    ],
+    allow_origins=cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # Include API routes
