@@ -41,7 +41,7 @@ def test_nginx_proxy_routes(nginx_server):
 @pytest.mark.parametrize("mock_google_auth", ["admin"], indirect=True)
 def test_admin_route_authorized(client, mock_auth_headers, mock_google_auth):
     """Test that admin routes work with valid auth."""
-    response = client.get("/admin/health", headers=mock_auth_headers)
+    response = client.get("/api/admin/health", headers=mock_auth_headers)
     assert response.status_code == 200
     assert response.json()["status"] == "ok"
     assert response.json()["system"]["admin_access"] is True
