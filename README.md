@@ -1,6 +1,12 @@
-# Metropole.AI
+# Metropole.AI [Link: https://metpole-ai.vercel.app/]
 
 An AI-powered chatbot application that answers questions about the Metropole building using RAG (Retrieval-Augmented Generation) technology.
+
+# Link to Chatbot
+
+https://metpole-ai.vercel.app/
+
+- Google ID is required
 
 ## Overview
 
@@ -21,12 +27,14 @@ Metropole.AI is a full-stack application that combines document retrieval with l
 ### Tech Stack
 
 **Frontend**
+
 - React 19 with Vite
 - Styled Components for styling
 - Google OAuth integration
 - Axios for API communication
 
 **Backend**
+
 - FastAPI (Python)
 - OpenAI API for LLM responses
 - LangChain for RAG orchestration
@@ -35,6 +43,7 @@ Metropole.AI is a full-stack application that combines document retrieval with l
 - SQLite for user data and analytics
 
 **Document Processing**
+
 - Unstructured.io for document parsing
 - Support for PDF, DOCX, PPTX, XLSX, images (OCR)
 - Web crawling capabilities
@@ -52,11 +61,13 @@ Metropole.AI is a full-stack application that combines document retrieval with l
 ### Environment Setup
 
 1. Copy the environment template:
+
    ```bash
    cp env.example .env
    ```
 
 2. Configure required environment variables in `.env`:
+
    ```bash
    # OpenAI
    OPENAI_API_KEY=sk-your-openai-api-key
@@ -74,12 +85,14 @@ Metropole.AI is a full-stack application that combines document retrieval with l
    ```
 
 3. Configure frontend environment:
+
    ```bash
    cd frontend
    cp .env.example .env
    ```
 
    Update `frontend/.env`:
+
    ```bash
    VITE_BACKEND_URL=http://localhost:8000
    VITE_FRONTEND_URL=http://localhost:3000
@@ -103,6 +116,7 @@ uvicorn backend.server.app:service --host 0.0.0.0 --port 8000 --reload
 ```
 
 Or use the Makefile:
+
 ```bash
 make serve
 ```
@@ -116,6 +130,7 @@ npm run dev
 ```
 
 Or use the Makefile:
+
 ```bash
 make front
 ```
@@ -152,6 +167,7 @@ make pip-prod-full
 ### Production Deployment
 
 The application is designed to deploy to:
+
 - **Backend**: Fly.io
 - **Frontend**: Vercel
 
@@ -189,11 +205,13 @@ make admin-check-quota email=user@example.com
 ### SQLite Web Interface
 
 For local development:
+
 ```bash
 sqlite_web --host 0.0.0.0 --port 8080 backend/server/data/app.db
 ```
 
 For production (via Fly.io proxy):
+
 ```bash
 flyctl proxy 8081:8080 -a metpol-ai
 # Access at http://localhost:8081
@@ -217,6 +235,7 @@ make test
 ### Testing
 
 The project includes:
+
 - **Unit tests**: For individual components
 - **Integration tests**: For API endpoints
 - **E2E tests**: For complete user flows
@@ -254,6 +273,7 @@ METPOL_AI/
 ## API Documentation
 
 Once the backend is running, interactive API documentation is available at:
+
 - Swagger UI: http://localhost:8000/docs
 - ReDoc: http://localhost:8000/redoc
 
@@ -262,6 +282,7 @@ Once the backend is running, interactive API documentation is available at:
 ### Rate Limiting
 
 Configure daily question limits in `.env`:
+
 ```bash
 MAX_QUESTIONS_PER_DAY=50         # Regular users
 MAX_QUESTIONS_PER_DAY_ADMIN=300  # Admin users
@@ -270,6 +291,7 @@ MAX_QUESTIONS_PER_DAY_ADMIN=300  # Admin users
 ### CORS
 
 Configure allowed origins for production:
+
 ```bash
 CORS_ALLOWED_ORIGINS=https://your-frontend-domain.com
 ```
@@ -277,6 +299,7 @@ CORS_ALLOWED_ORIGINS=https://your-frontend-domain.com
 ### Database
 
 The application uses SQLite for simplicity. The database stores:
+
 - User accounts and authentication
 - Question/answer sessions
 - User feedback
@@ -287,10 +310,12 @@ The application uses SQLite for simplicity. The database stores:
 ### Common Issues
 
 1. **OAuth Login Fails**
+
    - Verify `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are correct
    - Check authorized redirect URIs in Google Cloud Console
 
 2. **OpenAI API Errors**
+
    - Verify `OPENAI_API_KEY` is valid
    - Check API quota and billing
 
